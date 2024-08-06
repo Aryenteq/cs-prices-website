@@ -24,7 +24,7 @@ export const signUp = async (username: string, email: string, password: string):
         data: { username, email, password: hashedPassword },
     });
 
-    return jwt.sign({ username: user.username }, SECRET_KEY, { expiresIn: '1h' });
+    return jwt.sign({ uid: user.uid, username: user.username, email: user.email, admin: user.admin }, SECRET_KEY, { expiresIn: '1h' });
 };
 
 export const logIn = async (email: string, password: string): Promise<string> => {
@@ -38,5 +38,5 @@ export const logIn = async (email: string, password: string): Promise<string> =>
         throw new Error('Invalid credentials');
     }
 
-    return jwt.sign({ username: user.username }, SECRET_KEY, { expiresIn: '1h' });
+    return jwt.sign({ uid: user.uid, username: user.username, email: user.email, admin: user.admin }, SECRET_KEY, { expiresIn: '1h' });
 };
