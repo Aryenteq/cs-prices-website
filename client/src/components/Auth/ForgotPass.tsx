@@ -1,13 +1,22 @@
 import React from 'react';
+import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import leftArrow from './media/left-arrow.svg';
 
 interface ForgotPassProp {
     toggle: () => void;
-  }
+}
 
-const handleSubmit = () => {
-    // TODO
+const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+
+    try {
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/forgot-pwd`, { email });
+    } catch (error: any) {
+        console.error('Error sending email:', error.response ? error.response.data : error.message);
+    }
 }
 
 const ForgotPass: React.FC<ForgotPassProp> = ({ toggle }) => {

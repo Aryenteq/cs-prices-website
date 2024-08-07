@@ -1,12 +1,37 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
+
 import AuthForm, { AuthFormProps } from '../components/Auth/AuthForm';
 import AuthImage from '../components/Auth/AuthImage';
 import ForgotPass from '../components/Auth/ForgotPass';
 
+const handleLogInSubmit = async (data: Record<string, string>, navigate: ReturnType<typeof useNavigate>) => {
+  try {
+    const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, data);
+    Cookies.set('token', response.data.token, { expires: 1 });
+    navigate('/');
+  } catch (error: any) {
+    console.error('Login error:', error.response ? error.response.data : error.message);
+  }
+};
+
+const handleSignUpSubmit = async (data: Record<string, string>, navigate: ReturnType<typeof useNavigate>) => {
+  try {
+    const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/signup`, data);
+    Cookies.set('token', response.data.token, { expires: 1 });
+    navigate('/');
+  } catch (error: any) {
+    console.error('Sign up error:', error.response ? error.response.data : error.message);
+  }
+};
+
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showForgotPass, setShowForgotPass] = useState(false);
+  const navigate = useNavigate();
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
@@ -24,10 +49,7 @@ const AuthPage: React.FC = () => {
       { name: 'password', label: 'Password', type: 'password', required: true },
     ],
     buttonText: 'Log In',
-    onSubmit: (data) => {
-      // TODO
-      console.log('Login data:', data);
-    },
+    onSubmit: (data) => handleLogInSubmit(data, navigate),
     toggleAuthMode,
     toggleText: "Don't have an account?",
     toggleForgotPass
@@ -43,10 +65,7 @@ const AuthPage: React.FC = () => {
       { name: 'confirmPassword', label: 'Confirm Password', type: 'password', required: true },
     ],
     buttonText: 'Sign Up',
-    onSubmit: (data) => {
-      // TODO
-      console.log('Signup data:', data);
-    },
+    onSubmit: (data) => handleSignUpSubmit(data, navigate),
     toggleAuthMode,
     toggleText: 'Already have an account?'
   };

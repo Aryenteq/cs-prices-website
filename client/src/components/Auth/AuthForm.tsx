@@ -76,9 +76,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, title, fields, buttonText, on
 				))}
 
 				{/* Forgot pass */}
-				{type === 'login' ?
-					(<button type="button" className='-translate-y-2 hover:underline focus:underline' onClick={toggleForgotPass}>Forgot password</button>)
-					: ''}
+				{type === 'login' &&
+					<button type="button" className='-translate-y-2 hover:underline focus:underline' onClick={toggleForgotPass}>Forgot password</button>}
 
 				{/* Submit button (log in, sign up) */}
 				<button type="submit" className='bg-primary rounded mt-4 py-3 hover:bg-primary-dark'>{buttonText}</button>
