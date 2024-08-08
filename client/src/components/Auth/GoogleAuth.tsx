@@ -1,12 +1,15 @@
 import React from 'react';
 import googleLogo from './media/google-logo.svg';
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { useInfo } from '../InfoContext';
 
 interface GoogleAuthButtonProps {
   text: string;
 }
 
 const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ text }) => {
+  const { setInfo } = useInfo();
+
   const handleButtonClick = () => {
     const auth = getAuth();
     const provider = new GoogleAuthProvider();
@@ -18,8 +21,8 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ text }) => {
         console.log('User signed in:', user);
       })
       .catch((error) => {
-        // TODO
         console.error('Error during sign in:', error);
+        setInfo({ message: error.response?.data?.message || error.message, isError: true });
       });
   };
 

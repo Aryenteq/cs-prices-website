@@ -14,7 +14,7 @@ if (!SECRET_KEY) {
 export const signUp = async (username: string, email: string, password: string): Promise<string> => {
     const passwordRegex = /^(?=.*\d).{8,}$/;
     if (!passwordRegex.test(password)) {
-        throw new Error('Password must be at least 8 characters long and include at least one digit');
+        throw new Error('Password must be at least 8 characters long and include at least one digit.');
     }
 
     const existingUser = await db.user.findUnique({ where: { email } });
@@ -33,12 +33,12 @@ export const signUp = async (username: string, email: string, password: string):
 export const logIn = async (email: string, password: string): Promise<string> => {
     const user = await db.user.findUnique({ where: { email } });
     if (!user) {
-        throw new Error('Invalid credentials');
+        throw new Error('Incorrect e-mail');
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-        throw new Error('Invalid credentials');
+        throw new Error('Incorrect password');
     }
 
     return jwt.sign({ uid: user.uid, username: user.username, email: user.email, admin: user.admin }, SECRET_KEY, { expiresIn: '1d' });
@@ -85,7 +85,7 @@ export const resetPass = async (newPwd: string, repeatedPwd: string, email: stri
 
     const passwordRegex = /^(?=.*\d).{8,}$/;
     if (!passwordRegex.test(newPwd)) {
-        throw new Error('Password must be at least 8 characters long and include at least one digit');
+        throw new Error('Password must be at least 8 characters long and include at least one digit.');
     }
 
     const user = await db.user.findUnique({

@@ -4,14 +4,13 @@ import axios from 'axios';
 import hidePass from '../components/Auth/media/hide-pass.svg';
 import showPass from '../components/Auth/media/show-pass.svg';
 import '../components/Auth/Auth.css';
-import Error from '../components/Error';
-
+import { useInfo } from '../components/InfoContext';
 
 export const useQuery = () => {
     return new URLSearchParams(useLocation().search);
 };
 
-const handleSubmit = (token: string, email: string, setError: React.Dispatch<React.SetStateAction<string | null>>, navigate: ReturnType<typeof useNavigate>) => async (event: React.FormEvent<HTMLFormElement>) => {
+const handleSubmit = (token: string, email: string, setInfo: (info: { message: string; isError?: boolean } | null) => void, navigate: ReturnType<typeof useNavigate>) => async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const pwd = formData.get('pwd') as string;
@@ -22,7 +21,7 @@ const handleSubmit = (token: string, email: string, setError: React.Dispatch<Rea
         navigate('/connect');
     } catch (error: any) {
         console.error('Error resetting password:', error.response ? error.response.data : error.message);
-        setError(error.response?.data?.message || error.message);
+        setInfo({ message: error.response?.data?.message || error.message, isError: true });
     }
 };
 
@@ -33,7 +32,7 @@ const ResetPwdPage: React.FC = () => {
 
     const navigate = useNavigate();
 
-    const [error, setError] = useState<string | null>(null);
+    const { setInfo } = useInfo();
     const [showPassword, setShowPassword] = useState(false);
 
     const togglePasswordVisibility = () => {
@@ -42,10 +41,9 @@ const ResetPwdPage: React.FC = () => {
 
     return (
         <div className={`flex flex-col justify-around items-center h-full w-full absolute bg-background`}>
-            {error && <Error error={error} />}
-            <h2 className='text-4xl text-center mt-8'>Recover password</h2>
+            <h2 className='text-4xl text-center mt-8'>Reset password</h2>
             {/* Custom scrollbar for the form in Auth.css */}
-            <form onSubmit={handleSubmit(token!, email!, setError, navigate)} className='form-container flex flex-col justify-center px-20 py-2'>
+            <form onSubmit={handleSubmit(token!, email!, setInfo, navigate)} className='form-container flex flex-col justify-center px-20 py-2'>
                 <div key='newPwd' className='flex flex-col justify-center items-center my-2 relative'>
                     <label htmlFor='pwd' className='font-medium my-1'>Password</label>
                     <input
