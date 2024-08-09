@@ -92,7 +92,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, title, fields, buttonText, on
 
 
 
-			<GoogleAuthButton text={buttonText} />
+			<GoogleAuthButton type={type} text={buttonText} />
 
 			{/* Change to the other auth form */}
 			<button type="button" className='hover:underline focus:underline' onClick={() => {

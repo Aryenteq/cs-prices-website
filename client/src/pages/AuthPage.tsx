@@ -5,27 +5,44 @@ import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 
 import { useInfo } from '../components/InfoContext';
+import { useQuery } from './ResetPwdPage';
 
 import AuthForm, { AuthFormProps } from '../components/Auth/AuthForm';
 import AuthImage from '../components/Auth/AuthImage';
 import ForgotPass from '../components/Auth/ForgotPass';
 
-const handleLogInSubmit = async (data: Record<string, string>, setInfo: (info: { message: string; isError?: boolean } | null) => void, navigate: ReturnType<typeof useNavigate>) => {
+const AVAILABLE_LANGUAGES = ['RO', 'EN'];
+const AVAILABLE_THEMES = ['DARK', 'LIGHT'];
+
+export const handleLogInSubmit = async (data: Record<string, string>, setInfo: (info: { message: string; isError?: boolean } | null) => void, navigate: ReturnType<typeof useNavigate>, location: URLSearchParams) => {
   try {
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, data);
     Cookies.set('token', response.data.token, { expires: 1 });
-    navigate('/');
+
+    const next = location.get('next');
+    navigate(next ? `/${next}` : '/');
   } catch (error: any) {
     console.error('Login error:', error.response ? error.response.data : error.message);
     setInfo({ message: error.response?.data?.message || error.message, isError: true });
   }
 };
 
-const handleSignUpSubmit = async (data: Record<string, string>, setInfo: (info: { message: string; isError?: boolean } | null) => void, navigate: ReturnType<typeof useNavigate>) => {
+export const handleSignUpSubmit = async (data: Record<string, string>, setInfo: (info: { message: string; isError?: boolean } | null) => void, navigate: ReturnType<typeof useNavigate>, location: URLSearchParams) => {
   try {
+    if (AVAILABLE_LANGUAGES.includes(navigator.language)) {
+      data['prefferedLanguage'] = navigator.language;
+    }
+
+    const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'DARK' : 'LIGHT';
+    if (AVAILABLE_THEMES.includes(preferredTheme)) {
+      data['prefferedTheme'] = preferredTheme;
+    }
+
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/signup`, data);
     Cookies.set('token', response.data.token, { expires: 1 });
-    navigate('/');
+
+    const next = location.get('next');
+    navigate(next ? `/${next}` : '/');
   } catch (error: any) {
     console.error('Sign up error:', error.response ? error.response.data : error.message);
     setInfo({ message: error.response?.data?.message || error.message, isError: true });
@@ -36,6 +53,7 @@ const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showForgotPass, setShowForgotPass] = useState(false);
   const navigate = useNavigate();
+  const location = useQuery();
 
   const { setInfo } = useInfo();
 
@@ -55,7 +73,7 @@ const AuthPage: React.FC = () => {
       { name: 'password', label: 'Password', type: 'password', required: true },
     ],
     buttonText: 'Log In',
-    onSubmit: (data) => handleLogInSubmit(data, setInfo, navigate),
+    onSubmit: (data) => handleLogInSubmit(data, setInfo, navigate, location),
     toggleAuthMode,
     toggleText: "Don't have an account?",
     toggleForgotPass
@@ -71,7 +89,7 @@ const AuthPage: React.FC = () => {
       { name: 'confirmPassword', label: 'Confirm Password', type: 'password', required: true },
     ],
     buttonText: 'Sign Up',
-    onSubmit: (data) => handleSignUpSubmit(data, setInfo, navigate),
+    onSubmit: (data) => handleSignUpSubmit(data, setInfo, navigate, location),
     toggleAuthMode,
     toggleText: 'Already have an account?'
   };
@@ -96,7 +114,7 @@ const AuthPage: React.FC = () => {
       </AnimatePresence>
       <AuthImage isLogin={isLogin} />
 
-      {showForgotPass ? <ForgotPass toggle={toggleForgotPass}/> : ''}
+      {showForgotPass ? <ForgotPass toggle={toggleForgotPass} /> : ''}
     </div>
   );
 };
