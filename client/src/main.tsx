@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import './index.css';
 
 import { InfoProvider } from "./components/InfoContext";
+import RequireAuth from "./components/RequireAuth";
 
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
@@ -13,7 +14,11 @@ import NotFoundPage from "./pages/NotFoundPage";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <LandingPage />,
+    element: (
+      <RequireAuth>
+        <LandingPage />
+      </RequireAuth>
+    ),
   },
   {
     path: "/connect",
