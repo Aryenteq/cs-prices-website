@@ -10,6 +10,7 @@ import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
 import ResetPwdPage from "./pages/ResetPwdPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import SpreadsheetPage from "./pages/SpreadsheetPage";
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,14 @@ const router = createBrowserRouter([
   {
     path: "/reset-pwd",
     element: <ResetPwdPage />,
+  },
+  {
+    path: "/spreadsheet/:id",
+    element: (
+      <RequireAuth>
+        <SpreadsheetPage />
+      </RequireAuth>
+    ),
   },
   {
     path: "*",

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 import { useInfo } from '../components/InfoContext';
 import { useQuery } from './ResetPwdPage';
@@ -50,6 +50,11 @@ export const handleSignUpSubmit = async (data: Record<string, string>, setInfo: 
 };
 
 const AuthPage: React.FC = () => {
+  const token = Cookies.get('token');
+  if (token) {
+    return <Navigate to="/" replace />;
+  }
+
   const [isLogin, setIsLogin] = useState(true);
   const [showForgotPass, setShowForgotPass] = useState(false);
   const navigate = useNavigate();

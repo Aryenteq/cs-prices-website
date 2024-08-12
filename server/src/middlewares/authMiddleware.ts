@@ -15,7 +15,7 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
   }
 
   try {
-    const decoded = jwt.verify(token, SECRET_KEY) as { username: string };
+    const decoded = jwt.verify(token, SECRET_KEY) as { username: string; uid: number; email: string; admin: boolean };
     (req as any).user = decoded;
     next();
   } catch (error) {

@@ -23,17 +23,85 @@ enum PrefferedTheme {
 }
 
 model User {
-  uid                  Int       @id @default(autoincrement())
-  registrationType     RegistrationType @default(FORM)
+  uid                  Int               @id @default(autoincrement())
+  registrationType     RegistrationType  @default(FORM)
   username             String
   password             String?
-  email                String    @unique
-  admin                Boolean   @default(false)
-  photoURL             String    @default("https://scontent.fias1-2.fna.fbcdn.net/v/t1.15752-9/416744895_376024205074877_1704543827305195711_n.webp?stp=dst-webp_p100x100&_nc_cat=111&ccb=1-7&_nc_sid=b70caf&_nc_ohc=ROnuMVAaUTEQ7kNvgHS9wov&_nc_ht=scontent.fias1-2.fna&oh=03_Q7cD1QGCZUn5ZnaQXamC9yawnpPX9WAlReyo2KziE_JOZbU5eg&oe=66DDDF99")
+  email                String            @unique
+  admin                Boolean           @default(false)
+  photoURL             String            @default("https://scontent.fias1-2.fna.fbcdn.net/v/t1.15752-9/416744895_376024205074877_1704543827305195711_n.webp?stp=dst-webp_p100x100&_nc_cat=111&ccb=1-7&_nc_sid=b70caf&_nc_ohc=ROnuMVAaUTEQ7kNvgHS9wov&_nc_ht=scontent.fias1-2.fna&oh=03_Q7cD1QGCZUn5ZnaQXamC9yawnpPX9WAlReyo2KziE_JOZbU5eg&oe=66DDDF99")
   prefferedLanguage    PrefferedLanguage @default(EN)
-  prefferedTheme       PrefferedTheme @default(DARK)
+  prefferedTheme       PrefferedTheme    @default(DARK)
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
-  created              DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  created              DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  sheets               Spreadsheet[]     @relation("UserSpreadsheets")
+}
+
+enum SpreadsheetTypes {
+  NORMAL
+  CS
+}
+
+model Spreadsheet {
+  id        Int              @id @default(autoincrement())
+  ownerId   Int
+  type      SpreadsheetTypes
+  name      String
+  sheets    Sheet[]          @relation("SpreadsheetSheets")
+  created   DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  User      User             @relation("UserSpreadsheets", fields: [ownerId], references: [uid], onDelete: Cascade)
+
+  @@index([ownerId])
+}
+
+model Sheet {
+  id            Int         @id @default(autoincrement())
+  spreadsheetId Int
+  name          String
+  numRows       Int         @default(100)
+  numCols       Int         @default(26)
+  columnWidths  Json?
+  rowHeights    Json?
+  hiddenCols    Json?
+  hiddenRows    Json?
+  created       DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  Spreadsheet   Spreadsheet @relation("SpreadsheetSheets", fields: [spreadsheetId], references: [id], onDelete: Cascade)
+  cells         Cell[]      @relation("SheetCells")
+
+  @@index([spreadsheetId])
+}
+
+enum HorizontalAlignment {
+  LEFT
+  CENTER
+  RIGHT
+}
+
+enum VerticalAlignment {
+  TOP
+  CENTER
+  BOTTOM
+}
+
+model Cell {
+  id         Int                 @id @default(autoincrement())
+  sheetId    Int
+  row        Int
+  col        Int
+  protected  Boolean             @default(false)
+  bgColor    String
+  color      String
+  style      Json?
+  hAlignment HorizontalAlignment @default(LEFT)
+  vAlignment VerticalAlignment   @default(CENTER)
+  content    String?
+  created    DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  Sheet      Sheet               @relation("SheetCells", fields: [sheetId], references: [id])
+
+  @@index([sheetId])
 }
