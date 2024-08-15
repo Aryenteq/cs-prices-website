@@ -5,6 +5,27 @@ import { Prisma } from '@prisma/client';
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
 
+export const getSheet = async (spreadsheetId: number, index: number, userId: number) => {
+    const sheet = await db.sheet.findFirst({
+        where: {
+            spreadsheetId: spreadsheetId,
+            index: index,
+            Spreadsheet: {
+                ownerId: userId,
+            },
+        },
+        include: {
+            cells: true,
+        },
+    });
+
+    if (!sheet) {
+        throw new Error('Sheet not found or you don\'t have permission to access it');
+    }
+
+    return sheet;
+};
+
 export const createSheet = async (sheet: PrismaSheet) => {
     return await db.sheet.create({
         data: {
@@ -59,6 +80,96 @@ export const setName = async (sheetId: number, name: string, userId: number) => 
         data: {
             name
         }
+    });
+};
+
+
+// Could be changed in the future?
+export const setIndex = async (sheetId: number, newIndex: number, userId: number) => {
+    // Fetch the sheet and its associated spreadsheet
+    const sheet = await db.sheet.findFirst({
+        where: {
+            id: sheetId,
+            Spreadsheet: {
+                ownerId: userId,
+            },
+        },
+        include: {
+            Spreadsheet: true,
+        },
+    });
+
+    if (!sheet) {
+        throw new Error('Sheet not found or you don\'t have permission to update it');
+    }
+
+    const currentIndex = sheet.index;
+    const spreadsheetId = sheet.spreadsheetId;
+
+    // Fetch all sheets in the same spreadsheet to get the count
+    const allSheets = await db.sheet.findMany({
+        where: {
+            spreadsheetId: spreadsheetId,
+        },
+        orderBy: {
+            index: 'asc',
+        },
+    });
+
+    const totalSheets = allSheets.length;
+
+    // Check if the new index is within the valid range
+    if (newIndex < 0 || newIndex >= totalSheets) {
+        throw new Error(`Invalid index: Index should be between 0 and ${totalSheets - 1}`);
+    }
+
+    // Begin transaction to ensure atomicity
+    return await db.$transaction(async (transaction) => {
+        if (newIndex > currentIndex) {
+            // Shift sheets down (decrement index) if the new index is greater than the current index
+            await transaction.sheet.updateMany({
+                where: {
+                    spreadsheetId: spreadsheetId,
+                    index: {
+                        gt: currentIndex,
+                        lte: newIndex,
+                    },
+                },
+                data: {
+                    index: {
+                        decrement: 1,
+                    },
+                },
+            });
+        } else if (newIndex < currentIndex) {
+            // Shift sheets up (increment index) if the new index is less than the current index
+            await transaction.sheet.updateMany({
+                where: {
+                    spreadsheetId: spreadsheetId,
+                    index: {
+                        gte: newIndex,
+                        lt: currentIndex,
+                    },
+                },
+                data: {
+                    index: {
+                        increment: 1,
+                    },
+                },
+            });
+        }
+
+        // Update the index of the target sheet
+        const updatedSheet = await transaction.sheet.update({
+            where: {
+                id: sheetId,
+            },
+            data: {
+                index: newIndex,
+            },
+        });
+
+        return updatedSheet;
     });
 };
 

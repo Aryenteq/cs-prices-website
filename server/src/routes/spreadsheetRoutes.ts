@@ -4,8 +4,10 @@ import { isAuthenticated } from '../middlewares/authMiddleware';
 
 const spreadsheetRoutes = Router();
 
+spreadsheetRoutes.get('/spreadsheet', isAuthenticated, spreadsheetController.getAllSpreadsheets);
+spreadsheetRoutes.get('/spreadsheet/:spreadsheetId', isAuthenticated, spreadsheetController.getSpreadsheet);
 spreadsheetRoutes.post('/spreadsheet', isAuthenticated, spreadsheetController.createSpreadsheet);
-spreadsheetRoutes.delete('/spreadhseet', isAuthenticated, spreadsheetController.deleteSpreadsheet);
+spreadsheetRoutes.delete('/spreadsheet/:spreadsheetId', isAuthenticated, spreadsheetController.deleteSpreadsheet);
 spreadsheetRoutes.put('/spreadsheet/:spreadsheetId/name', isAuthenticated, spreadsheetController.setName);
 
 

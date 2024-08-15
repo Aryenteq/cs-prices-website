@@ -2,6 +2,29 @@ import type { Request, Response } from 'express';
 import * as spreadsheetService from "../services/spreadsheetService";
 import type { Spreadsheet as PrismaSpreadsheet } from '@prisma/client';
 
+export const getAllSpreadsheets = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.uid;
+        const spreadsheets = await spreadsheetService.getAllSpreadsheets(userId);
+        res.status(200).json(spreadsheets);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+export const getSpreadsheet = async (req: Request, res: Response) => {
+    try {
+        const spreadsheetId = parseInt(req.params.spreadsheetId, 10);
+        const index = parseInt(req.query.index as string, 10);
+        const userId = (req as any).user.uid;
+
+        const result = await spreadsheetService.getSpreadsheet(spreadsheetId, index, userId);
+        res.status(200).json(result);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
 export const createSpreadsheet = async (req: Request, res: Response) => {
     try {
         const { name, type } = req.body as PrismaSpreadsheet;
@@ -16,7 +39,7 @@ export const createSpreadsheet = async (req: Request, res: Response) => {
 
 export const deleteSpreadsheet = async (req: Request, res: Response) => {
     try {
-        const { spreadsheetId } = req.body;
+        const spreadsheetId = parseInt(req.params.spreadsheetId, 10);
         const userId = (req as any).user.uid;
 
         await spreadsheetService.deleteSpreadsheet(spreadsheetId, userId);

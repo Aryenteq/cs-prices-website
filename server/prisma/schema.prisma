@@ -61,6 +61,7 @@ model Sheet {
   id            Int         @id @default(autoincrement())
   spreadsheetId Int
   name          String
+  index         Int
   numRows       Int         @default(100)
   numCols       Int         @default(26)
   columnWidths  Json?
