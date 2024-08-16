@@ -18,7 +18,9 @@ export const getSheet = async (req: Request, res: Response) => {
 export const createSheet = async (req: Request, res: Response) => {
     try {
         const sheet = req.body as PrismaSheet;
-        const newSheet = await sheetService.createSheet(sheet);
+        const userId = (req as any).user.uid;
+
+        const newSheet = await sheetService.createSheet(sheet, userId);
         res.status(201).json(newSheet);
     } catch (error: any) {
         res.status(400).json({ message: error.message });

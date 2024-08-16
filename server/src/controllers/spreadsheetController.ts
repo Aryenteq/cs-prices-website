@@ -61,3 +61,28 @@ export const setName = async (req: Request, res: Response) => {
         res.status(400).json({ message: error.message });
     }
 };
+
+export const setLastOpened = async (req: Request, res: Response) => {
+    try {
+        const spreadsheetId = parseInt(req.params.spreadsheetId, 10);
+        const userId = (req as any).user.uid;
+
+        const updatedSpreadsheet = await spreadsheetService.setLastOpened(spreadsheetId, userId);
+        res.status(200).json(updatedSpreadsheet);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+export const updateSharedUsersIds = async (req: Request, res: Response) => {
+    try {
+        const spreadsheetId = parseInt(req.params.spreadsheetId, 10);
+        const { email, permission } = req.body;
+        const userId = (req as any).user.uid;
+
+        const updatedSheet = await spreadsheetService.updateSharedUsersIds(spreadsheetId, email, permission, userId);
+        res.status(200).json(updatedSheet);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};

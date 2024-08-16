@@ -9,6 +9,7 @@ spreadsheetRoutes.get('/spreadsheet/:spreadsheetId', isAuthenticated, spreadshee
 spreadsheetRoutes.post('/spreadsheet', isAuthenticated, spreadsheetController.createSpreadsheet);
 spreadsheetRoutes.delete('/spreadsheet/:spreadsheetId', isAuthenticated, spreadsheetController.deleteSpreadsheet);
 spreadsheetRoutes.put('/spreadsheet/:spreadsheetId/name', isAuthenticated, spreadsheetController.setName);
-
+spreadsheetRoutes.put('/spreadsheet/:spreadsheetId/last-opened', isAuthenticated, spreadsheetController.setLastOpened);
+spreadsheetRoutes.patch('/spreadsheet/:spreadsheetId/shared-users-ids', isAuthenticated, spreadsheetController.updateSharedUsersIds);
 
 export default spreadsheetRoutes;

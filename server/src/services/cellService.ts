@@ -1,21 +1,30 @@
 import { db } from '../db';
 
 import { Prisma } from '@prisma/client';
+import { findSpreadsheetIdByCellId } from '../utils/findSpreadsheetId';
+import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
 export const updateStyle = async (cellId: number, newStyle: object, userId: number) => {
     const cell = await db.cell.findFirst({
         where: {
             id: cellId,
-            Sheet: {
-                Spreadsheet: {
-                    ownerId: userId,
-                },
-            },
         },
     });
 
     if (!cell) {
-        throw new Error('Cell not found or you don\'t have permission to update it');
+        throw new Error('Cell not found');
+    }
+
+    const spreadsheetId = await findSpreadsheetIdByCellId(cellId);
+
+    if (!spreadsheetId) {
+        throw new Error('Associated spreadsheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to edit this cell.');
     }
 
     // Merge existing style with the new style updates
@@ -55,17 +64,24 @@ export const setContent = async (cellId: number, content: string, userId: number
 const updateCell = async (cellId: number, data: object, userId: number) => {
     const cell = await db.cell.findFirst({
         where: {
-            id: cellId,
-            Sheet: {
-                Spreadsheet: {
-                    ownerId: userId,
-                },
-            },
+            id: cellId
         },
     });
 
     if (!cell) {
-        throw new Error('Cell not found or you don\'t have permission to update it');
+        throw new Error('Cell not found');
+    }
+
+    const spreadsheetId = await findSpreadsheetIdByCellId(cellId);
+
+    if (!spreadsheetId) {
+        throw new Error('Associated spreadsheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to edit this cell.');
     }
 
     return await db.cell.update({

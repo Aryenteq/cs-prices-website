@@ -1,18 +1,22 @@
 import { db } from '../db';
 import type { Sheet as PrismaSheet } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
 
 export const getSheet = async (spreadsheetId: number, index: number, userId: number) => {
+    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+
+    if (!permission) {
+        throw new Error('Sheet not found or you don\'t have permission to access it');
+    }
+
     const sheet = await db.sheet.findFirst({
         where: {
             spreadsheetId: spreadsheetId,
             index: index,
-            Spreadsheet: {
-                ownerId: userId,
-            },
         },
         include: {
             cells: true,
@@ -20,13 +24,18 @@ export const getSheet = async (spreadsheetId: number, index: number, userId: num
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to access it');
+        throw new Error('Sheet not found');
     }
 
     return sheet;
 };
 
-export const createSheet = async (sheet: PrismaSheet) => {
+export const createSheet = async (sheet: PrismaSheet, userId: number) => {
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to edit this spreadsheet.');
+    }
     return await db.sheet.create({
         data: {
             ...sheet,
@@ -42,35 +51,71 @@ export const deleteSheet = async (sheetId: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
             id: sheetId,
-            Spreadsheet: {
-                ownerId: userId
-            }
-        }
+        },
+        include: {
+            Spreadsheet: true,
+        },
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to delete it');
+        throw new Error('Sheet not found.');
     }
 
-    return await db.sheet.delete({
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to delete this sheet.');
+    }
+
+    const sheetCount = await db.sheet.count({
         where: {
-            id: sheetId
-        }
+            spreadsheetId: sheet.spreadsheetId,
+        },
     });
+
+    if (sheetCount <= 1) {
+        throw new Error('Cannot delete the only sheet in the spreadsheet.');
+    }
+
+    await db.sheet.delete({
+        where: {
+            id: sheetId,
+        },
+    });
+
+    // Index update on the remaining sheets
+    await db.sheet.updateMany({
+        where: {
+            spreadsheetId: sheet.spreadsheetId,
+            index: {
+                gt: sheet.index,
+            },
+        },
+        data: {
+            index: {
+                decrement: 1,
+            },
+        },
+    });
+
+    return { message: 'Sheet deleted successfully' };
 };
 
 export const setName = async (sheetId: number, name: string, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
             id: sheetId,
-            Spreadsheet: {
-                ownerId: userId
-            }
         }
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to rename this sheet.');
     }
 
     return await db.sheet.update({
@@ -86,13 +131,9 @@ export const setName = async (sheetId: number, name: string, userId: number) => 
 
 // Could be changed in the future?
 export const setIndex = async (sheetId: number, newIndex: number, userId: number) => {
-    // Fetch the sheet and its associated spreadsheet
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId,
-            },
+            id: sheetId
         },
         include: {
             Spreadsheet: true,
@@ -100,7 +141,13 @@ export const setIndex = async (sheetId: number, newIndex: number, userId: number
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to change the indexes on this sheet.');
     }
 
     const currentIndex = sheet.index;
@@ -176,10 +223,7 @@ export const setIndex = async (sheetId: number, newIndex: number, userId: number
 export const addRows = async (sheetId: number, startIndex: number, rowsNumber: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId
-            }
+            id: sheetId
         },
         include: {
             cells: true,
@@ -187,7 +231,13 @@ export const addRows = async (sheetId: number, startIndex: number, rowsNumber: n
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to add rows.');
     }
 
     // Update the row positions of existing cells
@@ -225,10 +275,7 @@ export const addRows = async (sheetId: number, startIndex: number, rowsNumber: n
 export const addCols = async (sheetId: number, startIndex: number, colsNumber: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId
-            }
+            id: sheetId
         },
         include: {
             cells: true,
@@ -236,7 +283,13 @@ export const addCols = async (sheetId: number, startIndex: number, colsNumber: n
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to add cols.');
     }
 
     // Update the column positions of existing cells
@@ -274,10 +327,7 @@ export const addCols = async (sheetId: number, startIndex: number, colsNumber: n
 export const deleteRows = async (sheetId: number, startIndex: number, rowsNumber: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId,
-            },
+            id: sheetId
         },
         include: {
             cells: true,
@@ -285,7 +335,17 @@ export const deleteRows = async (sheetId: number, startIndex: number, rowsNumber
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to delete these rows.');
+    }
+
+    if (sheet.numRows - rowsNumber <= 0) {
+        throw new Error('Cannot delete rows. Deleting these rows would leave the sheet with no rows.');
     }
 
     // Check for protected cells in the range to be deleted
@@ -343,10 +403,7 @@ export const deleteRows = async (sheetId: number, startIndex: number, rowsNumber
 export const deleteCols = async (sheetId: number, startIndex: number, colsNumber: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId,
-            },
+            id: sheetId
         },
         include: {
             cells: true,
@@ -354,7 +411,17 @@ export const deleteCols = async (sheetId: number, startIndex: number, colsNumber
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to delete these cols.');
+    }
+
+    if (sheet.numCols - colsNumber <= 0) {
+        throw new Error('Cannot delete cols. Deleting these cols would leave the sheet with no cols.');
     }
 
     // Check for protected cells in the range to be deleted
@@ -412,15 +479,18 @@ export const deleteCols = async (sheetId: number, startIndex: number, colsNumber
 export const updateRowsHeight = async (sheetId: number, index: number, height: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId
-            }
+            id: sheetId
         }
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to update this sheet.');
     }
 
     const updatedRowHeights = { ...(sheet.rowHeights as Prisma.JsonObject), [index]: height };
@@ -438,15 +508,18 @@ export const updateRowsHeight = async (sheetId: number, index: number, height: n
 export const updateColsWidth = async (sheetId: number, index: number, width: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId
-            }
+            id: sheetId
         }
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to update this sheet.');
     }
 
     const updatedColumnWidths = { ...(sheet.columnWidths as Prisma.JsonObject), [index]: width };
@@ -464,18 +537,29 @@ export const updateColsWidth = async (sheetId: number, index: number, width: num
 export const updateHiddenRows = async (sheetId: number, index: number, hidden: boolean, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId
-            }
+            id: sheetId
         }
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
     }
 
-    const updatedHiddenRows = { ...(sheet.hiddenRows as Prisma.JsonObject), [index]: hidden };
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to update this sheet.');
+    }
+
+    const updatedHiddenRows = { ...(sheet.hiddenRows as Prisma.JsonObject) };
+
+    updatedHiddenRows[index] = hidden;
+
+    const hiddenRowCount = Object.values(updatedHiddenRows).filter(value => value === true).length;
+
+    if (hiddenRowCount >= sheet.numRows) {
+        throw new Error('Cannot hide all rows. At least one row must remain visible.');
+    }
 
     return await db.sheet.update({
         where: {
@@ -490,18 +574,29 @@ export const updateHiddenRows = async (sheetId: number, index: number, hidden: b
 export const updateHiddenCols = async (sheetId: number, index: number, hidden: boolean, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId,
-            Spreadsheet: {
-                ownerId: userId
-            }
+            id: sheetId
         }
     });
 
     if (!sheet) {
-        throw new Error('Sheet not found or you don\'t have permission to update it');
+        throw new Error('Sheet not found');
     }
 
-    const updatedHiddenCols = { ...(sheet.hiddenCols as Prisma.JsonObject), [index]: hidden };
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to update this sheet.');
+    }
+
+    const updatedHiddenCols = { ...(sheet.hiddenCols as Prisma.JsonObject) };
+
+    updatedHiddenCols[index] = hidden;
+
+    const hiddenColCount = Object.values(updatedHiddenCols).filter(value => value === true).length;
+
+    if (hiddenColCount >= sheet.numCols) {
+        throw new Error('Cannot hide all columns. At least one column must remain visible.');
+    }
 
     return await db.sheet.update({
         where: {

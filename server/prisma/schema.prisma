@@ -23,20 +23,21 @@ enum PrefferedTheme {
 }
 
 model User {
-  uid                  Int               @id @default(autoincrement())
-  registrationType     RegistrationType  @default(FORM)
+  uid                  Int                @id @default(autoincrement())
+  registrationType     RegistrationType   @default(FORM)
   username             String
   password             String?
-  email                String            @unique
-  admin                Boolean           @default(false)
-  photoURL             String            @default("https://scontent.fias1-2.fna.fbcdn.net/v/t1.15752-9/416744895_376024205074877_1704543827305195711_n.webp?stp=dst-webp_p100x100&_nc_cat=111&ccb=1-7&_nc_sid=b70caf&_nc_ohc=ROnuMVAaUTEQ7kNvgHS9wov&_nc_ht=scontent.fias1-2.fna&oh=03_Q7cD1QGCZUn5ZnaQXamC9yawnpPX9WAlReyo2KziE_JOZbU5eg&oe=66DDDF99")
-  prefferedLanguage    PrefferedLanguage @default(EN)
-  prefferedTheme       PrefferedTheme    @default(DARK)
+  email                String             @unique
+  admin                Boolean            @default(false)
+  photoURL             String             @default("https://scontent.fias1-2.fna.fbcdn.net/v/t1.15752-9/416744895_376024205074877_1704543827305195711_n.webp?stp=dst-webp_p100x100&_nc_cat=111&ccb=1-7&_nc_sid=b70caf&_nc_ohc=ROnuMVAaUTEQ7kNvgHS9wov&_nc_ht=scontent.fias1-2.fna&oh=03_Q7cD1QGCZUn5ZnaQXamC9yawnpPX9WAlReyo2KziE_JOZbU5eg&oe=66DDDF99")
+  prefferedLanguage    PrefferedLanguage  @default(EN)
+  prefferedTheme       PrefferedTheme     @default(DARK)
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
-  created              DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  sheets               Spreadsheet[]     @relation("UserSpreadsheets")
+  created              DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  sheets               Spreadsheet[]      @relation("UserSpreadsheets")
+  sharedSpreadsheets   SpreadsheetShare[] @relation("UserSharedSpreadsheets")
 }
 
 enum SpreadsheetTypes {
@@ -44,17 +45,38 @@ enum SpreadsheetTypes {
   CS
 }
 
+enum PermissionType {
+  VIEW
+  EDIT
+}
+
 model Spreadsheet {
-  id        Int              @id @default(autoincrement())
-  ownerId   Int
-  type      SpreadsheetTypes
-  name      String
-  sheets    Sheet[]          @relation("SpreadsheetSheets")
-  created   DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  User      User             @relation("UserSpreadsheets", fields: [ownerId], references: [uid], onDelete: Cascade)
+  id             Int                @id @default(autoincrement())
+  ownerId        Int
+  type           SpreadsheetTypes
+  name           String
+  sharedUsersIds Json?
+  lastOpened     DateTime
+  sheets         Sheet[]            @relation("SpreadsheetSheets")
+  created        DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  User           User               @relation("UserSpreadsheets", fields: [ownerId], references: [uid], onDelete: Cascade)
+  sharedUsers    SpreadsheetShare[] @relation("SpreadsheetSharedUsers")
 
   @@index([ownerId])
+}
+
+model SpreadsheetShare {
+  id            Int            @id @default(autoincrement())
+  spreadsheetId Int
+  userId        Int
+  permission    PermissionType
+  lastOpened    DateTime?
+  Spreadsheet   Spreadsheet    @relation("SpreadsheetSharedUsers", fields: [spreadsheetId], references: [id], onDelete: Cascade)
+  User          User           @relation("UserSharedSpreadsheets", fields: [userId], references: [uid], onDelete: Cascade)
+
+  @@unique([spreadsheetId, userId]) // can not have both edit and view
+  @@index([userId])
 }
 
 model Sheet {
