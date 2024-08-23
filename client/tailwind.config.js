@@ -8,6 +8,7 @@ export default {
     extend: {
       colors: {
         primary: {
+          light: '#39B645',
           DEFAULT: '#047500',
           dark: '#045401',
         },
@@ -24,11 +25,44 @@ export default {
           dark: '#171717'
         }
       },
+      fontFamily: {
+        custom: ['Roboto', 'sans-serif'],
+        title: ['Quicksand', 'sans-serif']
+      },
       margin: {
         '1/2': '50%',
       },
+      textShadow: {
+        'default': '2px 2px 4px rgba(0, 0, 0, 0.5)',
+        'md': '3px 3px 6px rgba(0, 0, 0, 0.3)',
+        'lg': '4px 4px 8px rgba(0, 0, 0, 0.2)',
+      },
+      width: {
+        '2/5': '40%',
+        '3/20': '15%',
+        '1/20': '5%',
+        '9/20': '45%'
+      },
+      screens: {
+        'breakpoint-1000': '1000px',
+        'breakpoint-800': '800px',
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addUtilities }) {
+      addUtilities({
+        '.text-shadow': {
+          textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
+        },
+        '.text-shadow-md': {
+          textShadow: '3px 3px 6px rgba(0, 0, 0, 0.3)',
+        },
+        '.text-shadow-lg': {
+          textShadow: '4px 4px 8px rgba(0, 0, 0, 0.2)',
+        },
+      });
+    },
+  ],
 }
 

@@ -1,42 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
+import { JwtPayload } from '../utils/types';
 
-interface JwtPayload {
-  username?: string;
-  email?: string;
-  exp?: number;
-  [key: string]: any;
-}
+import LandingPageHeader from '../components/Landing/LandingPageHeader';
+import NewSpreadsheetMenu from '../components/Landing/NewSpreadsheetMenu';
+import SpreadsheetsList from '../components/Landing/SpreadsheetsList';
 
 const LandingPage: React.FC = () => {
-  const [token, setToken] = useState<string | null>(null);
-  const [decodedToken, setDecodedToken] = useState<JwtPayload | null>(null);
-
-  useEffect(() => {
+  const jwtInfo = useMemo(() => {
     const storedToken = Cookies.get('token');
     if (storedToken) {
-      setToken(storedToken);
-      const decoded: JwtPayload = jwtDecode(storedToken);
-      setDecodedToken(decoded);
+      try {
+        return jwtDecode<JwtPayload>(storedToken);
+      } catch (error) {
+        console.error('Failed to decode token', error);
+        return null;
+      }
     }
+    return null;
   }, []);
 
-  if (!decodedToken) {
-    return <div>No token found or invalid token</div>;
+  if (!jwtInfo) {
+    return <Navigate to="/connect" replace />;
   }
 
   return (
-    <div>
-      <h2>JWT Information</h2>
-      <ul>
-        {Object.entries(decodedToken).map(([key, value]) => (
-          <li key={key}>
-            <strong>{key}:</strong> {String(value)}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <main className='h-full'>
+      <LandingPageHeader userId={jwtInfo.uid} />
+      <NewSpreadsheetMenu />
+      <SpreadsheetsList userId={jwtInfo.uid} />
+    </main>
   );
 };
 

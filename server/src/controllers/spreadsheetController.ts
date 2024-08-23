@@ -5,7 +5,22 @@ import type { Spreadsheet as PrismaSpreadsheet } from '@prisma/client';
 export const getAllSpreadsheets = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.uid;
-        const spreadsheets = await spreadsheetService.getAllSpreadsheets(userId);
+
+        const {
+            type = 'ALL', // cs | normal
+            owner = 'ALL',
+            orderBy = 'LAST_OPENED',
+            orderType = 'asc'
+        } = req.query;
+
+        const spreadsheets = await spreadsheetService.getAllSpreadsheets(
+            userId,
+            type as 'NORMAL' | 'CS' | null,
+            owner as 'ME' | 'OTHER' | 'ALL',
+            orderBy as 'TITLE' | 'LAST_OPENED' | 'CREATED',
+            orderType as 'asc' | 'desc'
+        );
+
         res.status(200).json(spreadsheets);
     } catch (error: any) {
         res.status(400).json({ message: error.message });

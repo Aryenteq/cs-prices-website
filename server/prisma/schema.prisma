@@ -82,7 +82,7 @@ model SpreadsheetShare {
 model Sheet {
   id            Int         @id @default(autoincrement())
   spreadsheetId Int
-  name          String
+  name          String      @default("Sheet 1")
   index         Int
   numRows       Int         @default(100)
   numCols       Int         @default(26)
@@ -116,15 +116,15 @@ model Cell {
   row        Int
   col        Int
   protected  Boolean             @default(false)
-  bgColor    String
-  color      String
+  bgColor    String              @default("#242424")
+  color      String              @default("#000000")
   style      Json?
   hAlignment HorizontalAlignment @default(LEFT)
   vAlignment VerticalAlignment   @default(CENTER)
   content    String?
   created    DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
-  Sheet      Sheet               @relation("SheetCells", fields: [sheetId], references: [id])
+  Sheet      Sheet               @relation("SheetCells", fields: [sheetId], references: [id], onDelete: Cascade)
 
   @@index([sheetId])
 }

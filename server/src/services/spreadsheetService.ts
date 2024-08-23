@@ -1,44 +1,102 @@
 import { db } from '../db';
-
+import { Prisma } from '@prisma/client';
 import type { SpreadsheetTypes } from '@prisma/client';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
-export const getAllSpreadsheets = async (userId: number) => {
-    const ownedSpreadsheets = await db.spreadsheet.findMany({
-        where: {
-            ownerId: userId,
-        },
+
+type SpreadsheetType = 'ALL' | 'NORMAL' | 'CS';
+type SpreadsheetOwner = 'ME' | 'OTHER' | 'ALL';
+type SpreadsheetOrderBy = 'TITLE' | 'LAST_OPENED' | 'CREATED';
+type SpreadsheetOrderType = 'asc' | 'desc';
+
+export const getAllSpreadsheets = async (
+    userId: number,
+    type: SpreadsheetType | null,
+    owner: SpreadsheetOwner,
+    orderby: SpreadsheetOrderBy = 'LAST_OPENED',
+    orderType: SpreadsheetOrderType = 'asc'
+) => {
+    const whereConditions: Prisma.SpreadsheetWhereInput = {};
+
+    if (type && type !== 'ALL') {
+        whereConditions.type = type;
+    }
+
+    // owner filter
+    if (owner === 'ME') {
+        whereConditions.ownerId = userId;
+    } else if (owner === 'OTHER') {
+        whereConditions.sharedUsers = {
+            some: {
+                userId: userId,
+            },
+        };
+    } else if (owner === 'ALL') {
+        whereConditions.OR = [
+            { ownerId: userId },
+            { sharedUsers: { some: { userId: userId } } },
+        ];
+    }
+
+    // order
+    const orderByFieldMap: { [key in SpreadsheetOrderBy]: string } = {
+        'TITLE': 'name',
+        'LAST_OPENED': 'lastOpened',
+        'CREATED': 'created',
+    };
+
+    const orderByCondition = {
+        [orderByFieldMap[orderby]]: orderType,
+    };
+
+    // Query
+    const spreadsheets = await db.spreadsheet.findMany({
+        where: whereConditions,
         select: {
             id: true,
+            ownerId: true,
             name: true,
             type: true,
             created: true,
             updatedAt: true,
-        },
-    });
-
-    const sharedSpreadsheets = await db.spreadsheet.findMany({
-        where: {
+            lastOpened: true,
             sharedUsers: {
-                some: {
-                    userId: userId,
+                where: { userId: userId },
+                select: {
+                    lastOpened: true,
+                    permission: true,
+                },
+            },
+            User: {
+                select: {
+                    username: true,
                 },
             },
         },
-        select: {
-            id: true,
-            name: true,
-            type: true,
-            created: true,
-            updatedAt: true,
-        },
+        orderBy: orderByCondition,
     });
 
-    return [...ownedSpreadsheets, ...sharedSpreadsheets];
+    return spreadsheets.map(spreadsheet => {
+        const isOwner = spreadsheet.ownerId === userId;
+        const correctLastOpened = spreadsheet.sharedUsers.length > 0
+            ? spreadsheet.sharedUsers[0].lastOpened
+            : spreadsheet.lastOpened;
+
+        const permission = isOwner
+            ? 'EDIT'
+            : spreadsheet.sharedUsers[0]?.permission || 'VIEW';
+
+        return {
+            ...spreadsheet,
+            lastOpened: correctLastOpened,
+            ownerName: spreadsheet.User.username,
+            permission,
+        };
+    });
 };
 
 
-
+// index = sheet index (usually will be called with 0)
 export const getSpreadsheet = async (spreadsheetId: number, index: number, userId: number) => {
     const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
 
@@ -66,6 +124,9 @@ export const getSpreadsheet = async (spreadsheetId: number, index: number, userI
         throw new Error('Spreadsheet not found');
     }
 
+    // update the "Last Opened"
+    setLastOpened(spreadsheetId, userId);
+
     const firstSheet = spreadsheet.sheets.find(sheet => sheet.index === index);
 
     if (!firstSheet) {
@@ -84,19 +145,86 @@ export const getSpreadsheet = async (spreadsheetId: number, index: number, userI
             cells: firstSheet.cells, // cells for the first sheet
         },
         sheets: sheetInfo, // names and indexes of all sheets
+        permission,
     };
 };
 
 
 export const createSpreadsheet = async (name: string, type: SpreadsheetTypes, userId: number) => {
-    return await db.spreadsheet.create({
+    if (!name || !type) {
+        throw new Error("Required: name and type");
+    }
+
+    if (type !== 'NORMAL' && type !== 'CS') {
+        throw new Error("Type must be NORMAL or CS");
+    }
+
+    const spreadsheet = await db.spreadsheet.create({
         data: {
             name,
             type,
             ownerId: userId,
-            lastOpened: new Date(Date.now())
-        }
+            lastOpened: new Date(Date.now()),
+            sheets: {
+                create: [
+                    {
+                        index: 0,
+                    }
+                ]
+            }
+        },
+        include: {
+            sheets: true,
+        },
     });
+
+    const sheet = spreadsheet.sheets[0];
+
+    await db.cell.createMany({
+        data: generateCells(sheet.id, sheet.numRows, sheet.numCols),
+    });
+
+    const updatedSpreadsheet = await db.spreadsheet.findUnique({
+        where: {
+            id: spreadsheet.id,
+        },
+        include: {
+            sheets: {
+                include: {
+                    cells: true,
+                },
+            },
+        },
+    });
+
+    return updatedSpreadsheet;
+};
+
+export const generateCells = (sheetId: number, numRows: number, numCols: number) => {
+    const cells = [];
+    for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
+            cells.push({
+                sheetId,
+                row,
+                col,
+            });
+        }
+    }
+    return cells;
+};
+
+const removeUserFromSpreadsheetShare = async (spreadsheetId: number, userId: number) => {
+    try {
+        await db.spreadsheetShare.deleteMany({
+            where: {
+                spreadsheetId: spreadsheetId,
+                userId: userId,
+            },
+        });
+    } catch (error: any) {
+        throw new Error(`Failed to remove user from SpreadsheetShare: ${error.message}`);
+    }
 };
 
 export const deleteSpreadsheet = async (spreadsheetId: number, userId: number) => {
@@ -104,8 +232,19 @@ export const deleteSpreadsheet = async (spreadsheetId: number, userId: number) =
         where: { id: spreadsheetId },
     });
 
-    if (!spreadsheet || spreadsheet.ownerId !== userId) {
+    if (!spreadsheet) {
         throw new Error("Spreadsheet not found or unauthorized");
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+
+    if (permission === 'VIEW') {
+        await removeUserFromSpreadsheetShare(spreadsheetId, userId);
+        return { message: 'User removed from shared spreadsheet' };
+    }
+
+    if (!permission || permission !== 'EDIT') {
+        throw new Error("Unauthorized to delete the spreadsheet");
     }
 
     await db.spreadsheet.delete({

@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from 'react-query';
 import './index.css';
 
 import { InfoProvider } from "./components/InfoContext";
@@ -11,6 +12,8 @@ import LandingPage from "./pages/LandingPage";
 import ResetPwdPage from "./pages/ResetPwdPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import SpreadsheetPage from "./pages/SpreadsheetPage";
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -45,8 +48,10 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <InfoProvider>
-      <RouterProvider router={router} />
-    </InfoProvider>
+    <QueryClientProvider client={queryClient}>
+      <InfoProvider>
+        <RouterProvider router={router} />
+      </InfoProvider>
+    </QueryClientProvider>
   </React.StrictMode>,
 )

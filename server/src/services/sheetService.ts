@@ -2,6 +2,7 @@ import { db } from '../db';
 import type { Sheet as PrismaSheet } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
+import { generateCells } from './spreadsheetService';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
@@ -36,7 +37,8 @@ export const createSheet = async (sheet: PrismaSheet, userId: number) => {
     if (permission !== 'EDIT') {
         throw new Error('You do not have permission to edit this spreadsheet.');
     }
-    return await db.sheet.create({
+
+    const newSheet = await db.sheet.create({
         data: {
             ...sheet,
             columnWidths: sheet.columnWidths ?? {},
@@ -45,6 +47,12 @@ export const createSheet = async (sheet: PrismaSheet, userId: number) => {
             hiddenRows: sheet.hiddenRows ?? {},
         },
     });
+
+    await db.cell.createMany({
+        data: generateCells(newSheet.id, newSheet.numRows, newSheet.numCols),
+    });
+
+    return newSheet;
 };
 
 export const deleteSheet = async (sheetId: number, userId: number) => {
@@ -255,6 +263,14 @@ export const addRows = async (sheetId: number, startIndex: number, rowsNumber: n
         }
     });
 
+    // Generate cells for the new rows
+    const newCells = generateCellsForNewRows(sheetId, startIndex, rowsNumber, sheet.numCols);
+
+    // Insert the new cells into the database
+    await db.cell.createMany({
+        data: newCells
+    });
+
     // Update row heights with the new rows
     const updatedRowHeights: Prisma.JsonObject = sheet.rowHeights ? sheet.rowHeights as Prisma.JsonObject : {};
     for (let i = startIndex; i < startIndex + rowsNumber; i++) {
@@ -270,6 +286,20 @@ export const addRows = async (sheetId: number, startIndex: number, rowsNumber: n
             rowHeights: updatedRowHeights
         }
     });
+};
+
+const generateCellsForNewRows = (sheetId: number, startIndex: number, rowsNumber: number, numCols: number) => {
+    const cells = [];
+    for (let row = startIndex; row < startIndex + rowsNumber; row++) {
+        for (let col = 0; col < numCols; col++) {
+            cells.push({
+                sheetId,
+                row,
+                col,
+            });
+        }
+    }
+    return cells;
 };
 
 export const addCols = async (sheetId: number, startIndex: number, colsNumber: number, userId: number) => {
@@ -289,7 +319,7 @@ export const addCols = async (sheetId: number, startIndex: number, colsNumber: n
     const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
 
     if (permission !== 'EDIT') {
-        throw new Error('You do not have permission to add cols.');
+        throw new Error('You do not have permission to add columns.');
     }
 
     // Update the column positions of existing cells
@@ -307,7 +337,12 @@ export const addCols = async (sheetId: number, startIndex: number, colsNumber: n
         }
     });
 
-    // Update column widths with the new columns
+    const newCells = generateCellsForNewCols(sheetId, startIndex, colsNumber, sheet.numRows);
+
+    await db.cell.createMany({
+        data: newCells
+    });
+
     const updatedColumnWidths: Prisma.JsonObject = sheet.columnWidths ? sheet.columnWidths as Prisma.JsonObject : {};
     for (let i = startIndex; i < startIndex + colsNumber; i++) {
         updatedColumnWidths[i] = DEFAULT_COL_WIDTH;
@@ -322,6 +357,20 @@ export const addCols = async (sheetId: number, startIndex: number, colsNumber: n
             columnWidths: updatedColumnWidths
         }
     });
+};
+
+const generateCellsForNewCols = (sheetId: number, startIndex: number, colsNumber: number, numRows: number) => {
+    const cells = [];
+    for (let col = startIndex; col < startIndex + colsNumber; col++) {
+        for (let row = 0; row < numRows; row++) {
+            cells.push({
+                sheetId,
+                row,
+                col,
+            });
+        }
+    }
+    return cells;
 };
 
 export const deleteRows = async (sheetId: number, startIndex: number, rowsNumber: number, userId: number) => {

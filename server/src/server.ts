@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes';
 import spreadsheetRoutes from './routes/spreadsheetRoutes';
 import sheetRoutes from './routes/sheetRoutes';
 import cellRoutes from './routes/cellRoutes';
+import userRoutes from './routes/userRoutes';
 
 dotenv.config({ path: '../.env' });
 
@@ -18,7 +19,8 @@ app
 	.use(authRoutes)
     .use(spreadsheetRoutes)
     .use(sheetRoutes)
-    .use(cellRoutes);
+    .use(cellRoutes)
+    .use(userRoutes);
 
 
 const ip = process.env.SERVER_IP || '127.0.0.1';
