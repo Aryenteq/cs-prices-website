@@ -37,7 +37,6 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ text, type }) => {
         } else {
           handleSignUpSubmit(userData, setInfo, navigate, location);
         }
-        console.log('User signed in:', user);
       })
       .catch((error) => {
         console.error('Error during sign in:', error);

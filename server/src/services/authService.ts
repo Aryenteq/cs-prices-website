@@ -14,6 +14,7 @@ if (!SECRET_KEY) {
 }
 
 export const signUp = async (user: PrismaUser): Promise<string> => {
+    console.log("aici");
     if (!user.password) {
         throw new Error('Password is required for FORM registration.');
     }

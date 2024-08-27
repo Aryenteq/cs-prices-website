@@ -29,6 +29,15 @@ export const handleLogInSubmit = async (data: Record<string, string>, setInfo: (
 
 export const handleSignUpSubmit = async (data: Record<string, string>, setInfo: (info: { message: string; isError?: boolean } | null) => void, navigate: ReturnType<typeof useNavigate>, location: URLSearchParams) => {
   try {
+    if (!data.registrationType) {
+      if (data.password !== data.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+
+      delete data.confirmPassword;
+      data.registrationType = 'FORM';
+    }
+
     if (AVAILABLE_LANGUAGES.includes(navigator.language)) {
       data['prefferedLanguage'] = navigator.language;
     }

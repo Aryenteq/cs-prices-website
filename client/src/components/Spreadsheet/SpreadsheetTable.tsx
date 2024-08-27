@@ -1,13 +1,12 @@
 import React from "react";
+import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
 
-interface SpreadsheetTableProps {
-    type: 'normal' | 'cs'
-}
+const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, saving, setSaving }) => {
 
-const SpreadsheetTable: React.FC<SpreadsheetTableProps> = ({ type }) => {
+
     return (
         <>
-            {type}
+            uid: {uid}, spreadsheetId: {spreadsheetId}
         </>
     );
 }

@@ -51,6 +51,7 @@ const ListHeader: React.FC<ListHeaderProps> = ({ onFiltersChange }) => {
             <p className="w-1/6 truncate font-bold text-1xl text-primary-light">Last opened</p>
             <div className="w-1/6 truncate">
                 <Selector
+                    theme="dark"
                     label="Owner"
                     name="owner"
                     options={[
@@ -63,6 +64,7 @@ const ListHeader: React.FC<ListHeaderProps> = ({ onFiltersChange }) => {
             </div>
             <div className="w-1/6 truncate">
                 <Selector
+                    theme="dark"
                     label="Type"
                     name="type"
                     options={[

@@ -6,14 +6,17 @@ import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 
 interface SelectorProps {
+  theme: string;
+  defaultt?: string; // Optional default value
   label: string;
   name: string;
   options: Array<{ value: string | number; label: string }>;
   onChange: (value: string | number) => void;
+  disabled?: boolean;
 }
 
-const Selector: React.FC<SelectorProps> = ({ label, name, options, onChange }) => {
-  const [selectedValue, setSelectedValue] = React.useState<string | number>('');
+const Selector: React.FC<SelectorProps> = ({ theme, defaultt, label, name, options, onChange, disabled}) => {
+  const [selectedValue, setSelectedValue] = React.useState<string | number>(defaultt || '');
 
   const handleChange = (event: SelectChangeEvent) => {
     const value = event.target.value as string;
@@ -21,12 +24,18 @@ const Selector: React.FC<SelectorProps> = ({ label, name, options, onChange }) =
     onChange(value);
   };
 
+  React.useEffect(() => {
+    if (defaultt) {
+      setSelectedValue(defaultt);
+    }
+  }, [defaultt]);
+
   return (
     <Box sx={{
       minWidth: '8rem',
       maxWidth: '100%'
     }}>
-      <FormControl
+      <FormControl size="small" disabled={disabled}
         sx={{
           my: 1,
           minWidth: '8rem',
@@ -35,7 +44,7 @@ const Selector: React.FC<SelectorProps> = ({ label, name, options, onChange }) =
           "& .MuiInputLabel-root": { color: '#39B645 !important' },
           "& .MuiOutlinedInput-root": {
             "&.Mui-focused": { borderColor: '#39B645 !important' },
-            color: 'white',
+            color: theme === 'dark' ? 'white' : 'black',
             padding: '0px 0px',
           },
           "& .MuiOutlinedInput-notchedOutline": { borderColor: '#39B645 !important' },
@@ -52,7 +61,7 @@ const Selector: React.FC<SelectorProps> = ({ label, name, options, onChange }) =
           sx={{
             minWidth: 'auto',
             padding: '0px',
-            color: 'white',
+            color: theme === 'dark' ? 'white' : 'black',
             "& .MuiSvgIcon-root": {
               color: '#39B645',
             },

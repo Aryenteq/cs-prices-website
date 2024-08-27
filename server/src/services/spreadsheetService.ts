@@ -95,6 +95,112 @@ export const getAllSpreadsheets = async (
     });
 };
 
+export const getSpreadsheetName = async (spreadsheetId: number, userId: number) => {
+    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+
+    if (!permission) {
+        throw new Error('Spreadsheet not found or you don\'t have permission to access it');
+    }
+
+    const spreadsheet = await db.spreadsheet.findUnique({
+        where: {
+            id: spreadsheetId,
+        },
+        select: {
+            name: true,
+        },
+    });
+
+    if (!spreadsheet) {
+        throw new Error('Spreadsheet not found');
+    }
+
+    return spreadsheet.name;
+};
+
+export const getSpreadsheetType = async (spreadsheetId: number, userId: number) => {
+    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+
+    if (!permission) {
+        throw new Error('Spreadsheet not found or you don\'t have permission to access it');
+    }
+
+    const spreadsheet = await db.spreadsheet.findUnique({
+        where: {
+            id: spreadsheetId,
+        },
+        select: {
+            type: true,
+        },
+    });
+
+    if (!spreadsheet) {
+        throw new Error('Spreadsheet not found');
+    }
+
+    return spreadsheet.type;
+};
+
+export const getSpreadsheetShares = async (spreadsheetId: number, userId: number) => {
+    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+
+    if (!permission) {
+        throw new Error('Spreadsheet not found or you don\'t have permission to access it');
+    }
+    
+    const owner = await db.spreadsheet.findUnique({
+        where: { id: spreadsheetId },
+        include: {
+            User: {
+                select: {
+                    uid: true,
+                    username: true,
+                    email: true,
+                    photoURL: true,
+                }
+            }
+        }
+    });
+
+    if (!owner) {
+        throw new Error('Spreadsheet not found');
+    }
+
+    const sharedUsers = await db.spreadsheetShare.findMany({
+        where: {
+            spreadsheetId: spreadsheetId
+        },
+        include: {
+            User: {
+                select: {
+                    uid: true,
+                    username: true,
+                    email: true,
+                    photoURL: true,
+                }
+            }
+        }
+    });
+
+    const result = [
+        {
+            uid: owner.User.uid,
+            username: owner.User.username,
+            email: owner.User.email,
+            photoURL: owner.User.photoURL,
+            permission: 'OWNER'
+        },
+        ...sharedUsers.map(share => ({
+            uid: share.User.uid,
+            username: share.User.username,
+            email: share.User.email,
+            photoURL: share.User.photoURL,
+            permission: share.permission
+        }))
+    ];
+
+    return result;
+};
 
 // index = sheet index (usually will be called with 0)
 export const getSpreadsheet = async (spreadsheetId: number, index: number, userId: number) => {
@@ -104,7 +210,7 @@ export const getSpreadsheet = async (spreadsheetId: number, index: number, userI
         throw new Error('Spreadsheet not found or you don\'t have permission to access it');
     }
 
-    const spreadsheet = await db.spreadsheet.findFirst({
+    const spreadsheet = await db.spreadsheet.findUnique({
         where: {
             id: spreadsheetId,
         },
@@ -263,6 +369,10 @@ export const setName = async (spreadsheetId: number, name: string, userId: numbe
         throw new Error("Unauthorized to rename the spreadsheet");
     }
 
+    if (name.length === 0) {
+        throw new Error("Name can not be empty");
+    }
+
     return await db.spreadsheet.update({
         where: { id: spreadsheetId },
         data: { name },
@@ -320,19 +430,23 @@ export const setLastOpened = async (spreadsheetId: number, userId: number) => {
 export const updateSharedUsersIds = async (
     spreadsheetId: number,
     email: string,
-    permission: 'NONE' | 'VIEW' | 'EDIT',
+    permission: 'NONE' | 'VIEW' | 'EDIT', // new permission
     userId: number
 ) => {
-    // Only the owner can add/remove people
     const spreadsheet = await db.spreadsheet.findFirst({
         where: {
             id: spreadsheetId,
-            ownerId: userId,
         },
     });
 
     if (!spreadsheet) {
-        throw new Error('Spreadsheet not found or you don\'t have permission to update it');
+        throw new Error('Spreadsheet not found');
+    }
+
+    const currentPermission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+
+    if (!currentPermission || currentPermission !== 'EDIT') {
+        throw new Error("Unauthorized to share the spreadsheet");
     }
 
     // Find the user to share the spreadsheet with
@@ -342,10 +456,6 @@ export const updateSharedUsersIds = async (
 
     if (!userToShare) {
         throw new Error('User with the given email does not exist');
-    }
-
-    if (userToShare.uid === userId) {
-        throw new Error('You cannot share the spreadsheet with yourself');
     }
 
     const existingPermission = await getUserPermissionForSpreadsheet(spreadsheetId, userToShare.uid);

@@ -13,14 +13,21 @@ dotenv.config({ path: '../.env' });
 
 const app = express();
 
-app
-    .use(cors({ origin: "*" }))
-	.use(express.json())
-	.use(authRoutes)
+
+app.use(cors({
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    allowedHeaders: "Content-Type,Authorization"
+}))
+    .use(express.json())
+    .use(authRoutes)
     .use(spreadsheetRoutes)
     .use(sheetRoutes)
     .use(cellRoutes)
     .use(userRoutes);
+
 
 
 const ip = process.env.SERVER_IP || '127.0.0.1';

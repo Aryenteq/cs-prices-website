@@ -30,7 +30,7 @@ const LandingPage: React.FC = () => {
     <main className='h-full'>
       <LandingPageHeader userId={jwtInfo.uid} />
       <NewSpreadsheetMenu />
-      <SpreadsheetsList userId={jwtInfo.uid} />
+      <SpreadsheetsList />
     </main>
   );
 };

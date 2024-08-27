@@ -27,6 +27,42 @@ export const getAllSpreadsheets = async (req: Request, res: Response) => {
     }
 };
 
+export const getSpreadsheetName = async (req: Request, res: Response) => {
+    try {
+        const spreadsheetId = parseInt(req.params.spreadsheetId, 10);
+        const userId = (req as any).user.uid;
+
+        const result = await spreadsheetService.getSpreadsheetName(spreadsheetId, userId);
+        res.status(200).json(result);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+export const getSpreadsheetType = async (req: Request, res: Response) => {
+    try {
+        const spreadsheetId = parseInt(req.params.spreadsheetId, 10);
+        const userId = (req as any).user.uid;
+
+        const result = await spreadsheetService.getSpreadsheetType(spreadsheetId, userId);
+        res.status(200).json(result);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+export const getSpreadsheetShares = async (req: Request, res: Response) => {
+    try {
+        const spreadsheetId = parseInt(req.params.spreadsheetId, 10);
+        const userId = (req as any).user.uid;
+
+        const result = await spreadsheetService.getSpreadsheetShares(spreadsheetId, userId);
+        res.status(200).json(result);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
 export const getSpreadsheet = async (req: Request, res: Response) => {
     try {
         const spreadsheetId = parseInt(req.params.spreadsheetId, 10);

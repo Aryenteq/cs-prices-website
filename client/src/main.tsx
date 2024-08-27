@@ -33,7 +33,7 @@ const router = createBrowserRouter([
     element: <ResetPwdPage />,
   },
   {
-    path: "/spreadsheet/:id",
+    path: "/spreadsheet/:encodedSpreadsheetId",
     element: (
       <RequireAuth>
         <SpreadsheetPage />

@@ -1,13 +1,14 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "react-query";
 import { UserIdProps } from "../../utils/types";
 import logo from "../../assets/logo.webp";
-import account from "../../assets/user-edit.svg";
-import loading from "../../assets/loading.svg";
+import account from "../../media/svgs/user-edit.svg";
+import loading from "../../media/svgs/loading.svg";
 
 import SpreadsheetSearch from "./SpreadsheetSearch";
 import { getAuthHeader } from '../../utils/authHeader';
-import { useNavigate } from "react-router-dom";
+
 
 const fetchUserPhoto = async (userId: number) => {
     const headers = getAuthHeader();
