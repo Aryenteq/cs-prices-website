@@ -528,8 +528,8 @@ export const deleteCols = async (sheetId: number, startIndex: number, colsNumber
 export const updateRowsHeight = async (sheetId: number, index: number, height: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId
-        }
+            id: sheetId,
+        },
     });
 
     if (!sheet) {
@@ -542,23 +542,40 @@ export const updateRowsHeight = async (sheetId: number, index: number, height: n
         throw new Error('You do not have permission to update this sheet.');
     }
 
-    const updatedRowHeights = { ...(sheet.rowHeights as Prisma.JsonObject), [index]: height };
+    if (height < 20) {
+        throw new Error('Height cannot be under 20px');
+    }
 
-    return await db.sheet.update({
+    let currentRowHeights: Prisma.JsonObject;
+    if (!sheet.rowHeights || typeof sheet.rowHeights !== 'object') {
+        currentRowHeights = {};
+    } else {
+        currentRowHeights = sheet.rowHeights as Prisma.JsonObject;
+    }
+
+    if (typeof height === 'number') {
+        currentRowHeights[index] = height;
+    } else {
+        throw new Error('Invalid height value');
+    }
+
+    const updatedSheet = await db.sheet.update({
         where: {
-            id: sheetId
+            id: sheetId,
         },
         data: {
-            rowHeights: updatedRowHeights
-        }
+            rowHeights: currentRowHeights,
+        },
     });
+
+    return updatedSheet;
 };
 
 export const updateColsWidth = async (sheetId: number, index: number, width: number, userId: number) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId
-        }
+            id: sheetId,
+        },
     });
 
     if (!sheet) {
@@ -571,23 +588,47 @@ export const updateColsWidth = async (sheetId: number, index: number, width: num
         throw new Error('You do not have permission to update this sheet.');
     }
 
-    const updatedColumnWidths = { ...(sheet.columnWidths as Prisma.JsonObject), [index]: width };
+    if (width < 20) {
+        throw new Error('Width cannot be under 20px');
+    }
 
-    return await db.sheet.update({
+    let currentColumnWidths: Prisma.JsonObject;
+    if (!sheet.columnWidths || typeof sheet.columnWidths !== 'object') {
+        currentColumnWidths = {};
+    } else {
+        currentColumnWidths = sheet.columnWidths as Prisma.JsonObject;
+    }
+
+    if (typeof width === 'number') {
+        currentColumnWidths[index] = width;
+    } else {
+        throw new Error('Invalid width value');
+    }
+
+    const updatedSheet = await db.sheet.update({
         where: {
-            id: sheetId
+            id: sheetId,
         },
         data: {
-            columnWidths: updatedColumnWidths
-        }
+            columnWidths: currentColumnWidths,
+        },
     });
+
+    return updatedSheet;
 };
 
-export const updateHiddenRows = async (sheetId: number, index: number, hidden: boolean, userId: number) => {
+
+export const updateVisibility = async (
+    sheetId: number,
+    index: number,
+    hidden: boolean,
+    userId: number,
+    type: 'row' | 'col'
+) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId
-        }
+            id: sheetId,
+        },
     });
 
     if (!sheet) {
@@ -600,59 +641,47 @@ export const updateHiddenRows = async (sheetId: number, index: number, hidden: b
         throw new Error('You do not have permission to update this sheet.');
     }
 
-    const updatedHiddenRows = { ...(sheet.hiddenRows as Prisma.JsonObject) };
+    let updatedVisibility: Prisma.JsonObject;
+    let currentVisibility: Prisma.JsonObject | null = null;
+    let totalItems = 0;
 
-    updatedHiddenRows[index] = hidden;
-
-    const hiddenRowCount = Object.values(updatedHiddenRows).filter(value => value === true).length;
-
-    if (hiddenRowCount >= sheet.numRows) {
-        throw new Error('Cannot hide all rows. At least one row must remain visible.');
+    if (type === 'row') {
+        currentVisibility = sheet.hiddenRows as Prisma.JsonObject;
+        totalItems = sheet.numRows;
+    } else if (type === 'col') {
+        currentVisibility = sheet.hiddenCols as Prisma.JsonObject;
+        totalItems = sheet.numCols;
     }
+
+    if (!currentVisibility || typeof currentVisibility !== 'object') {
+        updatedVisibility = {};
+    } else {
+        updatedVisibility = { ...currentVisibility };
+    }
+
+    // Start from the given index and continue to reveal following adjacent neighbors
+    let currentIndex = index;
+
+    if (hidden === true) {
+        updatedVisibility[currentIndex] = hidden;
+    } else {
+        while (currentIndex < totalItems && updatedVisibility[currentIndex] === true) {
+            updatedVisibility[currentIndex] = hidden;
+            currentIndex++;
+        }
+        const hiddenCount = Object.values(updatedVisibility).filter(value => value === true).length;
+
+        if (hiddenCount >= totalItems) {
+            throw new Error(`Cannot hide all ${type === 'row' ? 'rows' : 'columns'}. At least one ${type === 'row' ? 'row' : 'column'} must remain visible.`);
+        }
+    }
+
+    const updateData = type === 'row' ? { hiddenRows: updatedVisibility } : { hiddenCols: updatedVisibility };
 
     return await db.sheet.update({
         where: {
-            id: sheetId
+            id: sheetId,
         },
-        data: {
-            hiddenRows: updatedHiddenRows
-        }
-    });
-};
-
-export const updateHiddenCols = async (sheetId: number, index: number, hidden: boolean, userId: number) => {
-    const sheet = await db.sheet.findFirst({
-        where: {
-            id: sheetId
-        }
-    });
-
-    if (!sheet) {
-        throw new Error('Sheet not found');
-    }
-
-    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
-
-    if (permission !== 'EDIT') {
-        throw new Error('You do not have permission to update this sheet.');
-    }
-
-    const updatedHiddenCols = { ...(sheet.hiddenCols as Prisma.JsonObject) };
-
-    updatedHiddenCols[index] = hidden;
-
-    const hiddenColCount = Object.values(updatedHiddenCols).filter(value => value === true).length;
-
-    if (hiddenColCount >= sheet.numCols) {
-        throw new Error('Cannot hide all columns. At least one column must remain visible.');
-    }
-
-    return await db.sheet.update({
-        where: {
-            id: sheetId
-        },
-        data: {
-            hiddenCols: updatedHiddenCols
-        }
+        data: updateData,
     });
 };

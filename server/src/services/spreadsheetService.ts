@@ -141,6 +141,35 @@ export const getSpreadsheetType = async (spreadsheetId: number, userId: number) 
     return spreadsheet.type;
 };
 
+export const getSpreadsheetPermission = async (spreadsheetId: number, userId: number) => {
+    const spreadsheet = await db.spreadsheet.findUnique({
+        where: { id: spreadsheetId },
+    });
+
+    if (!spreadsheet) {
+        throw new Error('Spreadsheet not found');
+    }
+
+    if (spreadsheet.ownerId === userId) {
+        return 'EDIT';
+    }
+
+    const sharedUser = await db.spreadsheetShare.findUnique({
+        where: {
+            spreadsheetId_userId: {
+                spreadsheetId: spreadsheetId,
+                userId: userId,
+            },
+        },
+    });
+
+    if (!sharedUser) {
+        throw new Error('You do not have access to this spreadsheet');
+    }
+
+    return sharedUser.permission;
+};
+
 export const getSpreadsheetShares = async (spreadsheetId: number, userId: number) => {
     const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
 

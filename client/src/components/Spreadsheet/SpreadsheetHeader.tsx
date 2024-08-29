@@ -5,7 +5,6 @@ import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
 import { getAuthHeader } from "../../utils/authHeader";
 
 import SpreadsheetShare from "./SpreadsheetShare";
-import SpreadsheetUtilities from "./SpreadsheetUtilities";
 
 import { useInfo } from "../InfoContext";
 
@@ -117,6 +116,10 @@ const SpreadsheetHeader: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, sav
         navigate('/account');
     };
 
+    const landingPage = () => {
+        navigate('/');
+    }
+
 
     const renameMutation = useMutation(async (newName: string) => {
         const headers = {
@@ -187,7 +190,10 @@ const SpreadsheetHeader: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, sav
         <>
             {/* Upper header (icon, name, saving, share, account) */}
             <div className="flex justify-between items-center m-4 gap-2">
-                <img src={spreadsheetType === 'NORMAL' ? normalSpreadsheetImg : csSpreadsheetImg} alt="Spreadsheet Icon" className="w-6 h-6" />
+                <button onClick={landingPage} className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Home">
+                    <img src={spreadsheetType === 'NORMAL' ? normalSpreadsheetImg : csSpreadsheetImg} alt="Spreadsheet Icon" className="w-6 h-6" />
+                </button>
+                
                 <input
                     ref={inputRef}
                     type="text"
@@ -215,9 +221,6 @@ const SpreadsheetHeader: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, sav
             {isShareVisible && (
                 <SpreadsheetShare onClose={hideSpreadsheetShare} uid={uid} spreadsheetId={spreadsheetId} />
             )}
-
-            {/* Lower header (spreadsheet utilities) */}
-            <SpreadsheetUtilities uid={uid} spreadsheetId={spreadsheetId} saving={saving} setSaving={setSaving}/>
         </>
     );
 }

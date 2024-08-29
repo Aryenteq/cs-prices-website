@@ -8,6 +8,7 @@ export default {
     extend: {
       colors: {
         primary: {
+          lightest: '#d0f7d4',
           light: '#39B645',
           DEFAULT: '#047500',
           dark: '#045401',
@@ -23,7 +24,10 @@ export default {
         background: {
           DEFAULT: '#242424',
           dark: '#171717'
-        }
+        },
+        accent: {
+          DEFAULT: '#FFFFFF',
+        },
       },
       fontFamily: {
         custom: ['Roboto', 'sans-serif'],

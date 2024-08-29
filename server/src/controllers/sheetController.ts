@@ -133,10 +133,10 @@ export const updateRowsHeight = async (req: Request, res: Response) => {
 export const updateColsWidth = async (req: Request, res: Response) => {
     try {
         const sheetId = parseInt(req.params.sheetId, 10);
-        const { index, height } = req.body;
+        const { index, width } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedSheet = await sheetService.updateColsWidth(sheetId, index, height, userId);
+        const updatedSheet = await sheetService.updateColsWidth(sheetId, index, width, userId);
         res.status(200).json(updatedSheet);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
@@ -149,7 +149,7 @@ export const updateHiddenRows = async (req: Request, res: Response) => {
         const { index, hidden } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedSheet = await sheetService.updateHiddenRows(sheetId, index, hidden, userId);
+        const updatedSheet = await sheetService.updateVisibility(sheetId, index, hidden, userId, 'row');
         res.status(200).json(updatedSheet);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
@@ -162,7 +162,7 @@ export const updateHiddenCols = async (req: Request, res: Response) => {
         const { index, hidden } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedSheet = await sheetService.updateHiddenCols(sheetId, index, hidden, userId);
+        const updatedSheet = await sheetService.updateVisibility(sheetId, index, hidden, userId, 'col');
         res.status(200).json(updatedSheet);
     } catch (error: any) {
         res.status(400).json({ message: error.message });

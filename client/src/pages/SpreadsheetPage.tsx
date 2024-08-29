@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 import { JwtPayload } from '../utils/types';
 
 import SpreadsheetHeader from "../components/Spreadsheet/SpreadsheetHeader";
+import SpreadsheetUtilities from "../components/Spreadsheet/SpreadsheetUtilities";
 import SpreadsheetTable from "../components/Spreadsheet/SpreadsheetTable";
 import { decryptData } from '../utils/encrypt';
 
@@ -55,20 +56,29 @@ const SpreadsheetPage: React.FC = () => {
     }
 
     return (
-        <>
-            <SpreadsheetHeader
-                uid={jwtInfo.uid}
-                spreadsheetId={spreadsheetId}
-                saving={saving}
-                setSaving={setSaving}
-            />
+        <div className="flex flex-col h-full">
+            <div className="flex-shrink-0">
+                <SpreadsheetHeader
+                    uid={jwtInfo.uid}
+                    spreadsheetId={spreadsheetId}
+                    saving={saving}
+                    setSaving={setSaving}
+                />
+                <SpreadsheetUtilities
+                    uid={jwtInfo.uid}
+                    spreadsheetId={spreadsheetId}
+                    saving={saving}
+                    setSaving={setSaving}
+                />
+            </div>
             <SpreadsheetTable
                 uid={jwtInfo.uid}
                 spreadsheetId={spreadsheetId}
                 saving={saving}
                 setSaving={setSaving}
             />
-        </>
+
+        </div>
     );
 }
 

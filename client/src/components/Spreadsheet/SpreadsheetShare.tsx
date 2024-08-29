@@ -5,6 +5,8 @@ import { useInfo } from "../InfoContext";
 
 import Selector from "../MUI/Selector";
 
+import copyLinkImg from "../../media/svgs/copy-link.svg";
+
 type ShareInfo = {
     uid: number;
     username: string;
@@ -154,7 +156,13 @@ const SpreadsheetShare: React.FC<{ onClose: () => void, uid: number, spreadsheet
                 className="bg-white text-gray-600 p-4 rounded-lg"
                 onClick={handlePopupClick} >
                 <div className="flex justify-between items-center mb-5">
-                    <h2 className="text-lg font-bold">Share this Spreadsheet</h2>
+                    <h2 className="text-lg font-bold mr-auto">Share this Spreadsheet</h2>
+                    <button
+                        onClick={copyLink}
+                        className="bg-primary text-white px-2 py-2 rounded hover:bg-primary-dark transition duration-300 ease-in-out mr-2"
+                    >
+                        <img src={copyLinkImg} alt="Copy link" />
+                    </button>
                     <button onClick={onClose}
                         className="bg-secondary text-white px-4 py-2 rounded hover:bg-secondary-dark transition duration-300 ease-in-out">
                         X
@@ -231,17 +239,6 @@ const SpreadsheetShare: React.FC<{ onClose: () => void, uid: number, spreadsheet
                         </form>
                     </>
                 )}
-
-                <div className="mt-2 px-4 w-full h-[1px] bg-gray-500"></div>
-                <div className="flex justify-center w-full">
-                    <button
-                        onClick={copyLink}
-                        className="bg-primary text-white px-4 py-2 rounded mt-2 hover:bg-primary-dark transition duration-300 ease-in-out"
-                    >
-                        Copy link
-                    </button>
-                </div>
-
             </div>
         </div>
     );
