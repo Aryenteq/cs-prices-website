@@ -9,6 +9,8 @@ type SpreadsheetOwner = 'ME' | 'OTHER' | 'ALL';
 type SpreadsheetOrderBy = 'TITLE' | 'LAST_OPENED' | 'CREATED';
 type SpreadsheetOrderType = 'asc' | 'desc';
 
+export const CS_PROTECTED_COLUMNS_LENGTH: number = 2;
+
 export const getAllSpreadsheets = async (
     userId: number,
     type: SpreadsheetType | null,
@@ -176,7 +178,7 @@ export const getSpreadsheetShares = async (spreadsheetId: number, userId: number
     if (!permission) {
         throw new Error('Spreadsheet not found or you don\'t have permission to access it');
     }
-    
+
     const owner = await db.spreadsheet.findUnique({
         where: { id: spreadsheetId },
         include: {
@@ -315,8 +317,10 @@ export const createSpreadsheet = async (name: string, type: SpreadsheetTypes, us
 
     const sheet = spreadsheet.sheets[0];
 
+    const cellsData = await generateCells(spreadsheet.id, sheet.id, sheet.numRows, sheet.numCols);
+
     await db.cell.createMany({
-        data: generateCells(sheet.id, sheet.numRows, sheet.numCols),
+        data: cellsData,
     });
 
     const updatedSpreadsheet = await db.spreadsheet.findUnique({
@@ -335,17 +339,35 @@ export const createSpreadsheet = async (name: string, type: SpreadsheetTypes, us
     return updatedSpreadsheet;
 };
 
-export const generateCells = (sheetId: number, numRows: number, numCols: number) => {
+export const generateCells = async (spreadsheetId: number, sheetId: number, numRows: number, numCols: number) => {
+    const spreadsheet = await db.spreadsheet.findUnique({
+        where: {
+            id: spreadsheetId,
+        },
+        select: {
+            type: true,
+        }
+    });
+
+    if (!spreadsheet) {
+        throw new Error('Spreadsheet not found');
+    }
+
     const cells = [];
+
     for (let row = 0; row < numRows; row++) {
         for (let col = 0; col < numCols; col++) {
+            const isProtected = spreadsheet.type === 'CS' && col < CS_PROTECTED_COLUMNS_LENGTH;
+
             cells.push({
                 sheetId,
                 row,
                 col,
+                protected: isProtected,
             });
         }
     }
+
     return cells;
 };
 

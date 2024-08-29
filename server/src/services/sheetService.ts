@@ -2,7 +2,7 @@ import { db } from '../db';
 import type { Sheet as PrismaSheet } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
-import { generateCells } from './spreadsheetService';
+import { CS_PROTECTED_COLUMNS_LENGTH, generateCells } from './spreadsheetService';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
@@ -48,9 +48,12 @@ export const createSheet = async (sheet: PrismaSheet, userId: number) => {
         },
     });
 
+    const cellsData = await generateCells(sheet.spreadsheetId, newSheet.id, newSheet.numRows, newSheet.numCols);
+
     await db.cell.createMany({
-        data: generateCells(newSheet.id, newSheet.numRows, newSheet.numCols),
+        data: cellsData,
     });
+
 
     return newSheet;
 };
@@ -248,7 +251,11 @@ export const addRows = async (sheetId: number, startIndex: number, rowsNumber: n
         throw new Error('You do not have permission to add rows.');
     }
 
-    // Update the row positions of existing cells
+    if (sheet.numRows + rowsNumber > 65536) {
+        throw new Error('Can\'t exceed 65536 rows.');
+    }
+
+    // Update row positions
     await db.cell.updateMany({
         where: {
             sheetId: sheetId,
@@ -263,28 +270,65 @@ export const addRows = async (sheetId: number, startIndex: number, rowsNumber: n
         }
     });
 
-    // Generate cells for the new rows
     const newCells = generateCellsForNewRows(sheetId, startIndex, rowsNumber, sheet.numCols);
-
-    // Insert the new cells into the database
     await db.cell.createMany({
         data: newCells
     });
 
-    // Update row heights with the new rows
-    const updatedRowHeights: Prisma.JsonObject = sheet.rowHeights ? sheet.rowHeights as Prisma.JsonObject : {};
+    // Height & Hidden Json object adjustment
+    const updatedRowHeights: Prisma.JsonObject = {};
+    const updatedHiddenRows: Prisma.JsonObject = {};
+
+    if (sheet.rowHeights) {
+        const rowHeights = sheet.rowHeights as Prisma.JsonObject;
+
+        for (const [key, value] of Object.entries(rowHeights)) {
+            const rowIndex = parseInt(key, 10);
+
+            if (rowIndex < startIndex) {
+                updatedRowHeights[rowIndex] = value;
+            } else {
+                updatedRowHeights[rowIndex + rowsNumber] = value;
+            }
+        }
+    }
+
+    if (sheet.hiddenRows) {
+        const hiddenRows = sheet.hiddenRows as Prisma.JsonObject;
+
+        for (const [key, value] of Object.entries(hiddenRows)) {
+            const rowIndex = parseInt(key, 10);
+
+            if (rowIndex < startIndex) {
+                updatedHiddenRows[rowIndex] = value;
+            } else {
+                updatedHiddenRows[rowIndex + rowsNumber] = value;
+            }
+        }
+    }
+
     for (let i = startIndex; i < startIndex + rowsNumber; i++) {
         updatedRowHeights[i] = DEFAULT_ROW_HEIGHT;
     }
 
-    return await db.sheet.update({
+    await db.sheet.update({
         where: {
-            id: sheetId
+            id: sheetId,
         },
         data: {
             numRows: sheet.numRows + rowsNumber,
-            rowHeights: updatedRowHeights
-        }
+            rowHeights: updatedRowHeights,
+            hiddenRows: updatedHiddenRows,
+        },
+    });
+
+    return await db.sheet.findFirst({
+        where: {
+            id: sheetId,
+        },
+        include: {
+            cells: true,
+        },
     });
 };
 
@@ -300,6 +344,27 @@ const generateCellsForNewRows = (sheetId: number, startIndex: number, rowsNumber
         }
     }
     return cells;
+};
+
+const getSpreadsheetTypeBySheetId = async (sheetId: number): Promise<string | null> => {
+    const sheet = await db.sheet.findFirst({
+        where: {
+            id: sheetId,
+        },
+        select: {
+            Spreadsheet: {
+                select: {
+                    type: true,
+                },
+            },
+        },
+    });
+
+    if (!sheet || !sheet.Spreadsheet) {
+        throw new Error('Sheet or associated spreadsheet not found');
+    }
+
+    return sheet.Spreadsheet.type;
 };
 
 export const addCols = async (sheetId: number, startIndex: number, colsNumber: number, userId: number) => {
@@ -322,7 +387,16 @@ export const addCols = async (sheetId: number, startIndex: number, colsNumber: n
         throw new Error('You do not have permission to add columns.');
     }
 
-    // Update the column positions of existing cells
+    const spreadsheetType = await getSpreadsheetTypeBySheetId(sheetId);
+    if (spreadsheetType === 'CS' && startIndex < CS_PROTECTED_COLUMNS_LENGTH) {
+        throw new Error('Can\'t insert new columns between protected ones.');
+    }
+
+    if (sheet.numCols + colsNumber > 256) {
+        throw new Error('Can\'t exceed 256 columns.');
+    }
+
+    // Update column positions
     await db.cell.updateMany({
         where: {
             sheetId: sheetId,
@@ -338,24 +412,64 @@ export const addCols = async (sheetId: number, startIndex: number, colsNumber: n
     });
 
     const newCells = generateCellsForNewCols(sheetId, startIndex, colsNumber, sheet.numRows);
-
     await db.cell.createMany({
         data: newCells
     });
 
-    const updatedColumnWidths: Prisma.JsonObject = sheet.columnWidths ? sheet.columnWidths as Prisma.JsonObject : {};
+    // Width & Hidden Json object adjustment
+    const updatedColumnWidths: Prisma.JsonObject = {};
+    const updatedHiddenCols: Prisma.JsonObject = {};
+
+    if (sheet.columnWidths) {
+        const columnWidths = sheet.columnWidths as Prisma.JsonObject;
+
+        for (const [key, value] of Object.entries(columnWidths)) {
+            const colIndex = parseInt(key, 10);
+
+            if (colIndex < startIndex) {
+                updatedColumnWidths[colIndex] = value;
+            } else {
+                updatedColumnWidths[colIndex + colsNumber] = value;
+            }
+        }
+    }
+
+    if (sheet.hiddenCols) {
+        const hiddenCols = sheet.hiddenCols as Prisma.JsonObject;
+
+        for (const [key, value] of Object.entries(hiddenCols)) {
+            const colIndex = parseInt(key, 10);
+
+            if (colIndex < startIndex) {
+                updatedHiddenCols[colIndex] = value;
+            } else {
+                updatedHiddenCols[colIndex + colsNumber] = value;
+            }
+        }
+    }
+
     for (let i = startIndex; i < startIndex + colsNumber; i++) {
         updatedColumnWidths[i] = DEFAULT_COL_WIDTH;
     }
 
-    return await db.sheet.update({
+    await db.sheet.update({
         where: {
-            id: sheetId
+            id: sheetId,
         },
         data: {
             numCols: sheet.numCols + colsNumber,
-            columnWidths: updatedColumnWidths
-        }
+            columnWidths: updatedColumnWidths,
+            hiddenCols: updatedHiddenCols,
+        },
+    });
+
+    return await db.sheet.findFirst({
+        where: {
+            id: sheetId,
+        },
+        include: {
+            cells: true,
+        },
     });
 };
 
@@ -373,10 +487,15 @@ const generateCellsForNewCols = (sheetId: number, startIndex: number, colsNumber
     return cells;
 };
 
-export const deleteRows = async (sheetId: number, startIndex: number, rowsNumber: number, userId: number) => {
+export const deleteRows = async (
+    sheetId: number,
+    startIndex: number,
+    rowsNumber: number,
+    userId: number
+) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId
+            id: sheetId,
         },
         include: {
             cells: true,
@@ -397,16 +516,7 @@ export const deleteRows = async (sheetId: number, startIndex: number, rowsNumber
         throw new Error('Cannot delete rows. Deleting these rows would leave the sheet with no rows.');
     }
 
-    // Check for protected cells in the range to be deleted
-    const protectedCells = sheet.cells.filter(cell => {
-        return cell.protected && cell.sheetId === sheetId && cell.row >= startIndex && cell.row < startIndex + rowsNumber;
-    });
-
-    if (protectedCells.length > 0) {
-        throw new Error('Cannot delete rows with protected cells');
-    }
-
-    // Delete cells within the specified rows
+    // Delete cells
     await db.cell.deleteMany({
         where: {
             sheetId: sheetId,
@@ -417,7 +527,7 @@ export const deleteRows = async (sheetId: number, startIndex: number, rowsNumber
         },
     });
 
-    // Update remaining cells' row positions
+    // Update rows positions
     await db.cell.updateMany({
         where: {
             sheetId: sheetId,
@@ -432,27 +542,68 @@ export const deleteRows = async (sheetId: number, startIndex: number, rowsNumber
         },
     });
 
-    // Update the sheet by removing rows and adjusting row heights
-    const updatedRowHeights = sheet.rowHeights ? sheet.rowHeights as Prisma.JsonObject : {};
-    for (let i = startIndex; i < startIndex + rowsNumber; i++) {
-        delete updatedRowHeights[i];
+    // rowHeights & hiddenRows Json objects update
+    const updatedRowHeights: Prisma.JsonObject = {};
+    const updatedHiddenRows: Prisma.JsonObject = {};
+
+    if (sheet.rowHeights) {
+        const rowHeights = sheet.rowHeights as Prisma.JsonObject;
+
+        for (const [key, value] of Object.entries(rowHeights)) {
+            const rowIndex = parseInt(key, 10);
+
+            if (rowIndex < startIndex) {
+                updatedRowHeights[rowIndex] = value;
+            } else if (rowIndex >= startIndex + rowsNumber) {
+                updatedRowHeights[rowIndex - rowsNumber] = value;
+            }
+        }
     }
 
-    return await db.sheet.update({
+    if (sheet.hiddenRows) {
+        const hiddenRows = sheet.hiddenRows as Prisma.JsonObject;
+
+        for (const [key, value] of Object.entries(hiddenRows)) {
+            const rowIndex = parseInt(key, 10);
+
+            if (rowIndex < startIndex) {
+                updatedHiddenRows[rowIndex] = value;
+            } else if (rowIndex >= startIndex + rowsNumber) {
+                updatedHiddenRows[rowIndex - rowsNumber] = value;
+            }
+        }
+    }
+
+    await db.sheet.update({
         where: {
             id: sheetId,
         },
         data: {
             numRows: sheet.numRows - rowsNumber,
             rowHeights: updatedRowHeights,
+            hiddenRows: updatedHiddenRows,
+        },
+    });
+
+    return await db.sheet.findFirst({
+        where: {
+            id: sheetId,
+        },
+        include: {
+            cells: true,
         },
     });
 };
 
-export const deleteCols = async (sheetId: number, startIndex: number, colsNumber: number, userId: number) => {
+export const deleteCols = async (
+    sheetId: number,
+    startIndex: number,
+    colsNumber: number,
+    userId: number
+) => {
     const sheet = await db.sheet.findFirst({
         where: {
-            id: sheetId
+            id: sheetId,
         },
         include: {
             cells: true,
@@ -466,23 +617,23 @@ export const deleteCols = async (sheetId: number, startIndex: number, colsNumber
     const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
 
     if (permission !== 'EDIT') {
-        throw new Error('You do not have permission to delete these cols.');
+        throw new Error('You do not have permission to delete these columns.');
     }
 
     if (sheet.numCols - colsNumber <= 0) {
-        throw new Error('Cannot delete cols. Deleting these cols would leave the sheet with no cols.');
+        throw new Error('Cannot delete columns. Deleting these columns would leave the sheet with no columns.');
     }
 
-    // Check for protected cells in the range to be deleted
+    // Protected cells
     const protectedCells = sheet.cells.filter(cell => {
         return cell.protected && cell.sheetId === sheetId && cell.col >= startIndex && cell.col < startIndex + colsNumber;
     });
 
     if (protectedCells.length > 0) {
-        throw new Error('Cannot delete columns with protected cells');
+        throw new Error('Cannot delete columns with protected cells.');
     }
 
-    // Delete cells within the specified columns
+    // Delete
     await db.cell.deleteMany({
         where: {
             sheetId: sheetId,
@@ -493,7 +644,7 @@ export const deleteCols = async (sheetId: number, startIndex: number, colsNumber
         },
     });
 
-    // Update remaining cells' column positions
+    // Update column positions
     await db.cell.updateMany({
         where: {
             sheetId: sheetId,
@@ -508,19 +659,55 @@ export const deleteCols = async (sheetId: number, startIndex: number, colsNumber
         },
     });
 
-    // Update the sheet by removing columns and adjusting column widths
-    const updatedColumnWidths = sheet.columnWidths ? sheet.columnWidths as Prisma.JsonObject : {};
-    for (let i = startIndex; i < startIndex + colsNumber; i++) {
-        delete updatedColumnWidths[i];
+    // Update columnWidths & hiddenCols Json objects
+    const updatedColumnWidths: Prisma.JsonObject = {};
+    const updatedHiddenCols: Prisma.JsonObject = {};
+
+    if (sheet.columnWidths) {
+        const columnWidths = sheet.columnWidths as Prisma.JsonObject;
+
+        for (const [key, value] of Object.entries(columnWidths)) {
+            const colIndex = parseInt(key, 10);
+
+            if (colIndex < startIndex) {
+                updatedColumnWidths[colIndex] = value;
+            } else if (colIndex >= startIndex + colsNumber) {
+                updatedColumnWidths[colIndex - colsNumber] = value;
+            }
+        }
     }
 
-    return await db.sheet.update({
+    if (sheet.hiddenCols) {
+        const hiddenCols = sheet.hiddenCols as Prisma.JsonObject;
+
+        for (const [key, value] of Object.entries(hiddenCols)) {
+            const colIndex = parseInt(key, 10);
+
+            if (colIndex < startIndex) {
+                updatedHiddenCols[colIndex] = value;
+            } else if (colIndex >= startIndex + colsNumber) {
+                updatedHiddenCols[colIndex - colsNumber] = value;
+            }
+        }
+    }
+
+    await db.sheet.update({
         where: {
             id: sheetId,
         },
         data: {
             numCols: sheet.numCols - colsNumber,
             columnWidths: updatedColumnWidths,
+            hiddenCols: updatedHiddenCols,
+        },
+    });
+
+    return await db.sheet.findFirst({
+        where: {
+            id: sheetId,
+        },
+        include: {
+            cells: true,
         },
     });
 };

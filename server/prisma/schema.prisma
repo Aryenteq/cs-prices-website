@@ -115,7 +115,7 @@ model Cell {
   sheetId    Int
   row        Int
   col        Int
-  protected  Boolean             @default(false) // col 1 can edit, rest no
+  protected  Boolean             @default(false)
   bgColor    String              @default("#242424")
   color      String              @default("#FFFFFF")
   style      Json?

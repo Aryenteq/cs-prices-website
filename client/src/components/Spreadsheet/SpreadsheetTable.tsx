@@ -4,7 +4,10 @@ import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
 import { useInfo } from "../InfoContext";
 import ContextMenu from "./ContextMenu";
 import { getColumnLetter, initializeSizes, initializeVisibility } from "./Functions/Utils";
-import { fetchSpreadsheet, updateColWidth, updateRowHeight, updateHiddenCols, updateHiddenRows } from "./Functions/Fetch";
+import {
+    fetchSpreadsheet, updateColWidth, updateRowHeight, updateHiddenCols, updateHiddenRows,
+    deleteSheetCols, deleteSheetRows, addRows, addCols
+} from "./Functions/Fetch";
 import ResizeDialog from "./Functions/ResizeDialog";
 
 const DEFAULT_ROW_HEIGHT = 21;
@@ -12,9 +15,11 @@ const DEFAULT_COL_WIDTH = 100;
 const FIRST_COLUMN_WIDTH = 40;
 const EDGE_THRESHOLD = 10;
 const MINIMUM_SIZE = 20;
+export const CS_PROTECTED_COLUMNS_LENGTH = 2;
 
 const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, saving, setSaving }) => {
     const { setInfo } = useInfo();
+    const [isLoading, setIsLoading] = useState(true);
 
     const { data: spreadsheet } = useQuery<any, Error>(
         ['spreadsheet', spreadsheetId],
@@ -30,10 +35,22 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
         }
     );
 
-    const sheet = spreadsheet?.firstSheet;
+    const [sheet, setSheet] = useState<any>(null);
+
+    useEffect(() => {
+        if (spreadsheet) {
+            setSheet(spreadsheet.firstSheet);
+            setIsLoading(false);
+        } else {
+            setIsLoading(true);
+        }
+    }, [spreadsheet]);
+
+
     const numRows = sheet?.numRows || 100;
     const numCols = sheet?.numCols || 26;
     const userPermission = spreadsheet?.permission;
+    const spreadsheetType = spreadsheet?.type;
 
     const [rowHeights, setRowHeights] = useState<number[]>(() => new Array(numRows).fill(DEFAULT_ROW_HEIGHT));
     const [colWidths, setColWidths] = useState<number[]>(() => new Array(numCols).fill(DEFAULT_COL_WIDTH));
@@ -68,9 +85,22 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
 
     const handleContextMenu = (e: React.MouseEvent, target: { row?: number, col?: number }) => {
         e.preventDefault();
-        const options = target.col !== undefined
-            ? ["Insert 1 column left", "Insert 1 column right", "Hide column", "Delete column", "Resize column"]
-            : ["Insert 1 row above", "Insert 1 row below", "Hide row", "Delete row", "Resize row"];
+
+        const options = [];
+
+        if (target.col !== undefined) {
+            if (spreadsheetType === 'CS' && target.col < CS_PROTECTED_COLUMNS_LENGTH - 1) {
+                options.push("Hide column", "Resize column");
+            } else {
+                if (spreadsheetType === 'CS' && target.col === CS_PROTECTED_COLUMNS_LENGTH - 1) {
+                    options.push("Insert 1 column right", "Hide column", "Resize column");
+                } else {
+                    options.push("Insert 1 column left", "Insert 1 column right", "Hide column", "Delete column", "Resize column");
+                }
+            }
+        } else {
+            options.push("Insert 1 row above", "Insert 1 row below", "Hide row", "Delete row", "Resize row");
+        }
 
         setContextMenu({
             x: e.clientX,
@@ -80,16 +110,31 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
         });
     };
 
+
     const handleMenuClick = (option: string) => {
         if (contextMenu?.target) {
             const { row, col } = contextMenu.target;
 
             switch (option) {
                 case "Insert 1 column left":
-                    alert(`insert 1 col left ${row} and ${col}`);
+                    if (col !== undefined) {
+                        if (numCols > 256) {
+                            setInfo({ message: 'Can\'t exceed 256 columns!', isError: true });
+                            break;
+                        }
+                        setIsLoading(true);
+                        addColsMutation({ sheetId: Number(sheet.id), startIndex: col, colsNumber: 1 });
+                    }
                     break;
                 case "Insert 1 column right":
-                    // Handle insert column to the right
+                    if (col !== undefined) {
+                        if (numCols > 256) {
+                            setInfo({ message: 'Can\'t exceed 256 columns!', isError: true });
+                            break;
+                        }
+                        setIsLoading(true);
+                        addColsMutation({ sheetId: Number(sheet.id), startIndex: col + 1, colsNumber: 1 });
+                    }
                     break;
                 case "Hide column":
                     if (col !== undefined) {
@@ -116,7 +161,24 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
 
                     break;
                 case "Delete column":
-                    // Handle delete column
+                    if (col !== undefined) {
+                        const colsNumber = 1;
+
+                        const visibleColCount = hiddenCols.filter(hidden => !hidden).length;
+                        if (visibleColCount - colsNumber <= 1) {
+                            setInfo({ message: 'Cannot delete all cols. At least one col must remain visible.', isError: true });
+                            break;
+                        }
+
+                        // CS Protected Columns: Index start from 0, therefore the "-1"
+                        if (spreadsheet.type === 'CS' && col <= CS_PROTECTED_COLUMNS_LENGTH - 1) {
+                            setInfo({ message: 'Cannot delete this row.', isError: true });
+                            break;
+                        }
+
+                        setIsLoading(true);
+                        deleteColsMutation({ sheetId: Number(sheet.id), startIndex: col, colsNumber });
+                    }
                     break;
                 case "Resize column":
                     if (col !== undefined) {
@@ -126,10 +188,24 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                     }
                     break;
                 case "Insert 1 row above":
-                    // Handle insert row above
+                    if (row !== undefined) {
+                        if (numRows > 65535) {
+                            setInfo({ message: 'Can\'t exceed 65536 rows!', isError: true });
+                            break;
+                        }
+                        setIsLoading(true);
+                        addRowsMutation({ sheetId: Number(sheet.id), startIndex: row, rowsNumber: 1 });
+                    }
                     break;
                 case "Insert 1 row below":
-                    // Handle insert row below
+                    if (row !== undefined) {
+                        if (numRows > 65535) {
+                            setInfo({ message: 'Can\'t exceed 65536 rows!', isError: true });
+                            break;
+                        }
+                        setIsLoading(true);
+                        addRowsMutation({ sheetId: Number(sheet.id), startIndex: row + 1, rowsNumber: 1 });
+                    }
                     break;
                 case "Hide row":
                     if (row !== undefined) {
@@ -155,7 +231,18 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                     }
                     break;
                 case "Delete row":
-                    // Handle delete row
+                    if (row !== undefined) {
+                        const rowsNumber = 1;
+
+                        const visibleRowCount = hiddenRows.filter(hidden => !hidden).length;
+                        if (visibleRowCount - rowsNumber <= 1) {
+                            setInfo({ message: 'Cannot delete all rows. At least one row must remain visible.', isError: true });
+                            break;
+                        }
+
+                        setIsLoading(true);
+                        deleteRowsMutation({ sheetId: Number(sheet.id), startIndex: row, rowsNumber });
+                    }
                     break;
                 case "Resize row":
                     if (row !== undefined) {
@@ -171,6 +258,100 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
         setContextMenu(null); // Close context afterwards
     };
 
+
+    //
+    //
+    // INSERT ROWS/COLS
+    //
+    //
+
+    const [addRowsInputValue, setAddRowsInputValue] = useState<number>(100);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (/^\d*$/.test(value)) {
+            setAddRowsInputValue(Number(value));
+        }
+    };
+
+    const handleAddRowsClick = () => {
+        if (addRowsInputValue + numRows > 65536) {
+            setInfo({ message: 'Can\'t exceed 65536 rows!', isError: true });
+        }
+        else if (addRowsInputValue > 0) {
+            addRowsMutation({ sheetId: Number(sheet.id), startIndex: numRows, rowsNumber: addRowsInputValue });
+        }
+    };
+
+    const { mutate: addRowsMutation } = useMutation(addRows, {
+        onSuccess: (updatedSheet) => {
+            setSaving(false);
+            setSheet(updatedSheet);
+            setIsLoading(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            setIsLoading(false);
+            console.error('Error inserting rows:', error);
+            setInfo({ message: 'Something went wrong inserting the rows. Try again', isError: true });
+        }
+    });
+
+    const { mutate: addColsMutation } = useMutation(addCols, {
+        onSuccess: (updatedSheet) => {
+            setSaving(false);
+            setSheet(updatedSheet);
+            setIsLoading(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            setIsLoading(false);
+            console.error('Error inserting cols:', error);
+            setInfo({ message: 'Something went wrong inserting the columns. Try again', isError: true });
+        }
+    });
+
+    //
+    //
+    // DELETE ROWS/COLS
+    //
+    //
+
+    const { mutate: deleteRowsMutation } = useMutation(deleteSheetRows, {
+        onSuccess: (updatedSheet) => {
+            setSaving(false);
+            setSheet(updatedSheet);
+            setIsLoading(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            setIsLoading(false);
+            console.error('Error deleting rows:', error);
+            setInfo({ message: 'Something went wrong deleting the rows. Try again', isError: true });
+        }
+    });
+
+
+    const { mutate: deleteColsMutation } = useMutation(deleteSheetCols, {
+        onSuccess: (updatedSheet) => {
+            setSaving(false);
+            setSheet(updatedSheet);
+            setIsLoading(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            setIsLoading(false);
+            console.error('Error deleting cols:', error);
+            setInfo({ message: 'Something went wrong deleting the cols. Try again', isError: true });
+        }
+    });
+
+
+    //
+    //
+    // RESIZE
+    //
+    //
     const { mutate: updateRowHeightMutation } = useMutation(updateRowHeight, {
         onSuccess: () => {
             setSaving(false);
@@ -192,13 +373,6 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
             setInfo({ message: 'Something went wrong saving the new width. Try again', isError: true });
         }
     });
-
-
-    //
-    //
-    // RESIZE
-    //
-    //
 
     const [currentResizeRowIndex, setCurrentResizeRowIndex] = useState<number | null>(null);
     const [currentResizeColIndex, setCurrentResizeColIndex] = useState<number | null>(null);
@@ -473,7 +647,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
         }
     };
 
-
+    // if (isLoading) {
+    //     return (
+    //         <div>Loading...</div>
+    //     );
+    // }
 
     return (
         <div className="flex-grow overflow-auto custom-scrollbar">
@@ -492,11 +670,12 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                                 return (
                                     <th
                                         key={i}
-                                        className={`z-10 border border-gray-400 p-2 bg-primary-lightest text-black relative
+                                        className={`z-10 border border-gray-400 p-2 text-black relative
                                         ${currentResizeColIndex === i ? 'col-resize-handle' : ''}
                                         ${currentResizeColIndex === i - 1 ? 'col-resize-cursor' : ''}
                                         ${hiddenCols[i - 1] ? 'hidden-col-before' : ''}
-                                        ${hiddenCols[i + 1] ? 'hidden-col-after' : ''}`}
+                                        ${hiddenCols[i + 1] ? 'hidden-col-after' : ''}
+                                        ${spreadsheetType === 'CS' && i < CS_PROTECTED_COLUMNS_LENGTH ? 'bg-secondary-lightest' : 'bg-primary-lightest'}`}
                                         style={{ width: getColumnWidth(i) }}
                                         onContextMenu={userPermission !== 'VIEW' ? (e) => handleContextMenu(e, { col: i }) : undefined}
                                         onMouseMove={userPermission !== 'VIEW' ? (e) => handleMouseMove(e, 'col', i) : undefined}
@@ -508,7 +687,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                                         onMouseDown={userPermission !== 'VIEW' ? (e) => handleMouseDown(e, 'col') : undefined}
                                         onClick={userPermission !== 'VIEW' ? (e) => handlePseudoElementClick(e, i, 'col') : undefined}
                                     >
-                                        {getColumnLetter(i)}
+                                        {getColumnLetter(spreadsheetType, i)}
                                     </th>
 
 
@@ -547,7 +726,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                                     {Array.from({ length: numCols }, (_, colIndex) => {
                                         if (hiddenCols[colIndex]) return null; // Skip hidden columns
 
-                                        const cell = sheet?.cells.find(
+                                        const cell = sheet?.cells!.find(
                                             (c: any) => c.row === rowIndex && c.col === colIndex
                                         );
                                         return (
@@ -574,7 +753,19 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                 </tbody>
             </table>
 
-            {contextMenu && userPermission !== 'VIEW' && (
+            <div className="my-6 flex gap-2 items-center">
+                <button onClick={handleAddRowsClick}
+                className="border border-2 border-transparent hover:border-white rounded-lg p-2">Add</button>
+                <input
+                    type="text"
+                    value={addRowsInputValue}
+                    onChange={handleInputChange}
+                    className="p-2 w-12 rounded-lg"
+                />
+                <span>more rows</span>
+            </div>
+
+            {contextMenu && (
                 <ContextMenu
                     x={contextMenu.x}
                     y={contextMenu.y}

@@ -87,3 +87,95 @@ export const updateHiddenCols = async ({ sheetId, colIndex, hidden }: { sheetId:
     }
     return response.json();
 };
+
+export const deleteSheetRows = async ({ sheetId, startIndex, rowsNumber }: { sheetId: number, startIndex: number, rowsNumber: number }): Promise<any> => {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+    };
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/rows`, {
+        method: 'DELETE',
+        headers: headers,
+        body: JSON.stringify({ startIndex, rowsNumber })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to delete rows.');
+    }
+
+    return response.json();
+};
+
+
+export const deleteSheetCols = async ({ sheetId, startIndex, colsNumber }: { sheetId: number, startIndex: number, colsNumber: number }): Promise<any> => {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+    };
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/cols`, {
+        method: 'DELETE',
+        headers: headers,
+        body: JSON.stringify({ startIndex, colsNumber })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to delete cols.');
+    }
+
+    return response.json();
+};
+
+export const addRows = async ({ sheetId, startIndex, rowsNumber }: { sheetId: number, startIndex: number, rowsNumber: number }) => {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+    };
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/rows`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify({ startIndex, rowsNumber })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to add row(s)');
+    }
+    return response.json();
+};
+
+
+export const addCols = async ({ sheetId, startIndex, colsNumber }: { sheetId: number, startIndex: number, colsNumber: number }) => {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+    };
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/cols`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify({ startIndex, colsNumber })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to add column(s)');
+    }
+    return response.json();
+};
+
+
+export const deleteSheet = async (sheetId: number): Promise<any> => {
+    const headers = getAuthHeader();
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}`, {
+        method: 'DELETE',
+        headers: headers,
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to delete sheet');
+    }
+
+    return response.json();
+};
