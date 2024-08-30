@@ -117,7 +117,7 @@ model Cell {
   col        Int
   protected  Boolean             @default(false)
   bgColor    String              @default("#242424")
-  color      String              @default("#FFFFFF")
+  color      String              @default("#ffffff")
   style      Json?
   hAlignment HorizontalAlignment @default(LEFT)
   vAlignment VerticalAlignment   @default(CENTER)

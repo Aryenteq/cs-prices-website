@@ -33,7 +33,11 @@ const fetchSpreadsheetPermission = async (spreadsheetId: number): Promise<string
     return response.json();
 };
 
-const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, saving, setSaving }) => {
+const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
+    selectedCellIds: number[];
+    setSelectedCellIds: React.Dispatch<React.SetStateAction<number[]>>;
+}> = ({ selectedCellIds, setSelectedCellIds, saving, setSaving, uid, spreadsheetId }) => {
+    
     const { setInfo } = useInfo();
     const [permission, setPermission] = useState<string>('VIEW');
     const [isHorizontalAlignmentOpen, setHorizontalAlignmentOpen] = useState(false);

@@ -753,6 +753,9 @@ export const updateRowsHeight = async (sheetId: number, index: number, height: n
         data: {
             rowHeights: currentRowHeights,
         },
+        include: {
+            cells: true,
+        },
     });
 
     return updatedSheet;
@@ -798,6 +801,9 @@ export const updateColsWidth = async (sheetId: number, index: number, width: num
         },
         data: {
             columnWidths: currentColumnWidths,
+        },
+        include: {
+            cells: true,
         },
     });
 
@@ -870,5 +876,8 @@ export const updateVisibility = async (
             id: sheetId,
         },
         data: updateData,
+        include: {
+            cells: true,
+        },
     });
 };

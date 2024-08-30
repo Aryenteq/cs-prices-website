@@ -18,6 +18,12 @@ export default {
           DEFAULT: '#85008a',
           dark: '#510154',
         },
+        selected: {
+          DEFAULT: '#325472',
+        },
+        selectedHeader: {
+          DEFAULT: '#6a93b8',
+        },
         input: {
           DEFAULT: '#f4f7f2',
           dark: '#e4e6e3',

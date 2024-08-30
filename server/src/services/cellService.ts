@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client';
 import { findSpreadsheetIdByCellId } from '../utils/findSpreadsheetId';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
+import { CS_PROTECTED_COLUMNS_LENGTH } from './spreadsheetService';
+
 export const updateStyle = async (cellId: number, newStyle: object, userId: number) => {
     const cell = await db.cell.findFirst({
         where: {
@@ -82,6 +84,13 @@ const updateCell = async (cellId: number, data: object, userId: number) => {
 
     if (permission !== 'EDIT') {
         throw new Error('You do not have permission to edit this cell.');
+    }
+
+    // Can't edit protected cells content
+    if ('content' in data) {
+        if (cell.protected && cell.col !== 0) {
+            throw new Error(`Cannot edit cells in protected columns, except for column 0`);
+        }
     }
 
     return await db.cell.update({

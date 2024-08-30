@@ -19,6 +19,7 @@ export interface SpreadsheetProps {
 
 const SpreadsheetPage: React.FC = () => {
     const [saving, setSaving] = useState<boolean>(false);
+    const [selectedCellIds, setSelectedCellIds] = useState<number[]>([]);
     const { encodedSpreadsheetId } = useParams<{ encodedSpreadsheetId: string }>();
 
     const spreadsheetId = useMemo(() => {
@@ -69,6 +70,8 @@ const SpreadsheetPage: React.FC = () => {
                     spreadsheetId={spreadsheetId}
                     saving={saving}
                     setSaving={setSaving}
+                    selectedCellIds={selectedCellIds}
+                    setSelectedCellIds={setSelectedCellIds}
                 />
             </div>
             <SpreadsheetTable
@@ -76,6 +79,8 @@ const SpreadsheetPage: React.FC = () => {
                 spreadsheetId={spreadsheetId}
                 saving={saving}
                 setSaving={setSaving}
+                selectedCellIds={selectedCellIds}
+                setSelectedCellIds={setSelectedCellIds}
             />
 
         </div>

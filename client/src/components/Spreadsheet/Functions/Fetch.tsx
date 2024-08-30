@@ -179,3 +179,30 @@ export const deleteSheet = async (sheetId: number): Promise<any> => {
 
     return response.json();
 };
+
+
+
+
+//
+//
+// CELLS
+//
+//
+
+export const updateCellContent = async ({ cellId, content }: { cellId: Number, content: string }) => {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+    };
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/cell/${cellId}/content`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify({ cellId, content })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to save cell content');
+    }
+    return response.json();
+};

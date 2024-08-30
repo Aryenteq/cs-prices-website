@@ -1,25 +1,30 @@
-import React, { useState, useEffect } from "react";
-import { useQuery, useMutation } from "react-query";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "react-query";
 import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
 import { useInfo } from "../InfoContext";
 import ContextMenu from "./ContextMenu";
 import { getColumnLetter, initializeSizes, initializeVisibility } from "./Functions/Utils";
 import {
     fetchSpreadsheet, updateColWidth, updateRowHeight, updateHiddenCols, updateHiddenRows,
-    deleteSheetCols, deleteSheetRows, addRows, addCols
+    deleteSheetCols, deleteSheetRows, addRows, addCols, updateCellContent
 } from "./Functions/Fetch";
+import type { Sheet } from "./Functions/Types";
 import ResizeDialog from "./Functions/ResizeDialog";
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
-const FIRST_COLUMN_WIDTH = 40;
+const FIRST_COLUMN_WIDTH = 50;
 const EDGE_THRESHOLD = 10;
 const MINIMUM_SIZE = 20;
 export const CS_PROTECTED_COLUMNS_LENGTH = 2;
 
-const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, saving, setSaving }) => {
+const SpreadsheetTable: React.FC<SpreadsheetProps & {
+    selectedCellIds: number[];
+    setSelectedCellIds: React.Dispatch<React.SetStateAction<number[]>>;
+}> = ({ selectedCellIds, setSelectedCellIds, saving, setSaving, uid, spreadsheetId }) => {
     const { setInfo } = useInfo();
     const [isLoading, setIsLoading] = useState(true);
+    const queryClient = useQueryClient();
 
     const { data: spreadsheet } = useQuery<any, Error>(
         ['spreadsheet', spreadsheetId],
@@ -36,26 +41,27 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
     );
 
     const [sheet, setSheet] = useState<any>(null);
+    const [numRows, setNumRows] = useState<number>(100);
+    const [numCols, setNumCols] = useState<number>(26);
+    const [userPermission, setUserPermission] = useState<string | undefined>(undefined);
+    const [spreadsheetType, setSpreadsheetType] = useState<'CS' | 'NORMAL'>('NORMAL');
+    const [rowHeights, setRowHeights] = useState<number[]>(() => new Array(numRows).fill(DEFAULT_ROW_HEIGHT));
+    const [colWidths, setColWidths] = useState<number[]>(() => new Array(numCols).fill(DEFAULT_COL_WIDTH));
+    const [hiddenRows, setHiddenRows] = useState<boolean[]>(() => new Array(numRows).fill(false));
+    const [hiddenCols, setHiddenCols] = useState<boolean[]>(() => new Array(numCols).fill(false));
 
     useEffect(() => {
         if (spreadsheet) {
             setSheet(spreadsheet.firstSheet);
+            setNumRows(spreadsheet.firstSheet.numRows || 100);
+            setNumCols(spreadsheet.firstSheet.numCols || 26);
+            setUserPermission(spreadsheet.permission);
+            setSpreadsheetType(spreadsheet.type);
             setIsLoading(false);
         } else {
             setIsLoading(true);
         }
     }, [spreadsheet]);
-
-
-    const numRows = sheet?.numRows || 100;
-    const numCols = sheet?.numCols || 26;
-    const userPermission = spreadsheet?.permission;
-    const spreadsheetType = spreadsheet?.type;
-
-    const [rowHeights, setRowHeights] = useState<number[]>(() => new Array(numRows).fill(DEFAULT_ROW_HEIGHT));
-    const [colWidths, setColWidths] = useState<number[]>(() => new Array(numCols).fill(DEFAULT_COL_WIDTH));
-    const [hiddenRows, setHiddenRows] = useState<boolean[]>(() => new Array(numRows).fill(false));
-    const [hiddenCols, setHiddenCols] = useState<boolean[]>(() => new Array(numCols).fill(false));
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [resizeType, setResizeType] = useState<'row' | 'col' | null>(null);
@@ -138,30 +144,38 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                     break;
                 case "Hide column":
                     if (col !== undefined) {
-                        setHiddenCols(prevHidden => {
-                            const newHidden = [...prevHidden];
-                            const visibleColCount = newHidden.filter(hidden => !hidden).length;
+                        // if (editingCell) {
+                        //     handleInvalidCellEdit(col);
+                        // }
+                        setSaving(true);
 
-                            if (visibleColCount > 1) {
-                                newHidden[col] = true;
+                        //setHiddenCols(prevHidden => {
+                        //const newHidden = [...prevHidden];
+                        const newHidden = [...hiddenCols];
+                        const visibleColCount = newHidden.filter(hidden => !hidden).length;
 
-                                setSaving(true);
-                                updateHiddenColsMutation({
-                                    sheetId: sheet.id,
-                                    colIndex: col,
-                                    hidden: true,
-                                });
-                            } else {
-                                setInfo({ message: 'Cannot hide all columns. At least one column must remain visible.', isError: true });
-                            }
+                        if (visibleColCount > 1) {
+                            newHidden[col] = true;
 
-                            return newHidden;
-                        });
+                            updateHiddenColsMutation({
+                                sheetId: sheet.id,
+                                colIndex: col,
+                                hidden: true,
+                            });
+                        } else {
+                            setInfo({ message: 'Cannot hide all columns. At least one column must remain visible.', isError: true });
+                        }
+                        //    return newHidden;
+                        //});
                     }
 
                     break;
                 case "Delete column":
                     if (col !== undefined) {
+                        // if (editingCell) {
+                        //     handleInvalidCellEdit(col);
+                        // }
+
                         const colsNumber = 1;
 
                         const visibleColCount = hiddenCols.filter(hidden => !hidden).length;
@@ -209,29 +223,38 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                     break;
                 case "Hide row":
                     if (row !== undefined) {
-                        setHiddenRows(prevHidden => {
-                            const newHidden = [...prevHidden];
-                            const visibleRowCount = newHidden.filter(hidden => !hidden).length;
+                        // if (editingCell) {
+                        //     handleInvalidCellEdit(row);
+                        // }
+                        setSaving(true);
 
-                            if (visibleRowCount > 1) {
-                                newHidden[row] = true;
+                        //setHiddenRows(prevHidden => {
+                        //    const newHidden = [...prevHidden];
+                        const newHidden = [...hiddenRows];
+                        const visibleRowCount = newHidden.filter(hidden => !hidden).length;
 
-                                setSaving(true);
-                                updateHiddenRowsMutation({
-                                    sheetId: sheet.id,
-                                    rowIndex: row,
-                                    hidden: true,
-                                });
-                            } else {
-                                setInfo({ message: 'Cannot hide all rows. At least one row must remain visible.', isError: true });
-                            }
+                        if (visibleRowCount > 1) {
+                            newHidden[row] = true;
 
-                            return newHidden;
-                        });
+                            updateHiddenRowsMutation({
+                                sheetId: sheet.id,
+                                rowIndex: row,
+                                hidden: true,
+                            });
+                        } else {
+                            setInfo({ message: 'Cannot hide all rows. At least one row must remain visible.', isError: true });
+                        }
+
+                        //    return newHidden;
+                        //});
                     }
                     break;
                 case "Delete row":
                     if (row !== undefined) {
+                        // if (editingCell) {
+                        //     handleInvalidCellEdit(row);
+                        // }
+
                         const rowsNumber = 1;
 
                         const visibleRowCount = hiddenRows.filter(hidden => !hidden).length;
@@ -353,8 +376,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
     //
     //
     const { mutate: updateRowHeightMutation } = useMutation(updateRowHeight, {
-        onSuccess: () => {
+        onSuccess: (updatedSheet) => {
             setSaving(false);
+            //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
+            setSheet(updatedSheet);
+            setIsLoading(false);
         },
         onError: (error) => {
             setSaving(false);
@@ -364,8 +390,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
     });
 
     const { mutate: updateColWidthMutation } = useMutation(updateColWidth, {
-        onSuccess: () => {
+        onSuccess: (updatedSheet) => {
             setSaving(false);
+            //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
+            setSheet(updatedSheet);
+            setIsLoading(false);
         },
         onError: (error) => {
             setSaving(false);
@@ -521,8 +550,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
     //
     //
     const { mutate: updateHiddenColsMutation } = useMutation(updateHiddenCols, {
-        onSuccess: () => {
+        onSuccess: (updatedSheet) => {
             setSaving(false);
+            //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
+            setSheet(updatedSheet);
+            setIsLoading(false);
         },
         onError: (error) => {
             setSaving(false);
@@ -532,8 +564,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
     });
 
     const { mutate: updateHiddenRowsMutation } = useMutation(updateHiddenRows, {
-        onSuccess: () => {
+        onSuccess: (updatedSheet) => {
             setSaving(false);
+            //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
+            setSheet(updatedSheet);
+            setIsLoading(false);
         },
         onError: (error) => {
             setSaving(false);
@@ -647,11 +682,233 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
         }
     };
 
-    // if (isLoading) {
-    //     return (
-    //         <div>Loading...</div>
-    //     );
-    // }
+
+    //
+    //
+    // CONTENT
+    //
+    //
+    //
+
+    const [editingCell, setEditingCell] = useState<{ id: number, row: number, col: number } | null>(null);
+    const [cellContent, setCellContent] = useState<string>("");
+    const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const { mutate: saveCellContentMutation } = useMutation(updateCellContent, {
+        onSuccess: () => {
+            setSaving(false);
+            //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
+        },
+        onError: (error) => {
+            setSaving(false);
+            console.error('Error updating cell content:', error);
+            setInfo({ message: 'Something went wrong saving the new content. Try again', isError: true });
+        }
+    });
+
+    const handleCellClick = (id: number, row: number, col: number, content: string) => {
+        if (hiddenRows[row] || hiddenCols[col]) return;
+
+        setEditingCell({ id, row, col });
+        setCellContent(content);
+
+        setTimeout(() => {
+            inputRef.current?.focus();
+        }, 0);
+    };
+
+    const handleCellContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSaving(true);
+        const updatedContent = e.target.value;
+        setCellContent(updatedContent);
+
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+
+        const newTimeoutId = setTimeout(() => {
+            saveCellContent(updatedContent);
+        }, 2000);
+
+        setTimeoutId(newTimeoutId);
+    };
+
+    const saveCellContent = (content?: string) => {
+        const finalContent = content !== undefined ? content : cellContent;
+
+        if (editingCell) {
+            // Update the local state to reflect the new content immediately
+            setSheet((prevSheet: Sheet) => {
+                const updatedCells = prevSheet.cells.map(cell =>
+                    cell.id === editingCell.id ? { ...cell, content: finalContent } : cell
+                );
+                return { ...prevSheet, cells: updatedCells };
+            });
+
+            saveCellContentMutation({
+                cellId: editingCell.id,
+                content: finalContent
+            });
+        }
+    };
+
+    const handleCellBlur = () => {
+        if (editingCell) {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                setTimeoutId(null);
+            }
+            saveCellContent();
+            setEditingCell(null);
+        }
+    };
+
+    // const handleInvalidCellEdit = (row?: number, col?: number) => {
+    //     if (editingCell?.row === row || editingCell?.col === col) {
+    //         handleCellBlur();
+    //     }
+    // };
+
+
+    //
+    //
+    // CELLS SELECTION
+    //
+    //
+
+    const [selectedRange, setSelectedRange] = useState<string | null>(null);
+
+    const isSelecting = useRef<boolean>(false);
+    const startCell = useRef<{ row: number, col: number } | null>(null);
+
+    useEffect(() => {
+        const handleWindowMouseUp = () => {
+            handleCellMouseUp();
+        };
+    
+        window.addEventListener('mouseup', handleWindowMouseUp);
+    
+        return () => {
+            window.removeEventListener('mouseup', handleWindowMouseUp);
+        };
+    }, []);
+    
+    const getSelectedCells = (start: { row: number, col: number }, end: { row: number, col: number }) => {
+        let selectedIds: number[] = [];
+        const startRow = Math.min(start.row, end.row);
+        const endRow = Math.max(start.row, end.row);
+        const startCol = Math.min(start.col, end.col);
+        const endCol = Math.max(start.col, end.col);
+    
+        for (let rowIndex = startRow; rowIndex <= endRow; rowIndex++) {
+            for (let colIndex = startCol; colIndex <= endCol; colIndex++) {
+                const cell = sheet?.cells!.find((c: any) => c.row === rowIndex && c.col === colIndex);
+                if (cell) {
+                    selectedIds.push(cell.id);
+                }
+            }
+        }
+    
+        return selectedIds;
+    };
+    
+    const handleCellMouseDown = (e: React.MouseEvent, rowIndex: number, colIndex: number) => {
+        e.preventDefault();
+        handleCellBlur();
+        isSelecting.current = true;
+        startCell.current = { row: rowIndex, col: colIndex };
+        setSelectedCellIds([]);
+        setSelectedRange(null);
+    };
+    
+    const handleCellMouseMove = (e: React.MouseEvent, rowIndex: number, colIndex: number) => {
+        e.preventDefault();
+        if (isSelecting.current && startCell.current) {
+            const newSelectedCells = getSelectedCells(startCell.current, { row: rowIndex, col: colIndex });
+            setSelectedCellIds(newSelectedCells);
+        }
+    };
+    
+    const handleCellMouseUp = () => {
+        isSelecting.current = false;
+        startCell.current = null;
+    };
+    
+    useEffect(() => {
+        if (selectedCellIds.length > 0 && sheet) {
+            const calculatedRange = calculateSelectedRange(selectedCellIds);
+            setSelectedRange(calculatedRange);
+        }
+    }, [selectedCellIds, sheet]);
+
+    const calculateSelectedRange = (selectedIds: number[]) => {
+        if (!sheet || !sheet.cells) return null;
+        const selectedCells = selectedIds.map(id => sheet?.cells!.find((c: any) => c.id === id)!);
+        const rows = selectedCells.map(c => c.row);
+        const cols = selectedCells.map(c => c.col);
+
+        if (rows.length === 0 || cols.length === 0) return null;
+
+        const minRow = Math.min(...rows) + 1;
+        const maxRow = Math.max(...rows) + 1;
+        const minCol = Math.min(...cols);
+        const maxCol = Math.max(...cols);
+
+        const minColLetter = getColumnLetter(spreadsheetType, minCol);
+        const maxColLetter = getColumnLetter(spreadsheetType, maxCol);
+
+        if (minRow === maxRow && minCol === maxCol) {
+            return `${minColLetter}${minRow}`;
+        } else {
+            return `${minColLetter}${minRow}:${maxColLetter}${maxRow}`;
+        }
+    };
+
+
+
+    const getBorderClasses = (id: number, rowIndex: number, colIndex: number) => {
+        const isSelected = selectedCellIds.includes(id);
+
+        if (!isSelected) {
+            return;
+        }
+
+        const selectedCells = selectedCellIds.map(id => sheet?.cells!.find((c: any) => c.id === id)!);
+        const rows = selectedCells.map(c => c.row);
+        const cols = selectedCells.map(c => c.col);
+
+        const minRow = Math.min(...rows);
+        const maxRow = Math.max(...rows);
+        const minCol = Math.min(...cols);
+        const maxCol = Math.max(...cols);
+
+        let borderClasses = '';
+
+        if (rowIndex === minRow) {
+            borderClasses += ' border-t-3';
+        } if (rowIndex === maxRow) {
+            borderClasses += ' border-b-3';
+        } if (colIndex === minCol) {
+            borderClasses += ' border-l-3';
+        } if (colIndex === maxCol) {
+            borderClasses += ' border-r-3';
+        }
+
+        return borderClasses;
+    };
+
+    const getSelectedHeaders = () => {
+        const selectedCells = selectedCellIds.map(id => sheet?.cells!.find((c: any) => c.id === id)!);
+        const selectedRows = Array.from(new Set(selectedCells.map(c => c.row)));
+        const selectedCols = Array.from(new Set(selectedCells.map(c => c.col)));
+    
+        return { selectedRows, selectedCols };
+    };
+
+    const { selectedRows, selectedCols } = getSelectedHeaders();
+
 
     return (
         <div className="flex-grow overflow-auto custom-scrollbar">
@@ -659,13 +916,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                 <thead className="sticky top-0 bg-gray-100">
                     <tr>
                         <th
-                            className="sticky left-0 z-20 border border-gray-400 p-2 bg-primary-lightest text-black"
-                            style={{ width: FIRST_COLUMN_WIDTH }}
-                        ></th>
+                            className="sticky left-0 z-20 border border-gray-400 p-2 bg-primary-lightest text-black text-xs break-words overflow-hidden"
+                            style={{ width: FIRST_COLUMN_WIDTH, wordBreak: 'break-word' }}
+                        >
+                            {selectedRange}
+                        </th>
 
-                        {/* COLUMNS HEADER (top) */}
+
                         {Array.from({ length: numCols }, (_, i) => {
                             if (!hiddenCols[i]) {
+                                const isSelected = selectedCols.includes(i);
 
                                 return (
                                     <th
@@ -675,8 +935,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                                         ${currentResizeColIndex === i - 1 ? 'col-resize-cursor' : ''}
                                         ${hiddenCols[i - 1] ? 'hidden-col-before' : ''}
                                         ${hiddenCols[i + 1] ? 'hidden-col-after' : ''}
-                                        ${spreadsheetType === 'CS' && i < CS_PROTECTED_COLUMNS_LENGTH ? 'bg-secondary-lightest' : 'bg-primary-lightest'}`}
-                                        style={{ width: getColumnWidth(i) }}
+                                        ${spreadsheetType === 'CS' && i < CS_PROTECTED_COLUMNS_LENGTH ? 'bg-secondary-lightest' : 'bg-primary-lightest'}
+                                        ${isSelected ? 'bg-selectedHeader' : ''}`}
+                                        style={{ width: getColumnWidth(i), height: '50px' }}
                                         onContextMenu={userPermission !== 'VIEW' ? (e) => handleContextMenu(e, { col: i }) : undefined}
                                         onMouseMove={userPermission !== 'VIEW' ? (e) => handleMouseMove(e, 'col', i) : undefined}
                                         onMouseLeave={userPermission !== 'VIEW' ? () => {
@@ -689,8 +950,6 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                                     >
                                         {getColumnLetter(spreadsheetType, i)}
                                     </th>
-
-
                                 );
                             }
                         })}
@@ -699,15 +958,17 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                 <tbody>
                     {Array.from({ length: numRows }, (_, rowIndex) => {
                         if (!hiddenRows[rowIndex]) {
+                            const isRowSelected = selectedRows.includes(rowIndex);
+
                             return (
                                 <tr key={rowIndex} style={{ height: getRowHeight(rowIndex) }}>
-                                    {/* ROWS HEADER (left) */}
                                     <td
                                         className={`sticky left-0 z-10 border border-gray-400 text-center bg-primary-lightest text-black
                                         ${currentResizeRowIndex === rowIndex ? 'row-resize-handle' : ''}
                                         ${currentResizeRowIndex === rowIndex - 1 ? 'row-resize-cursor' : ''}
                                         ${hiddenRows[rowIndex - 1] ? 'hidden-row-before' : ''}
-                                        ${hiddenRows[rowIndex + 1] ? 'hidden-row-after' : ''}`}
+                                        ${hiddenRows[rowIndex + 1] ? 'hidden-row-after' : ''}
+                                        ${isRowSelected ? 'bg-selectedHeader' : ''}`}
                                         style={{ width: FIRST_COLUMN_WIDTH }}
                                         onContextMenu={userPermission !== 'VIEW' ? (e) => handleContextMenu(e, { row: rowIndex }) : undefined}
                                         onMouseMove={userPermission !== 'VIEW' ? (e) => handleMouseMove(e, 'row', rowIndex) : undefined}
@@ -722,24 +983,56 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
                                         {rowIndex + 1}
                                     </td>
 
-
                                     {Array.from({ length: numCols }, (_, colIndex) => {
-                                        if (hiddenCols[colIndex]) return null; // Skip hidden columns
+                                        if (hiddenCols[colIndex]) return null;
 
                                         const cell = sheet?.cells!.find(
                                             (c: any) => c.row === rowIndex && c.col === colIndex
                                         );
+
+                                        const borderClasses = getBorderClasses(cell?.id, rowIndex, colIndex);
+                                        const isSelected = selectedCellIds.includes(cell?.id || -1);
+
+                                        if (editingCell?.row === rowIndex && editingCell?.col === colIndex) {
+                                            return (
+                                                <td key={colIndex} className="border border-gray-400 p-0">
+                                                    <input
+                                                        ref={inputRef}
+                                                        type="text"
+                                                        value={cellContent}
+                                                        onChange={handleCellContentChange}
+                                                        onBlur={handleCellBlur}
+                                                        className="w-full h-full p-2"
+                                                        style={{ height: getRowHeight(rowIndex) }}
+                                                    />
+                                                </td>
+                                            );
+                                        }
+
                                         return (
                                             <td
                                                 key={colIndex}
-                                                className="border border-gray-400 overflow-hidden truncate"
+                                                className={`border border-gray-400 overflow-hidden truncate 
+                                                    ${borderClasses} ${isSelected ? 'bg-selected' : ''}`}
                                                 style={{
-                                                    backgroundColor: cell?.bgColor || '#ffffff',
-                                                    color: cell?.color || '#000000',
+                                                    backgroundColor: !isSelected ? (cell?.bgColor || '#000000') : undefined,
+                                                    color: cell?.color || '#ffffff',
                                                     textAlign: cell?.hAlignment.toLowerCase() || 'left',
                                                     verticalAlign: cell?.vAlignment.toLowerCase() || 'center',
                                                     width: getColumnWidth(colIndex),
                                                     height: getRowHeight(rowIndex),
+                                                }}
+                                                onMouseDown={(e) => handleCellMouseDown(e, rowIndex, colIndex)}
+                                                onMouseMove={(e) => handleCellMouseMove(e, rowIndex, colIndex)}
+                                                onClick={() => {
+                                                    setSelectedCellIds([cell.id]);
+                                                    setSelectedRange(`${getColumnLetter(spreadsheetType, colIndex)}${rowIndex}`)
+
+                                                    if (userPermission !== 'VIEW' &&
+                                                        ((spreadsheetType === 'NORMAL') ||
+                                                            (spreadsheetType === 'CS' && (colIndex >= CS_PROTECTED_COLUMNS_LENGTH || colIndex == 0)))) {
+                                                        handleCellClick(cell?.id, rowIndex, colIndex, cell?.content || '');
+                                                    }
                                                 }}
                                             >
                                                 {cell?.content || ''}
@@ -755,7 +1048,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ uid, spreadsheetId, savi
 
             <div className="my-6 flex gap-2 items-center">
                 <button onClick={handleAddRowsClick}
-                className="border border-2 border-transparent hover:border-white rounded-lg p-2">Add</button>
+                    className="border border-2 border-transparent hover:border-white rounded-lg p-2">Add</button>
                 <input
                     type="text"
                     value={addRowsInputValue}
