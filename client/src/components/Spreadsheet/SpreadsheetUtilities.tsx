@@ -29,7 +29,7 @@ import verticalBottomAlignmentImg from "../../media/svgs/vertical-bottom.svg";
 import verticalCenterAlignmentImg from "../../media/svgs/vertical-center.svg";
 import verticalTopAlignmentImg from "../../media/svgs/vertical-top.svg";
 
-const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Helvetica', 'Georgia', 'Courier New', 
+const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Helvetica', 'Georgia', 'Courier New',
     'Trebuchet MS', 'Impact', 'Open Sans', 'Playfair Display', 'Roboto', 'Dancing Script'];
 
 const fetchSpreadsheetPermission = async (spreadsheetId: number): Promise<string> => {
@@ -69,6 +69,9 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
         if (/^\d*$/.test(value)) {
             setCurrentFontSize(Number(value));
             setLastValidValue(value);
+            if (Number(value) >= 5 && Number(value) <= 48) {
+                toggleTextStyle('fontSize', value);
+            }
         } else {
             e.currentTarget.value = lastValidValue;
         }

@@ -811,8 +811,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
         if (editingCell) {
             const cell = sheet.cells.find(c => c.id === editingCell.id);
 
+            const currentContent = cell?.content ?? '';
+            const newContent = finalContent ?? '';
+
             // No changes made - don't send an unnecessary request
-            if (cell && cell.content === finalContent) {
+            if (currentContent === newContent) {
                 setSaving(false);
                 return;
             }
