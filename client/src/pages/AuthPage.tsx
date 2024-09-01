@@ -17,7 +17,9 @@ const AVAILABLE_THEMES = ['DARK', 'LIGHT'];
 export const handleLogInSubmit = async (data: Record<string, string>, setInfo: (info: { message: string; isError?: boolean } | null) => void, navigate: ReturnType<typeof useNavigate>, location: URLSearchParams) => {
   try {
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, data);
-    Cookies.set('token', response.data.token, { expires: 1 });
+    const { accessToken, refreshToken } = response.data;
+    Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
+    Cookies.set('refresh_token', refreshToken, { expires: 7 });
 
     const next = location.get('next');
     navigate(next ? `/${next}` : '/');
@@ -48,7 +50,9 @@ export const handleSignUpSubmit = async (data: Record<string, string>, setInfo: 
     }
 
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/signup`, data);
-    Cookies.set('token', response.data.token, { expires: 1 });
+    const { accessToken, refreshToken } = response.data;
+    Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
+    Cookies.set('refresh_token', refreshToken, { expires: 7 });
 
     const next = location.get('next');
     navigate(next ? `/${next}` : '/');
@@ -59,7 +63,7 @@ export const handleSignUpSubmit = async (data: Record<string, string>, setInfo: 
 };
 
 const AuthPage: React.FC = () => {
-  const token = Cookies.get('token');
+  const token = Cookies.get('access_token');
   if (token) {
     return <Navigate to="/" replace />;
   }

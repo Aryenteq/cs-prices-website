@@ -35,7 +35,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
         {
             keepPreviousData: true,
             onError: (error: any) => {
-                console.error('Error getting spreadsheet:', error);
+                if (error.status !== 401) {
+                    console.error('Error getting spreadsheet:', error);
+                }
                 const parsedMessage = JSON.parse(error.message);
                 const errorMessage = parsedMessage.message || 'An unknown error occurred while getting the spreadsheet.';
                 setInfo({ message: errorMessage, isError: true });
@@ -330,7 +332,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error deleting rows:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error deleting rows:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });
@@ -350,7 +354,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error inserting cols:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error inserting cols:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });
@@ -377,7 +383,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error deleting rows:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error deleting rows:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });
@@ -398,7 +406,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error deleting cols:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error deleting cols:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });
@@ -424,7 +434,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error updating row height:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error updating row height:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });
@@ -444,7 +456,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error updating column width:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error updating column width:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });
@@ -616,7 +630,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error updating cols height:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error updating cols height:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });
@@ -636,7 +652,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error updating row height:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error updating row height:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });
@@ -773,7 +791,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 errorMessage = error.message;
             }
 
-            console.error('Error updating cell content:', errorMessage);
+            if (error.status !== 401) {
+                console.error('Error updating cell content:', errorMessage);
+            }
             setInfo({ message: errorMessage, isError: true });
         }
     });

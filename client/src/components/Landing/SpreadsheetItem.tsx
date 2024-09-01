@@ -17,7 +17,7 @@ import newTab from "../../media/svgs/new-tab.svg";
 
 import { formatDate } from "../../utils/formatDate";
 import { encryptData } from "../../utils/encrypt";
-import { getAuthHeader } from "../../utils/authHeader";
+import { authTokensFetch } from "../../utils/authTokens";
 import { useInfo } from "../InfoContext";
 
 interface SpreadsheetItemProps {
@@ -48,22 +48,14 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
 
     // Rename mutation
     const renameMutation = useMutation(async () => {
-        const headers = {
-            'Content-Type': 'application/json',
-            ...getAuthHeader(),
-        };
-
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheet.id}/name`, {
+        const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheet.id}/name`, {
             method: 'PUT',
-            headers: headers,
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({ name: newName }),
         });
-        if (!response.ok) {
-            const errorResponse = await response.json();
-            const errorMessage = errorResponse.message || 'Failed to rename spreadsheet';
-            throw new Error(errorMessage);
-        }
-        return response.json();
+        return data;
     }, {
         onSuccess: () => {
             queryClient.invalidateQueries('spreadsheets');
@@ -71,27 +63,21 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
         },
         onError: (error: any) => {
             setInfo({ message: error.message, isError: true });
-            console.error('Error renaming spreadsheet:', error);
+            if (error.status !== 401) {
+                console.error('Error renaming spreadsheet:', error);
+            }
         },
     });
 
     // Delete mutation
     const deleteMutation = useMutation(async () => {
-        const headers = {
-            'Content-Type': 'application/json',
-            ...getAuthHeader(),
-        };
-
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheet.id}`, {
+        const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheet.id}`, {
             method: 'DELETE',
-            headers: headers,
+            headers: {
+                'Content-Type': 'application/json',
+            },
         });
-        if (!response.ok) {
-            const errorResponse = await response.json();
-            const errorMessage = errorResponse.message || 'Failed to delete spreadsheet';
-            throw new Error(errorMessage);
-        }
-        return response.json();
+        return data;
     }, {
         onSuccess: () => {
             queryClient.invalidateQueries('spreadsheets');
@@ -99,7 +85,9 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
         },
         onError: (error: any) => {
             setInfo({ message: error.message, isError: true });
-            console.error('Error deleting spreadsheet:', error);
+            if (error.status !== 401) {
+                console.error('Error deleting spreadsheet:', error);
+            }
         },
     });
 

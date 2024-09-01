@@ -10,12 +10,12 @@ import SpreadsheetsList from '../components/Landing/SpreadsheetsList';
 
 const LandingPage: React.FC = () => {
   const jwtInfo = useMemo(() => {
-    const storedToken = Cookies.get('token');
+    const storedToken = Cookies.get('access_token');
     if (storedToken) {
       try {
         return jwtDecode<JwtPayload>(storedToken);
       } catch (error) {
-        console.error('Failed to decode token', error);
+        console.error('Failed to decode access_token', error);
         return null;
       }
     }

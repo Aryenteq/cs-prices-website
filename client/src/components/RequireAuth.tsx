@@ -7,7 +7,7 @@ interface RequireAuthProps {
 }
 
 const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
-  const token = Cookies.get('token');
+  const token = Cookies.get('access_token');
   const location = useLocation();
 
   if (!token) {

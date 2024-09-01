@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { getAuthHeader } from "../../utils/authHeader";
+import { authTokensFetch } from "../../utils/authTokens";
 import { useInfo } from "../InfoContext";
 
 import Selector from "../MUI/Selector";
@@ -16,56 +16,34 @@ type ShareInfo = {
 };
 
 const fetchSpreadsheetShares = async (spreadsheetId: number): Promise<ShareInfo[]> => {
-    const headers = getAuthHeader();
-
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shares`, {
+    const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shares`, {
         method: 'GET',
-        headers: headers,
     });
-
-    if (!response.ok) {
-        const errorResponse = await response.json();
-        const errorMessage = errorResponse.message || 'Failed to fetch spreadsheet shares';
-        throw new Error(errorMessage);
-    }
-
-    return response.json();
+    return data;
 };
 
 const updatePermission = async (spreadsheetId: number, email: string, permission: string): Promise<void> => {
     const headers = {
-        ...getAuthHeader(),
         'Content-Type': 'application/json',
     };
 
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shared-users-ids`, {
+    await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shared-users-ids`, {
         method: 'PATCH',
         headers: headers,
         body: JSON.stringify({ email, permission }),
     });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update permission');
-    }
 };
 
 const shareSpreadsheet = async (spreadsheetId: number, email: string, permission: string): Promise<void> => {
     const headers = {
-        ...getAuthHeader(),
         'Content-Type': 'application/json',
     };
 
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shared-users-ids`, {
+    await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shared-users-ids`, {
         method: 'PATCH',
         headers: headers,
         body: JSON.stringify({ email, permission }),
     });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to share spreadsheet');
-    }
 };
 
 const SpreadsheetShare: React.FC<{ onClose: () => void, uid: number, spreadsheetId: number }> = ({ onClose, uid, spreadsheetId }) => {
@@ -81,7 +59,9 @@ const SpreadsheetShare: React.FC<{ onClose: () => void, uid: number, spreadsheet
         {
             keepPreviousData: true,
             onError: (error: any) => {
-                console.error('Error getting spreadsheet shares:', error);
+                if (error.status !== 401) {
+                    console.error('Error getting spreadsheet shares:', error);
+                }
                 const errorMessage = error.message || 'An unknown error occurred while getting the spreadsheet shares.';
                 setInfo({ message: errorMessage, isError: true });
             },
@@ -97,6 +77,9 @@ const SpreadsheetShare: React.FC<{ onClose: () => void, uid: number, spreadsheet
                 setPermission('VIEW'); // Reset the permission
             },
             onError: (error: any) => {
+                if (error.status !== 401) {
+                    console.error('Error sharing spreadsheet:', error);
+                }
                 const errorMessage = error.message || 'Failed to share the spreadsheet.';
                 setInfo({ message: errorMessage, isError: true });
             }

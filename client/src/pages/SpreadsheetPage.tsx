@@ -43,9 +43,6 @@ const SpreadsheetPage: React.FC = () => {
     const [sheet, setSheet] = useState<any>(null);
     const [currentFontFamily, setCurrentFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
     const [currentFontSize, setCurrentFontSize] = useState<number>(DEFAULT_FONT_SIZE);
-    // const [currentBold, setCurrentBold] = useState<boolean>(false);
-    // const [currentItalic, setCurrentItalic] = useState<boolean>(false);
-    // const [currentStrikethrough, setCurrentStrikethrough] = useState<boolean>(false);
     const [currentTextColor, setCurrentTextColor] = useState<string>('#FFFFFF');
     const [currentBgColor, setCurrentBgColor] = useState<string>('#242424');
     const { encodedSpreadsheetId } = useParams<{ encodedSpreadsheetId: string }>();
@@ -64,12 +61,12 @@ const SpreadsheetPage: React.FC = () => {
     }, [encodedSpreadsheetId]);
 
     const jwtInfo = useMemo(() => {
-        const storedToken = Cookies.get('token');
+        const storedToken = Cookies.get('access_token');
         if (storedToken) {
             try {
                 return jwtDecode<JwtPayload>(storedToken);
             } catch (error) {
-                console.error('Failed to decode token', error);
+                console.error('Failed to decode access_token', error);
                 return null;
             }
         }

@@ -6,8 +6,8 @@ export const signUp = async (req: Request, res: Response) => {
   try {
     const user = req.body as PrismaUser;
 
-    const token = user.registrationType === 'FORM' ? await authService.signUp(user) : await authService.GoogleSignUp(user);
-    res.status(201).json({ token });
+    const tokens = user.registrationType === 'FORM' ? await authService.signUp(user) : await authService.GoogleSignUp(user);
+    res.status(201).json(tokens);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }
@@ -16,8 +16,18 @@ export const signUp = async (req: Request, res: Response) => {
 export const logIn = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    const token = password ? await authService.logIn(email, password) : await authService.GoogleLogIn(email);
-    res.status(200).json({ token });
+    const tokens = password ? await authService.logIn(email, password) : await authService.GoogleLogIn(email);
+    res.status(200).json(tokens);
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    const tokens = await authService.refreshToken(refreshToken);
+    res.status(200).json(tokens);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
   }

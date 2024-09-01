@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
+import { add } from 'date-fns';
 import { db } from '../db';
 
 import type { User as PrismaUser } from '@prisma/client';
@@ -13,7 +15,45 @@ if (!SECRET_KEY) {
     throw new Error("JWT_SECRET not found");
 }
 
-export const signUp = async (user: PrismaUser): Promise<string> => {
+const generateTokens = async (user: PrismaUser) => {
+    const accessToken = jwt.sign({ uid: user.uid, username: user.username, email: user.email, admin: user.admin }, SECRET_KEY, { expiresIn: '15m' });
+
+    const refreshToken = uuidv4();
+    const expiresAt = add(new Date(), { days: 7 });
+
+    await db.refreshToken.create({
+        data: {
+            token: refreshToken,
+            expiresAt,
+            userId: user.uid,
+        },
+    });
+
+    return { accessToken, refreshToken };
+};
+
+export const refreshToken = async (refreshToken: string): Promise<{ accessToken: string, refreshToken: string }> => {
+    const storedToken = await db.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { User: true },
+    });
+
+    if (!storedToken || storedToken.expiresAt < new Date()) {
+        throw new Error('Invalid or expired refresh token');
+    }
+
+    const newTokens = await generateTokens(storedToken.User);
+
+    await db.refreshToken.delete({ where: { id: storedToken.id } });
+
+    return newTokens;
+};
+
+export const logOut = async (refreshToken: string): Promise<void> => {
+    await db.refreshToken.delete({ where: { token: refreshToken } });
+};
+
+export const signUp = async (user: PrismaUser): Promise<{ accessToken: string, refreshToken: string }> => {
     if (!user.password) {
         throw new Error('Password is required for FORM registration.');
     }
@@ -33,10 +73,10 @@ export const signUp = async (user: PrismaUser): Promise<string> => {
         data: { ...user, password: hashedPassword },
     });
 
-    return jwt.sign({ uid: newUser.uid, username: newUser.username, email: newUser.email, admin: newUser.admin }, SECRET_KEY, { expiresIn: '1h' });
+    return generateTokens(newUser);
 };
 
-export const GoogleSignUp = async (user: PrismaUser): Promise<string> => {
+export const GoogleSignUp = async (user: PrismaUser): Promise<{ accessToken: string, refreshToken: string }> => {
     if (user.email === '') {
         throw new Error('Google sign up failed.');
     }
@@ -50,10 +90,10 @@ export const GoogleSignUp = async (user: PrismaUser): Promise<string> => {
         data: { ...user },
     });
 
-    return jwt.sign({ uid: newUser.uid, username: newUser.username, email: newUser.email, admin: newUser.admin }, SECRET_KEY, { expiresIn: '1h' });
+    return generateTokens(newUser);
 };
 
-export const logIn = async (email: string, password: string): Promise<string> => {
+export const logIn = async (email: string, password: string): Promise<{ accessToken: string, refreshToken: string }> => {
     const user = await db.user.findUnique({ where: { email } });
     if (!user) {
         throw new Error('Incorrect e-mail');
@@ -68,10 +108,10 @@ export const logIn = async (email: string, password: string): Promise<string> =>
         throw new Error('Incorrect password');
     }
 
-    return jwt.sign({ uid: user.uid, username: user.username, email: user.email, admin: user.admin }, SECRET_KEY, { expiresIn: '1h' });
+    return generateTokens(user);
 };
 
-export const GoogleLogIn = async (email: string): Promise<string> => {
+export const GoogleLogIn = async (email: string): Promise<{ accessToken: string, refreshToken: string }> => {
     if (email === '') {
         throw new Error('Google log in failed.');
     }
@@ -81,7 +121,7 @@ export const GoogleLogIn = async (email: string): Promise<string> => {
         throw new Error('Account not found, try to sign up');
     }
 
-    return jwt.sign({ uid: user.uid, username: user.username, email: user.email, admin: user.admin }, SECRET_KEY, { expiresIn: '1h' });
+    return generateTokens(user);
 };
 
 export const forgotPass = async (email: string) => {

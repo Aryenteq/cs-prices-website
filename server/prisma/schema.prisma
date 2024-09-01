@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  expiresAt DateTime
+  userId    Int
+  User      User     @relation("UserRefreshTokens", fields: [userId], references: [uid], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
 enum RegistrationType {
   FORM
   GOOGLE
@@ -29,6 +38,7 @@ model User {
   password             String?
   email                String             @unique
   admin                Boolean            @default(false)
+  refreshToken         RefreshToken[]     @relation("UserRefreshTokens")
   photoURL             String             @default("https://scontent.fias1-2.fna.fbcdn.net/v/t1.15752-9/416744895_376024205074877_1704543827305195711_n.webp?stp=dst-webp_p100x100&_nc_cat=111&ccb=1-7&_nc_sid=b70caf&_nc_ohc=ROnuMVAaUTEQ7kNvgHS9wov&_nc_ht=scontent.fias1-2.fna&oh=03_Q7cD1QGCZUn5ZnaQXamC9yawnpPX9WAlReyo2KziE_JOZbU5eg&oe=66DDDF99")
   prefferedLanguage    PrefferedLanguage  @default(EN)
   prefferedTheme       PrefferedTheme     @default(DARK)

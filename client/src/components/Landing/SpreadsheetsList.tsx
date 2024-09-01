@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useQuery } from "react-query";
 import ListHeader from "./ListHeader";
 import SpreadsheetItem from "./SpreadsheetItem";
+import { useInfo } from "../InfoContext";
 
-import { getAuthHeader } from "../../utils/authHeader";
+import { authTokensFetch } from "../../utils/authTokens";
 
 // Define the types for spreadsheet items and filters
 export interface Spreadsheet {
@@ -25,21 +26,11 @@ export interface Filters {
 }
 
 const fetchSpreadsheets = async (filters: Filters): Promise<Spreadsheet[]> => {
-    const headers = getAuthHeader();
     const query = new URLSearchParams(filters as any).toString();
-
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet?${query}`, {
+    const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet?${query}`, {
         method: 'GET',
-        headers: headers,
     });
-
-    if (!response.ok) {
-        const errorResponse = await response.json();
-        const errorMessage = errorResponse.message || 'Failed to fetch spreadsheets';
-        throw new Error(errorMessage);
-    }
-
-    return response.json();
+    return data;
 };
 
 
@@ -78,6 +69,8 @@ function groupSpreadsheetsByDate(spreadsheets: Spreadsheet[]): Record<string, Sp
 }
 
 const SpreadsheetsList: React.FC = () => {
+    const { setInfo } = useInfo();
+
     const [filters, setFilters] = useState<Filters>({
         owner: 'ALL',
         type: 'ALL',
@@ -88,8 +81,18 @@ const SpreadsheetsList: React.FC = () => {
     const { data: spreadsheets, isLoading, error } = useQuery<Spreadsheet[], Error>(
         ['spreadsheets', filters],
         () => fetchSpreadsheets(filters),
-        { keepPreviousData: true }
+        {
+            keepPreviousData: true,
+            onError: (error: Error) => {
+                setInfo({ message: error.message, isError: true });
+                const typedError = error as any;
+                if (typedError.status !== 401) {
+                    console.error('Error fetching spreadsheets:', error.message);
+                }
+            },
+        }
     );
+
 
     const handleFiltersChange = (newFilters: Partial<Filters>) => {
         setFilters((prevFilters) => ({
@@ -129,36 +132,36 @@ const SpreadsheetsList: React.FC = () => {
         !groupedSpreadsheets.previous30Days.length &&
         !groupedSpreadsheets.earlier.length;
 
-        const renderGroups = () => {
-            const groupOrder = (filters.orderBy === 'LAST_OPENED' || filters.orderBy === 'CREATED') && filters.orderType === 'asc'
-                ? ['earlier', 'previous30Days', 'previous7Days', 'yesterday', 'today']
-                : ['today', 'yesterday', 'previous7Days', 'previous30Days', 'earlier'];
-    
-            return groupOrder.map((group) => {
-                if (groupedSpreadsheets[group].length > 0) {
-                    const groupLabel = group === 'today' ? 'Last 24h' :
-                        group === 'yesterday' ? 'Yesterday' :
+    const renderGroups = () => {
+        const groupOrder = (filters.orderBy === 'LAST_OPENED' || filters.orderBy === 'CREATED') && filters.orderType === 'asc'
+            ? ['earlier', 'previous30Days', 'previous7Days', 'yesterday', 'today']
+            : ['today', 'yesterday', 'previous7Days', 'previous30Days', 'earlier'];
+
+        return groupOrder.map((group) => {
+            if (groupedSpreadsheets[group].length > 0) {
+                const groupLabel = group === 'today' ? 'Last 24h' :
+                    group === 'yesterday' ? 'Yesterday' :
                         group === 'previous7Days' ? 'Previous 7 days' :
-                        group === 'previous30Days' ? 'Previous 30 days' :
-                        'Earlier';
-    
-                    return (
-                        <div key={group}>
-                            <h3>{groupLabel}</h3>
-                            {groupedSpreadsheets[group].map(spreadsheet => (
-                                <SpreadsheetItem
-                                    key={spreadsheet.id}
-                                    spreadsheet={spreadsheet}
-                                    openMenuId={openMenuId}
-                                    handleMenuToggle={handleMenuToggle}
-                                />
-                            ))}
-                        </div>
-                    );
-                }
-                return null;
-            });
-        };
+                            group === 'previous30Days' ? 'Previous 30 days' :
+                                'Earlier';
+
+                return (
+                    <div key={group}>
+                        <h3>{groupLabel}</h3>
+                        {groupedSpreadsheets[group].map(spreadsheet => (
+                            <SpreadsheetItem
+                                key={spreadsheet.id}
+                                spreadsheet={spreadsheet}
+                                openMenuId={openMenuId}
+                                handleMenuToggle={handleMenuToggle}
+                            />
+                        ))}
+                    </div>
+                );
+            }
+            return null;
+        });
+    };
 
     return (
         <div className="my-10 px-2 breakpoint-1000:px-20">

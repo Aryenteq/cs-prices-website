@@ -4,7 +4,7 @@ import { Button, Popover } from '@mui/material';
 import { SketchPicker } from 'react-color';
 
 import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
-import { getAuthHeader } from "../../utils/authHeader";
+import { authTokensFetch } from "../../utils/authTokens";
 import { useInfo } from "../InfoContext";
 import { sketchColors } from "./Functions/Utils";
 import {
@@ -33,21 +33,12 @@ const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Helvetica', 'Georgia', 'C
     'Trebuchet MS', 'Impact', 'Open Sans', 'Playfair Display', 'Roboto', 'Dancing Script'];
 
 const fetchSpreadsheetPermission = async (spreadsheetId: number): Promise<string> => {
-    const headers = getAuthHeader();
-
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/permission`, {
+    const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/permission`, {
         method: 'GET',
-        headers: headers,
     });
-
-    if (!response.ok) {
-        const errorResponse = await response.json();
-        const errorMessage = errorResponse.message || 'Failed to fetch permission';
-        throw new Error(errorMessage);
-    }
-
-    return response.json();
+    return data;
 };
+
 
 const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId, sheet, setSheet, selectedCellIds, setSelectedCellIds,
     currentFontFamily, setCurrentFontFamily, currentFontSize, setCurrentFontSize, currentTextColor, setCurrentTextColor, currentBgColor, setCurrentBgColor
@@ -84,7 +75,9 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
             keepPreviousData: true,
             onSuccess: (data) => setPermission(data),
             onError: (error: any) => {
-                console.error('Error getting spreadsheet permission:', error);
+                if (error.status !== 401) {
+                    console.error('Error getting spreadsheet permission:', error);
+                }
                 const parsedMessage = JSON.parse(error.message);
                 const errorMessage = parsedMessage.message || 'An unknown error occurred while getting your permissions.';
                 setInfo({ message: errorMessage, isError: true });
@@ -168,9 +161,11 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
         onSuccess: () => {
             setSaving(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating styles:', error);
+            if (error.status !== 401) {
+                console.error('Error updating styles:', error);
+            }
             setInfo({ message: 'Something went wrong updating the styles', isError: true });
         }
     });
@@ -179,9 +174,11 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
         onSuccess: () => {
             setSaving(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating styles:', error);
+            if (error.status !== 401) {
+                console.error('Error updating styles:', error);
+            }
             setInfo({ message: 'Something went wrong updating the styles', isError: true });
         }
     });
@@ -190,9 +187,11 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
         onSuccess: () => {
             setSaving(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating styles:', error);
+            if (error.status !== 401) {
+                console.error('Error updating styles:', error);
+            }
             setInfo({ message: 'Something went wrong updating the styles', isError: true });
         }
     });
@@ -201,9 +200,11 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
         onSuccess: () => {
             setSaving(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating styles:', error);
+            if (error.status !== 401) {
+                console.error('Error updating styles:', error);
+            }
             setInfo({ message: 'Something went wrong updating the styles', isError: true });
         }
     });
@@ -212,9 +213,11 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
         onSuccess: () => {
             setSaving(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating styles:', error);
+            if (error.status !== 401) {
+                console.error('Error updating styles:', error);
+            }
             setInfo({ message: 'Something went wrong updating the styles', isError: true });
         }
     });

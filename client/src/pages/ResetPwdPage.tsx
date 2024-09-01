@@ -28,7 +28,7 @@ const handleSubmit = (token: string, email: string, setInfo: (info: { message: s
 const ResetPwdPage: React.FC = () => {
     const query = useQuery();
     const email = query.get('email');
-    const token = query.get('token');
+    const token = query.get('access_token');
 
     const navigate = useNavigate();
 

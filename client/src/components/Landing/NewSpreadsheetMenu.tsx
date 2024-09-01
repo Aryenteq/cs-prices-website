@@ -5,31 +5,25 @@ import { useInfo } from "../InfoContext";
 
 import csSheet from "../../media/imgs/cs-sheet.png";
 import normalSheet from "../../media/imgs/normal-sheet.png";
-import { getAuthHeader } from '../../utils/authHeader';
+import { authTokensFetch } from "../../utils/authTokens";
 import { encryptData } from '../../utils/encrypt';
 
 const createSpreadsheet = async ({ type }: { type: string }) => {
-    const headers = {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-    };
-
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet`, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({
-            name: 'New spreadsheet',
-            type: type,
-        }),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create spreadsheet');
+    try {
+        const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: 'New spreadsheet',
+                type: type,
+            }),
+        });
+        return data;
+    } catch (error: any) {
+        throw error;
     }
-
-    const data = await response.json();
-    return data;
 };
 
 const NewSpreadsheetMenu: React.FC = () => {
@@ -45,7 +39,9 @@ const NewSpreadsheetMenu: React.FC = () => {
         },
         onError: (error: any) => {
             setInfo({ message: error.message, isError: true });
-            console.error('Error creating spreadsheet:', error);
+            if (error.status !== 401) {
+                console.error('Error creating spreadsheet:', error);
+            }
         },
     });
 

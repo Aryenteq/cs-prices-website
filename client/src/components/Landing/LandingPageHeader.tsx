@@ -7,23 +7,23 @@ import account from "../../media/svgs/user-edit.svg";
 import loading from "../../media/svgs/loading.svg";
 
 import SpreadsheetSearch from "./SpreadsheetSearch";
-import { getAuthHeader } from '../../utils/authHeader';
+import { authTokensFetch } from "../../utils/authTokens";
+
 
 
 const fetchUserPhoto = async (userId: number) => {
-    const headers = getAuthHeader();
-
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/photo/${userId}`, {
-        headers: headers,
-    });
-
-    if (!response.ok) {
-        const errorResponse = await response.json();
-        const errorMessage = errorResponse.message || 'Failed to fetch user photo';
-        throw new Error(errorMessage);
+    try {
+        const data = await authTokensFetch(
+            `${import.meta.env.VITE_BACKEND_URL}/user/photo/${userId}`,
+            { method: 'GET' }
+        );
+        return data;
+    } catch (error: any) {
+        if (error.status !== 401) {
+            console.error('Error fetching user photo:', error.message);
+        }
+        throw error;
     }
-
-    return await response.json();
 };
 
 const LandingPageHeader: React.FC<UserIdProps> = ({ userId }) => {
