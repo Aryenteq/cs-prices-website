@@ -3,12 +3,11 @@ import * as cellService from "../services/cellService";
 
 export const setBgColor = async (req: Request, res: Response) => {
     try {
-        const cellId = parseInt(req.params.cellId, 10);
-        const { bgColor } = req.body;
+        const { bgColors } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedCell = await cellService.setBgColor(cellId, bgColor, userId);
-        res.status(200).json(updatedCell);
+        const updatedCells = await cellService.setBgColor(bgColors, userId);
+        res.status(200).json(updatedCells);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
     }
@@ -16,11 +15,10 @@ export const setBgColor = async (req: Request, res: Response) => {
 
 export const setColor = async (req: Request, res: Response) => {
     try {
-        const cellId = parseInt(req.params.cellId, 10);
-        const { color } = req.body;
+        const { colors } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedCell = await cellService.setColor(cellId, color, userId);
+        const updatedCell = await cellService.setColor(colors, userId);
         res.status(200).json(updatedCell);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
@@ -29,11 +27,10 @@ export const setColor = async (req: Request, res: Response) => {
 
 export const updateStyle = async (req: Request, res: Response) => {
     try {
-        const cellId = parseInt(req.params.cellId, 10);
-        const { style } = req.body; // This should be a JSON object representing the style
+        const { styles } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedCell = await cellService.updateStyle(cellId, style, userId);
+        const updatedCell = await cellService.updateStyle(styles, userId);
         res.status(200).json(updatedCell);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
@@ -42,11 +39,10 @@ export const updateStyle = async (req: Request, res: Response) => {
 
 export const setHorizontalAlignment = async (req: Request, res: Response) => {
     try {
-        const cellId = parseInt(req.params.cellId, 10);
-        const { hAlignment } = req.body;
+        const { hAlignments } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedCell = await cellService.setHorizontalAlignment(cellId, hAlignment, userId);
+        const updatedCell = await cellService.setHorizontalAlignment(hAlignments, userId);
         res.status(200).json(updatedCell);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
@@ -55,11 +51,10 @@ export const setHorizontalAlignment = async (req: Request, res: Response) => {
 
 export const setVerticalAlignment = async (req: Request, res: Response) => {
     try {
-        const cellId = parseInt(req.params.cellId, 10);
-        const { vAlignment } = req.body;
+        const { vAlignments } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedCell = await cellService.setVerticalAlignment(cellId, vAlignment, userId);
+        const updatedCell = await cellService.setVerticalAlignment(vAlignments, userId);
         res.status(200).json(updatedCell);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
@@ -68,11 +63,10 @@ export const setVerticalAlignment = async (req: Request, res: Response) => {
 
 export const setContent = async (req: Request, res: Response) => {
     try {
-        const cellId = parseInt(req.params.cellId, 10);
-        const { content } = req.body;
+        const { contents } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedCell = await cellService.setContent(cellId, content, userId);
+        const updatedCell = await cellService.setContent(contents, userId);
         res.status(200).json(updatedCell);
     } catch (error: any) {
         res.status(400).json({ message: error.message });

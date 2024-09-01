@@ -59,7 +59,9 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
             body: JSON.stringify({ name: newName }),
         });
         if (!response.ok) {
-            throw new Error('Failed to rename spreadsheet');
+            const errorResponse = await response.json();
+            const errorMessage = errorResponse.message || 'Failed to rename spreadsheet';
+            throw new Error(errorMessage);
         }
         return response.json();
     }, {
@@ -85,7 +87,9 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
             headers: headers,
         });
         if (!response.ok) {
-            throw new Error('Failed to delete spreadsheet');
+            const errorResponse = await response.json();
+            const errorMessage = errorResponse.message || 'Failed to delete spreadsheet';
+            throw new Error(errorMessage);
         }
         return response.json();
     }, {

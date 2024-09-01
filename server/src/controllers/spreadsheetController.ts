@@ -17,7 +17,7 @@ export const getAllSpreadsheets = async (req: Request, res: Response) => {
             userId,
             type as 'NORMAL' | 'CS' | null,
             owner as 'ME' | 'OTHER' | 'ALL',
-            orderBy as 'TITLE' | 'LAST_OPENED' | 'CREATED',
+            orderBy as 'NAME' | 'LAST_OPENED' | 'CREATED',
             orderType as 'asc' | 'desc'
         );
 

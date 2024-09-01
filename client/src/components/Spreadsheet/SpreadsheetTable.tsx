@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "react-query";
+import React, { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "react-query";
 import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
 import { useInfo } from "../InfoContext";
 import ContextMenu from "./ContextMenu";
-import { getColumnLetter, initializeSizes, initializeVisibility } from "./Functions/Utils";
+import {
+    getColumnLetter, initializeSizes, initializeVisibility,
+    getTextAlign, getVerticalAlign
+} from "./Functions/Utils";
 import {
     fetchSpreadsheet, updateColWidth, updateRowHeight, updateHiddenCols, updateHiddenRows,
     deleteSheetCols, deleteSheetRows, addRows, addCols, updateCellContent
@@ -16,15 +19,15 @@ const DEFAULT_COL_WIDTH = 100;
 const FIRST_COLUMN_WIDTH = 50;
 const EDGE_THRESHOLD = 10;
 const MINIMUM_SIZE = 20;
+export const DEFAULT_FONT_SIZE = 12;
+export const DEFAULT_FONT_FAMILY = 'Arial';
 export const CS_PROTECTED_COLUMNS_LENGTH = 2;
 
-const SpreadsheetTable: React.FC<SpreadsheetProps & {
-    selectedCellIds: number[];
-    setSelectedCellIds: React.Dispatch<React.SetStateAction<number[]>>;
-}> = ({ selectedCellIds, setSelectedCellIds, saving, setSaving, uid, spreadsheetId }) => {
+const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId, sheet, setSheet, selectedCellIds, setSelectedCellIds,
+    currentFontFamily, setCurrentFontFamily, currentFontSize, setCurrentFontSize, currentTextColor, setCurrentTextColor, currentBgColor, setCurrentBgColor
+}) => {
     const { setInfo } = useInfo();
     const [isLoading, setIsLoading] = useState(true);
-    const queryClient = useQueryClient();
 
     const { data: spreadsheet } = useQuery<any, Error>(
         ['spreadsheet', spreadsheetId],
@@ -40,7 +43,6 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         }
     );
 
-    const [sheet, setSheet] = useState<any>(null);
     const [numRows, setNumRows] = useState<number>(100);
     const [numCols, setNumCols] = useState<number>(26);
     const [userPermission, setUserPermission] = useState<string | undefined>(undefined);
@@ -128,6 +130,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                             setInfo({ message: 'Can\'t exceed 256 columns!', isError: true });
                             break;
                         }
+                        setSaving(true);
                         setIsLoading(true);
                         addColsMutation({ sheetId: Number(sheet.id), startIndex: col, colsNumber: 1 });
                     }
@@ -138,6 +141,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                             setInfo({ message: 'Can\'t exceed 256 columns!', isError: true });
                             break;
                         }
+                        setSaving(true);
                         setIsLoading(true);
                         addColsMutation({ sheetId: Number(sheet.id), startIndex: col + 1, colsNumber: 1 });
                     }
@@ -190,6 +194,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                             break;
                         }
 
+                        setSaving(true);
                         setIsLoading(true);
                         deleteColsMutation({ sheetId: Number(sheet.id), startIndex: col, colsNumber });
                     }
@@ -207,6 +212,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                             setInfo({ message: 'Can\'t exceed 65536 rows!', isError: true });
                             break;
                         }
+                        setSaving(true);
                         setIsLoading(true);
                         addRowsMutation({ sheetId: Number(sheet.id), startIndex: row, rowsNumber: 1 });
                     }
@@ -217,6 +223,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                             setInfo({ message: 'Can\'t exceed 65536 rows!', isError: true });
                             break;
                         }
+                        setSaving(true);
                         setIsLoading(true);
                         addRowsMutation({ sheetId: Number(sheet.id), startIndex: row + 1, rowsNumber: 1 });
                     }
@@ -263,6 +270,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                             break;
                         }
 
+                        setSaving(true);
                         setIsLoading(true);
                         deleteRowsMutation({ sheetId: Number(sheet.id), startIndex: row, rowsNumber });
                     }
@@ -302,6 +310,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setInfo({ message: 'Can\'t exceed 65536 rows!', isError: true });
         }
         else if (addRowsInputValue > 0) {
+            setSaving(true);
             addRowsMutation({ sheetId: Number(sheet.id), startIndex: numRows, rowsNumber: addRowsInputValue });
         }
     };
@@ -312,11 +321,17 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSheet(updatedSheet);
             setIsLoading(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
             setIsLoading(false);
-            console.error('Error inserting rows:', error);
-            setInfo({ message: 'Something went wrong inserting the rows. Try again', isError: true });
+            let errorMessage = 'Something went wrong deleting the rows. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error deleting rows:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -326,11 +341,17 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSheet(updatedSheet);
             setIsLoading(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
             setIsLoading(false);
-            console.error('Error inserting cols:', error);
-            setInfo({ message: 'Something went wrong inserting the columns. Try again', isError: true });
+            let errorMessage = 'Something went wrong inserting the columns. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error inserting cols:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -346,11 +367,18 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSheet(updatedSheet);
             setIsLoading(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
             setIsLoading(false);
-            console.error('Error deleting rows:', error);
-            setInfo({ message: 'Something went wrong deleting the rows. Try again', isError: true });
+
+            let errorMessage = 'Something went wrong deleting the rows. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error deleting rows:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -361,11 +389,17 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSheet(updatedSheet);
             setIsLoading(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
             setIsLoading(false);
-            console.error('Error deleting cols:', error);
-            setInfo({ message: 'Something went wrong deleting the cols. Try again', isError: true });
+            let errorMessage = 'Something went wrong deleting the cols. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error deleting cols:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -382,10 +416,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSheet(updatedSheet);
             setIsLoading(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating row height:', error);
-            setInfo({ message: 'Something went wrong saving the new height. Try again', isError: true });
+            let errorMessage = 'Something went wrong saving the new height. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error updating row height:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -396,10 +436,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSheet(updatedSheet);
             setIsLoading(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating column width:', error);
-            setInfo({ message: 'Something went wrong saving the new width. Try again', isError: true });
+            let errorMessage = 'Something went wrong saving the new width. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error updating column width:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -492,6 +538,8 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             if (currentResizeRowIndex !== null) {
                 setRowHeights(prevHeights => {
                     const newHeight = prevHeights[currentResizeRowIndex];
+
+                    setSaving(true);
                     updateRowHeightMutation({
                         sheetId: sheet.id,
                         rowIndex: currentResizeRowIndex,
@@ -522,6 +570,8 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setRowHeights(prevHeights => {
                 const newHeights = [...prevHeights];
                 newHeights[currentIndex] = newSize;
+
+                setSaving(true);
                 updateRowHeightMutation({
                     sheetId: sheet.id,
                     rowIndex: currentIndex,
@@ -533,6 +583,8 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setColWidths(prevWidths => {
                 const newWidths = [...prevWidths];
                 newWidths[currentIndex] = newSize;
+
+                setSaving(true);
                 updateColWidthMutation({
                     sheetId: sheet.id,
                     colIndex: currentIndex,
@@ -556,10 +608,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSheet(updatedSheet);
             setIsLoading(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating row height:', error);
-            setInfo({ message: 'Something went wrong saving the new revealed columns. Try again', isError: true });
+            let errorMessage = 'Something went wrong saving the new revealed columns. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error updating cols height:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -570,10 +628,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSheet(updatedSheet);
             setIsLoading(false);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating row height:', error);
-            setInfo({ message: 'Something went wrong saving the new revealed rows. Try again', isError: true });
+            let errorMessage = 'Something went wrong saving the new revealed rows. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error updating row height:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -701,10 +765,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSaving(false);
             //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
         },
-        onError: (error) => {
+        onError: (error: any) => {
             setSaving(false);
-            console.error('Error updating cell content:', error);
-            setInfo({ message: 'Something went wrong saving the new content. Try again', isError: true });
+            let errorMessage = 'Something went wrong saving the new content. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            console.error('Error updating cell content:', errorMessage);
+            setInfo({ message: errorMessage, isError: true });
         }
     });
 
@@ -739,7 +809,14 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         const finalContent = content !== undefined ? content : cellContent;
 
         if (editingCell) {
-            // Update the local state to reflect the new content immediately
+            const cell = sheet.cells.find(c => c.id === editingCell.id);
+
+            // No changes made - don't send an unnecessary request
+            if (cell && cell.content === finalContent) {
+                setSaving(false);
+                return;
+            }
+
             setSheet((prevSheet: Sheet) => {
                 const updatedCells = prevSheet.cells.map(cell =>
                     cell.id === editingCell.id ? { ...cell, content: finalContent } : cell
@@ -747,10 +824,13 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                 return { ...prevSheet, cells: updatedCells };
             });
 
-            saveCellContentMutation({
+            const updatedCellData = [{
                 cellId: editingCell.id,
                 content: finalContent
-            });
+            }];
+
+            setSaving(true);
+            saveCellContentMutation(updatedCellData);
         }
     };
 
@@ -787,21 +867,21 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         const handleWindowMouseUp = () => {
             handleCellMouseUp();
         };
-    
+
         window.addEventListener('mouseup', handleWindowMouseUp);
-    
+
         return () => {
             window.removeEventListener('mouseup', handleWindowMouseUp);
         };
     }, []);
-    
+
     const getSelectedCells = (start: { row: number, col: number }, end: { row: number, col: number }) => {
         let selectedIds: number[] = [];
         const startRow = Math.min(start.row, end.row);
         const endRow = Math.max(start.row, end.row);
         const startCol = Math.min(start.col, end.col);
         const endCol = Math.max(start.col, end.col);
-    
+
         for (let rowIndex = startRow; rowIndex <= endRow; rowIndex++) {
             for (let colIndex = startCol; colIndex <= endCol; colIndex++) {
                 const cell = sheet?.cells!.find((c: any) => c.row === rowIndex && c.col === colIndex);
@@ -810,10 +890,10 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                 }
             }
         }
-    
+
         return selectedIds;
     };
-    
+
     const handleCellMouseDown = (e: React.MouseEvent, rowIndex: number, colIndex: number) => {
         e.preventDefault();
         handleCellBlur();
@@ -822,7 +902,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         setSelectedCellIds([]);
         setSelectedRange(null);
     };
-    
+
     const handleCellMouseMove = (e: React.MouseEvent, rowIndex: number, colIndex: number) => {
         e.preventDefault();
         if (isSelecting.current && startCell.current) {
@@ -830,16 +910,24 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             setSelectedCellIds(newSelectedCells);
         }
     };
-    
+
     const handleCellMouseUp = () => {
         isSelecting.current = false;
         startCell.current = null;
     };
-    
+
     useEffect(() => {
         if (selectedCellIds.length > 0 && sheet) {
             const calculatedRange = calculateSelectedRange(selectedCellIds);
             setSelectedRange(calculatedRange);
+
+            const cell = sheet.cells.find(c => c.id === selectedCellIds[0]);
+            if (cell) {
+                setCurrentFontFamily(cell.style?.fontFamily || DEFAULT_FONT_FAMILY);
+                setCurrentFontSize(cell.style?.fontSize || DEFAULT_FONT_SIZE);
+                setCurrentTextColor(cell.color || '#FFFFFF');
+                setCurrentBgColor(cell.bgColor || '#242424');
+            }
         }
     }, [selectedCellIds, sheet]);
 
@@ -903,7 +991,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         const selectedCells = selectedCellIds.map(id => sheet?.cells!.find((c: any) => c.id === id)!);
         const selectedRows = Array.from(new Set(selectedCells.map(c => c.row)));
         const selectedCols = Array.from(new Set(selectedCells.map(c => c.col)));
-    
+
         return { selectedRows, selectedCols };
     };
 
@@ -990,8 +1078,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                             (c: any) => c.row === rowIndex && c.col === colIndex
                                         );
 
-                                        const borderClasses = getBorderClasses(cell?.id, rowIndex, colIndex);
+                                        const borderClasses = cell ? getBorderClasses(cell.id, rowIndex, colIndex) : '';
                                         const isSelected = selectedCellIds.includes(cell?.id || -1);
+
+                                        // Styles
+                                        const isBold = cell?.style?.fontWeight === 'bold';
+                                        const isItalic = cell?.style?.fontStyle === 'italic';
+                                        const isStrikethrough = cell?.style?.textDecoration === 'line-through';
+
+                                        const fontFamily = cell?.style?.fontFamily;
+                                        const fontSize = cell?.style?.fontSize;
 
                                         if (editingCell?.row === rowIndex && editingCell?.col === colIndex) {
                                             return (
@@ -1003,7 +1099,20 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                                         onChange={handleCellContentChange}
                                                         onBlur={handleCellBlur}
                                                         className="w-full h-full p-2"
-                                                        style={{ height: getRowHeight(rowIndex) }}
+                                                        style={{
+                                                            backgroundColor: !isSelected ? (cell?.bgColor || '#000000') : undefined,
+                                                            color: cell?.color || '#ffffff',
+                                                            textAlign: getTextAlign(cell?.hAlignment),
+                                                            verticalAlign: getVerticalAlign(cell?.vAlignment),
+                                                            width: getColumnWidth(colIndex),
+                                                            height: getRowHeight(rowIndex),
+                                                            fontWeight: isBold ? 'bold' : 'normal',
+                                                            fontStyle: isItalic ? 'italic' : 'normal',
+                                                            textDecoration: isStrikethrough ? 'line-through' : 'none',
+
+                                                            fontFamily: fontFamily ? fontFamily : DEFAULT_FONT_FAMILY,
+                                                            fontSize: fontSize ? parseInt(fontSize, 10) : DEFAULT_FONT_SIZE,
+                                                        }}
                                                     />
                                                 </td>
                                             );
@@ -1017,21 +1126,29 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                                 style={{
                                                     backgroundColor: !isSelected ? (cell?.bgColor || '#000000') : undefined,
                                                     color: cell?.color || '#ffffff',
-                                                    textAlign: cell?.hAlignment.toLowerCase() || 'left',
-                                                    verticalAlign: cell?.vAlignment.toLowerCase() || 'center',
+                                                    textAlign: getTextAlign(cell?.hAlignment),
+                                                    verticalAlign: getVerticalAlign(cell?.vAlignment),
                                                     width: getColumnWidth(colIndex),
                                                     height: getRowHeight(rowIndex),
+                                                    fontWeight: isBold ? 'bold' : 'normal',
+                                                    fontStyle: isItalic ? 'italic' : 'normal',
+                                                    textDecoration: isStrikethrough ? 'line-through' : 'none',
+
+                                                    fontFamily: fontFamily ? fontFamily : DEFAULT_FONT_FAMILY,
+                                                    fontSize: fontSize ? parseInt(fontSize, 10) : DEFAULT_FONT_SIZE,
                                                 }}
                                                 onMouseDown={(e) => handleCellMouseDown(e, rowIndex, colIndex)}
                                                 onMouseMove={(e) => handleCellMouseMove(e, rowIndex, colIndex)}
                                                 onClick={() => {
-                                                    setSelectedCellIds([cell.id]);
-                                                    setSelectedRange(`${getColumnLetter(spreadsheetType, colIndex)}${rowIndex}`)
+                                                    if (cell && cell.id !== undefined) {
+                                                        setSelectedCellIds([cell.id]);
+                                                        setSelectedRange(`${getColumnLetter(spreadsheetType, colIndex)}${rowIndex}`);
 
-                                                    if (userPermission !== 'VIEW' &&
-                                                        ((spreadsheetType === 'NORMAL') ||
-                                                            (spreadsheetType === 'CS' && (colIndex >= CS_PROTECTED_COLUMNS_LENGTH || colIndex == 0)))) {
-                                                        handleCellClick(cell?.id, rowIndex, colIndex, cell?.content || '');
+                                                        if (userPermission !== 'VIEW' &&
+                                                            ((spreadsheetType === 'NORMAL') ||
+                                                                (spreadsheetType === 'CS' && (colIndex >= CS_PROTECTED_COLUMNS_LENGTH || colIndex == 0)))) {
+                                                            handleCellClick(cell.id, rowIndex, colIndex, cell.content || '');
+                                                        }
                                                     }
                                                 }}
                                             >

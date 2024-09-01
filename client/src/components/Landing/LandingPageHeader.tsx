@@ -18,7 +18,9 @@ const fetchUserPhoto = async (userId: number) => {
     });
 
     if (!response.ok) {
-        throw new Error('Failed to fetch user photo');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to fetch user photo';
+        throw new Error(errorMessage);
     }
 
     return await response.json();

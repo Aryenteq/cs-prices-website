@@ -6,7 +6,7 @@ import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
 type SpreadsheetType = 'ALL' | 'NORMAL' | 'CS';
 type SpreadsheetOwner = 'ME' | 'OTHER' | 'ALL';
-type SpreadsheetOrderBy = 'TITLE' | 'LAST_OPENED' | 'CREATED';
+type SpreadsheetOrderBy = 'NAME' | 'LAST_OPENED' | 'CREATED';
 type SpreadsheetOrderType = 'asc' | 'desc';
 
 export const CS_PROTECTED_COLUMNS_LENGTH: number = 2;
@@ -42,7 +42,7 @@ export const getAllSpreadsheets = async (
 
     // order
     const orderByFieldMap: { [key in SpreadsheetOrderBy]: string } = {
-        'TITLE': 'name',
+        'NAME': 'name',
         'LAST_OPENED': 'lastOpened',
         'CREATED': 'created',
     };

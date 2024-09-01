@@ -20,7 +20,7 @@ export interface Spreadsheet {
 export interface Filters {
     owner: 'ALL' | 'ME' | 'OTHER';
     type: 'ALL' | 'NORMAL' | 'CS';
-    orderBy: 'LAST_OPENED' | 'TITLE' | 'CREATED';
+    orderBy: 'LAST_OPENED' | 'NAME' | 'CREATED';
     orderType: 'asc' | 'desc';
 }
 
@@ -34,13 +34,15 @@ const fetchSpreadsheets = async (filters: Filters): Promise<Spreadsheet[]> => {
     });
 
     if (!response.ok) {
-        throw new Error('Failed to fetch spreadsheets');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to fetch spreadsheets';
+        throw new Error(errorMessage);
     }
 
     return response.json();
 };
 
-// group spreadsheets by date
+
 function groupSpreadsheetsByDate(spreadsheets: Spreadsheet[]): Record<string, Spreadsheet[]> {
     const today = new Date();
     const yesterday = new Date(today);
@@ -80,7 +82,7 @@ const SpreadsheetsList: React.FC = () => {
         owner: 'ALL',
         type: 'ALL',
         orderBy: 'LAST_OPENED',
-        orderType: 'asc'
+        orderType: 'desc'
     });
 
     const { data: spreadsheets, isLoading, error } = useQuery<Spreadsheet[], Error>(
@@ -105,10 +107,8 @@ const SpreadsheetsList: React.FC = () => {
             }
         };
 
-        // Attach the click event listener to the document
         document.addEventListener("click", handleClickOutside);
 
-        // Cleanup the event listener on component unmount
         return () => {
             document.removeEventListener("click", handleClickOutside);
         };
@@ -129,6 +129,37 @@ const SpreadsheetsList: React.FC = () => {
         !groupedSpreadsheets.previous30Days.length &&
         !groupedSpreadsheets.earlier.length;
 
+        const renderGroups = () => {
+            const groupOrder = (filters.orderBy === 'LAST_OPENED' || filters.orderBy === 'CREATED') && filters.orderType === 'asc'
+                ? ['earlier', 'previous30Days', 'previous7Days', 'yesterday', 'today']
+                : ['today', 'yesterday', 'previous7Days', 'previous30Days', 'earlier'];
+    
+            return groupOrder.map((group) => {
+                if (groupedSpreadsheets[group].length > 0) {
+                    const groupLabel = group === 'today' ? 'Last 24h' :
+                        group === 'yesterday' ? 'Yesterday' :
+                        group === 'previous7Days' ? 'Previous 7 days' :
+                        group === 'previous30Days' ? 'Previous 30 days' :
+                        'Earlier';
+    
+                    return (
+                        <div key={group}>
+                            <h3>{groupLabel}</h3>
+                            {groupedSpreadsheets[group].map(spreadsheet => (
+                                <SpreadsheetItem
+                                    key={spreadsheet.id}
+                                    spreadsheet={spreadsheet}
+                                    openMenuId={openMenuId}
+                                    handleMenuToggle={handleMenuToggle}
+                                />
+                            ))}
+                        </div>
+                    );
+                }
+                return null;
+            });
+        };
+
     return (
         <div className="my-10 px-2 breakpoint-1000:px-20">
             <ListHeader onFiltersChange={handleFiltersChange} />
@@ -136,53 +167,7 @@ const SpreadsheetsList: React.FC = () => {
                 {isEmpty ? (
                     <p className="w-full text-center mt-20">No spreadsheets found, try creating one now!</p>
                 ) : (
-                    <>
-                        {groupedSpreadsheets.today.length > 0 && (
-                            <>
-                                <h3>Last 24h</h3>
-                                {groupedSpreadsheets.today.map(spreadsheet => (
-                                    <SpreadsheetItem key={spreadsheet.id} spreadsheet={spreadsheet} openMenuId={openMenuId}
-                                        handleMenuToggle={handleMenuToggle} />
-                                ))}
-                            </>
-                        )}
-                        {groupedSpreadsheets.yesterday.length > 0 && (
-                            <>
-                                <h3>Yesterday</h3>
-                                {groupedSpreadsheets.yesterday.map(spreadsheet => (
-                                    <SpreadsheetItem key={spreadsheet.id} spreadsheet={spreadsheet} openMenuId={openMenuId}
-                                        handleMenuToggle={handleMenuToggle} />
-                                ))}
-                            </>
-                        )}
-                        {groupedSpreadsheets.previous7Days.length > 0 && (
-                            <>
-                                <h3>Previous 7 days</h3>
-                                {groupedSpreadsheets.previous7Days.map(spreadsheet => (
-                                    <SpreadsheetItem key={spreadsheet.id} spreadsheet={spreadsheet} openMenuId={openMenuId}
-                                        handleMenuToggle={handleMenuToggle} />
-                                ))}
-                            </>
-                        )}
-                        {groupedSpreadsheets.previous30Days.length > 0 && (
-                            <>
-                                <h3>Previous 30 days</h3>
-                                {groupedSpreadsheets.previous30Days.map(spreadsheet => (
-                                    <SpreadsheetItem key={spreadsheet.id} spreadsheet={spreadsheet} openMenuId={openMenuId}
-                                        handleMenuToggle={handleMenuToggle} />
-                                ))}
-                            </>
-                        )}
-                        {groupedSpreadsheets.earlier.length > 0 && (
-                            <>
-                                <h3>Earlier</h3>
-                                {groupedSpreadsheets.earlier.map(spreadsheet => (
-                                    <SpreadsheetItem key={spreadsheet.id} spreadsheet={spreadsheet} openMenuId={openMenuId}
-                                        handleMenuToggle={handleMenuToggle} />
-                                ))}
-                            </>
-                        )}
-                    </>
+                    renderGroups()
                 )}
             </div>
         </div>

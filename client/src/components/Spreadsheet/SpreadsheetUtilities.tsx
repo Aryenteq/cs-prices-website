@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useQuery } from "react-query";
+import { useMutation, useQuery } from "react-query";
+import { Button, Popover } from '@mui/material';
+import { SketchPicker } from 'react-color';
+
 import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
 import { getAuthHeader } from "../../utils/authHeader";
 import { useInfo } from "../InfoContext";
+import { sketchColors } from "./Functions/Utils";
+import {
+    updateCellsStyle, updateCellsHorizontalAlignment,
+    updateCellsVerticalAlignment, updateCellsColor, updateCellsBgColor
+} from "./Functions/CellFetch";
+import { Sheet, HorizontalAlignment, VerticalAlignment } from "./Functions/Types";
+
+import { DEFAULT_FONT_SIZE } from "./SpreadsheetTable";
 
 import undoImg from "../../media/svgs/undo.svg";
 import redoImg from "../../media/svgs/redo.svg";
@@ -18,6 +29,9 @@ import verticalBottomAlignmentImg from "../../media/svgs/vertical-bottom.svg";
 import verticalCenterAlignmentImg from "../../media/svgs/vertical-center.svg";
 import verticalTopAlignmentImg from "../../media/svgs/vertical-top.svg";
 
+const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Helvetica', 'Georgia', 'Courier New', 
+    'Trebuchet MS', 'Impact', 'Open Sans', 'Playfair Display', 'Roboto', 'Dancing Script'];
+
 const fetchSpreadsheetPermission = async (spreadsheetId: number): Promise<string> => {
     const headers = getAuthHeader();
 
@@ -27,17 +41,18 @@ const fetchSpreadsheetPermission = async (spreadsheetId: number): Promise<string
     });
 
     if (!response.ok) {
-        throw new Error('Failed to fetch permission');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to fetch permission';
+        throw new Error(errorMessage);
     }
 
     return response.json();
 };
 
-const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
-    selectedCellIds: number[];
-    setSelectedCellIds: React.Dispatch<React.SetStateAction<number[]>>;
-}> = ({ selectedCellIds, setSelectedCellIds, saving, setSaving, uid, spreadsheetId }) => {
-    
+const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId, sheet, setSheet, selectedCellIds, setSelectedCellIds,
+    currentFontFamily, setCurrentFontFamily, currentFontSize, setCurrentFontSize, currentTextColor, setCurrentTextColor, currentBgColor, setCurrentBgColor
+}) => {
+
     const { setInfo } = useInfo();
     const [permission, setPermission] = useState<string>('VIEW');
     const [isHorizontalAlignmentOpen, setHorizontalAlignmentOpen] = useState(false);
@@ -46,16 +61,13 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
     const verticalMenuRef = useRef<HTMLDivElement | null>(null);
     const [isFontMenuOpen, setFontMenuOpen] = useState(false);
     const fontMenuRef = useRef<HTMLDivElement | null>(null);
-    const fonts = ['Arial', 'Open Sans', 'Playfair Display', 'Roboto', 'Dancing Script'];
-    const [fontFamily, setFontFamily] = useState<string>('Arial');
-    const [fontSize, setFontSize] = useState<number>(12);
-    const [lastValidValue, setLastValidValue] = useState<string>('12');
+    const [lastValidValue, setLastValidValue] = useState<string>(`${DEFAULT_FONT_SIZE}`);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.currentTarget.value;
 
         if (/^\d*$/.test(value)) {
-            setFontSize(Number(value));
+            setCurrentFontSize(Number(value));
             setLastValidValue(value);
         } else {
             e.currentTarget.value = lastValidValue;
@@ -114,22 +126,280 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
     }, [isVerticalAlignmentOpen, isHorizontalAlignmentOpen, isFontMenuOpen]);
 
     const handleFontChange = (font: string) => {
-        setFontFamily(font);
+        setCurrentFontFamily(() => {
+            toggleTextStyle('fontFamily', font);
+            return font;
+        });
         setFontMenuOpen(false);
     };
 
     const increaseFontSize = () => {
-        setFontSize((prev) => Math.min(prev + 1, 48));
+        setCurrentFontSize((prevFontSize) => {
+            const newFontSize = Math.min(prevFontSize + 1, 48);
+            toggleTextStyle('fontSize', `${newFontSize}`);
+            return newFontSize;
+        });
     };
 
     const decreaseFontSize = () => {
-        setFontSize((prev) => Math.max(prev - 1, 8));
+        setCurrentFontSize((prevFontSize) => {
+            const newFontSize = Math.max(prevFontSize - 1, 5);
+            toggleTextStyle('fontSize', `${newFontSize}`);
+            return newFontSize;
+        });
     };
+
+
 
     const isDisabled = permission === 'VIEW';
 
+
+
+    //
+    //
+    // MUTATIONS
+    //
+    //
+
+    const { mutate: updateCellsStyleMutation } = useMutation(updateCellsStyle, {
+        onSuccess: () => {
+            setSaving(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            console.error('Error updating styles:', error);
+            setInfo({ message: 'Something went wrong updating the styles', isError: true });
+        }
+    });
+
+    const { mutate: updateCellsHorizontalAlignmentMutation } = useMutation(updateCellsHorizontalAlignment, {
+        onSuccess: () => {
+            setSaving(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            console.error('Error updating styles:', error);
+            setInfo({ message: 'Something went wrong updating the styles', isError: true });
+        }
+    });
+
+    const { mutate: updateCellsVerticalAlignmentMutation } = useMutation(updateCellsVerticalAlignment, {
+        onSuccess: () => {
+            setSaving(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            console.error('Error updating styles:', error);
+            setInfo({ message: 'Something went wrong updating the styles', isError: true });
+        }
+    });
+
+    const { mutate: updateCellsColorMutation } = useMutation(updateCellsColor, {
+        onSuccess: () => {
+            setSaving(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            console.error('Error updating styles:', error);
+            setInfo({ message: 'Something went wrong updating the styles', isError: true });
+        }
+    });
+
+    const { mutate: updateCellsBgColorMutation } = useMutation(updateCellsBgColor, {
+        onSuccess: () => {
+            setSaving(false);
+        },
+        onError: (error) => {
+            setSaving(false);
+            console.error('Error updating styles:', error);
+            setInfo({ message: 'Something went wrong updating the styles', isError: true });
+        }
+    });
+
+
+    const toggleTextStyle = (styleProperty: 'fontFamily' | 'fontSize' | 'fontWeight' | 'fontStyle' | 'textDecoration', toggleValue: string) => {
+        if (selectedCellIds.length > 0) {
+            const allHaveStyle = selectedCellIds.every((cellId) => {
+                const cell = sheet.cells.find(cell => cell.id === cellId);
+                return cell?.style?.[styleProperty] === toggleValue;
+            });
+
+            let newValue: string | number = toggleValue;
+            if (styleProperty !== 'fontFamily' && styleProperty !== 'fontSize') {
+                newValue = allHaveStyle ? (styleProperty === 'textDecoration' ? 'none' : 'normal') : toggleValue;
+            }
+
+            if (styleProperty === 'fontSize') {
+                newValue = Number(toggleValue);
+            }
+
+            setSheet((prevSheet: Sheet) => {
+                const updatedCells = prevSheet.cells.map(cell =>
+                    selectedCellIds.includes(cell.id)
+                        ? { ...cell, style: { ...cell.style, [styleProperty]: newValue } }
+                        : cell
+                );
+                return { ...prevSheet, cells: updatedCells };
+            });
+
+            const stylesToUpdate = selectedCellIds.map((cellId) => ({
+                cellId: cellId,
+                style: { [styleProperty]: newValue }
+            }));
+
+            setSaving(true);
+            updateCellsStyleMutation(stylesToUpdate);
+        }
+    };
+
+
+    const setHorizontalAlignment = (value: HorizontalAlignment) => {
+        if (selectedCellIds.length > 0) {
+            setSheet((prevSheet: Sheet) => {
+                const updatedCells = prevSheet.cells.map(cell =>
+                    selectedCellIds.includes(cell.id)
+                        ? { ...cell, hAlignment: value }
+                        : cell
+                );
+                return { ...prevSheet, cells: updatedCells };
+            });
+
+            const hAlignmentsToUpdate = selectedCellIds.map((cellId) => ({
+                cellId: cellId,
+                hAlignment: value,
+            }));
+
+            setSaving(true);
+            updateCellsHorizontalAlignmentMutation(hAlignmentsToUpdate);
+        }
+    };
+
+    const setVerticalAlignment = (value: VerticalAlignment) => {
+        if (selectedCellIds.length > 0) {
+            setSheet((prevSheet: Sheet) => {
+                const updatedCells = prevSheet.cells.map(cell =>
+                    selectedCellIds.includes(cell.id)
+                        ? { ...cell, vAlignment: value }
+                        : cell
+                );
+                return { ...prevSheet, cells: updatedCells };
+            });
+
+            const vAlignmentsToUpdate = selectedCellIds.map((cellId) => ({
+                cellId: cellId,
+                vAlignment: value,
+            }));
+
+            setSaving(true);
+            updateCellsVerticalAlignmentMutation(vAlignmentsToUpdate);
+        }
+    };
+
+    const setTextColor = (value: string) => {
+        if (selectedCellIds.length > 0) {
+            setSheet((prevSheet: Sheet) => {
+                const updatedCells = prevSheet.cells.map(cell =>
+                    selectedCellIds.includes(cell.id)
+                        ? { ...cell, color: value }
+                        : cell
+                );
+                return { ...prevSheet, cells: updatedCells };
+            });
+
+            const colorsToUpdate = selectedCellIds.map((cellId) => ({
+                cellId: cellId,
+                color: value,
+            }));
+
+            setSaving(true);
+            updateCellsColorMutation(colorsToUpdate);
+        }
+    };
+
+    const setBgColor = (value: string) => {
+        if (selectedCellIds.length > 0) {
+            setSheet((prevSheet: Sheet) => {
+                const updatedCells = prevSheet.cells.map(cell =>
+                    selectedCellIds.includes(cell.id)
+                        ? { ...cell, bgColor: value }
+                        : cell
+                );
+                return { ...prevSheet, cells: updatedCells };
+            });
+
+            const colorsToUpdate = selectedCellIds.map((cellId) => ({
+                cellId: cellId,
+                bgColor: value,
+            }));
+
+            setSaving(true);
+            updateCellsBgColorMutation(colorsToUpdate);
+        }
+    };
+
+    const [anchorElText, setAnchorElText] = useState<null | HTMLElement>(null);
+    const [tempTextColor, setTempTextColor] = useState(currentTextColor);
+    const [anchorElBg, setAnchorElBg] = useState<null | HTMLElement>(null);
+    const [tempBgColor, setTempBgColor] = useState(currentBgColor);
+
+    // Text Color
+    const handleTextColorClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorElText(event.currentTarget);
+        setTempTextColor(currentTextColor);
+    };
+
+    const handleTextColorClose = () => {
+        setAnchorElText(null);
+    };
+
+    const handleTextColorChange = (color: any) => {
+        setTempTextColor(color.hex);
+    };
+
+    const handleTextColorConfirm = () => {
+        setCurrentTextColor(tempTextColor);
+        setTextColor(tempTextColor);
+        handleTextColorClose();
+    };
+
+    const handleTextColorCancel = () => {
+        setTempTextColor(currentTextColor);
+        handleTextColorClose();
+    };
+
+    const openTextColor = Boolean(anchorElText);
+
+    // Background Color
+    const handleBgColorClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorElBg(event.currentTarget);
+        setTempBgColor(currentBgColor);
+    };
+
+    const handleBgColorClose = () => {
+        setAnchorElBg(null);
+    };
+
+    const handleBgColorChange = (color: any) => {
+        setTempBgColor(color.hex);
+    };
+
+    const handleBgColorConfirm = () => {
+        setCurrentBgColor(tempBgColor);
+        setBgColor(tempBgColor);
+        handleBgColorClose();
+    };
+
+    const handleBgColorCancel = () => {
+        setTempBgColor(currentBgColor);
+        handleBgColorClose();
+    };
+
+    const openBgColor = Boolean(anchorElBg);
+
+
+
     return (
-        <div className="relative flex items-center mx-4 gap-2">
+        <div className="relative flex items-center mx-4 gap-2 flex-wrap">
             <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Undo (Ctrl+Z)" disabled={isDisabled}>
                 <img src={undoImg} alt="Undo" className="w-6 h-6" />
             </button>
@@ -146,18 +416,19 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                     onClick={showFontMenu}
                     disabled={isDisabled}
                 >
-                    <div className="text-white w-[100px] truncate">{fontFamily}</div>
+                    <div className="text-white w-[100px] truncate">{currentFontFamily}</div>
                 </button>
 
                 {isFontMenuOpen && (
                     <div
                         ref={fontMenuRef}
-                        className="absolute top-full left-0 mt-2 flex flex-col bg-gray-800 p-2 rounded shadow-lg z-10"
+                        className="absolute top-full left-0 mt-2 flex flex-col bg-gray-800 p-2 rounded shadow-lg z-10 max-h-[300px] w-[200px] overflow-auto custom-scrollbar"
                     >
                         {fonts.map((font) => (
                             <button
                                 key={font}
                                 className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out text-white"
+                                style={{ fontFamily: font }}
                                 onClick={() => handleFontChange(font)}
                             >
                                 {font}
@@ -178,7 +449,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                 </button>
                 <input
                     type="text"
-                    value={fontSize}
+                    value={currentFontSize}
                     onChange={handleInputChange}
                     className="w-12 text-center bg-gray-900 text-white border border-gray-700 rounded"
                     disabled={isDisabled}
@@ -193,27 +464,115 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                     +
                 </button>
             </div>
-            
+
             <div className="bg-accent w-[1px] h-5 py-[1px]"></div>
 
-            <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Bold (Ctrl+B)" disabled={isDisabled}>
+            <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Bold (Ctrl+B)" disabled={isDisabled}
+                onClick={() => toggleTextStyle('fontWeight', 'bold')}>
                 <img src={boldImg} alt="Bold" className="w-5 h-5" />
             </button>
-            <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Italic (Ctrl+I)" disabled={isDisabled}>
+            <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Italic (Ctrl+I)" disabled={isDisabled}
+                onClick={() => toggleTextStyle('fontStyle', 'italic')}>
                 <img src={italicImg} alt="Italic" className="w-5 h-5" />
             </button>
-            <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Strikethrough" disabled={isDisabled}>
+            <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Strikethrough" disabled={isDisabled}
+                onClick={() => toggleTextStyle('textDecoration', 'line-through')}>
                 <img src={strikethroughImg} alt="Strikethrough" className="w-5 h-5" />
             </button>
-            <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Text color" disabled={isDisabled}>
-                <img src={textColorImg} alt="Text color" className="w-5 h-5" />
-            </button>
+            <div className="relative flex items-center">
+                <button
+                    className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out"
+                    title="Text color"
+                    disabled={isDisabled}
+                    onClick={handleTextColorClick}
+                >
+                    <img src={textColorImg} alt="Text color" className="w-5 h-5" />
+                </button>
+
+                <Popover
+                    open={openTextColor}
+                    anchorEl={anchorElText}
+                    onClose={handleTextColorCancel}
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                    }}
+                >
+                    <div className="pb-2">
+                        <SketchPicker
+                            color={tempBgColor}
+                            onChangeComplete={handleTextColorChange}
+                            disableAlpha
+                            presetColors={sketchColors}
+                        />
+
+                        <div className="flex justify-around mt-2">
+                            <Button variant="contained" onClick={handleTextColorCancel}
+                                sx={{ color: '#510154', backgroundColor: '#FFFFFF' }}>
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleTextColorConfirm}
+                                style={{ marginRight: '10px' }}
+                                sx={{ color: '#510154', backgroundColor: '#FFFFFF' }}
+                            >
+                                OK
+                            </Button>
+                        </div>
+                    </div>
+                </Popover>
+            </div>
 
             <div className="bg-accent w-[1px] h-5 py-[1px]"></div>
 
-            <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Fill color" disabled={isDisabled}>
-                <img src={bgColorImg} alt="Fill color" className="w-5 h-5" />
-            </button>
+            <div className="relative flex items-center">
+                <button
+                    className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out"
+                    title="Fill color"
+                    disabled={isDisabled}
+                    onClick={handleBgColorClick}
+                >
+                    <img src={bgColorImg} alt="Fill color" className="w-5 h-5" />
+                </button>
+
+                <Popover
+                    open={openBgColor}
+                    anchorEl={anchorElBg}
+                    onClose={handleBgColorCancel}
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                    }}
+                >
+                    <div className="pb-2">
+                        <SketchPicker
+                            color={tempBgColor}
+                            onChangeComplete={handleBgColorChange}
+                            disableAlpha
+                            presetColors={sketchColors}
+                        />
+
+
+                        <div className="flex justify-around mt-2">
+                            <Button variant="contained" onClick={handleBgColorCancel}
+                                sx={{ color: '#510154', backgroundColor: '#FFFFFF' }}>
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleBgColorConfirm}
+                                style={{ marginRight: '10px' }}
+                                sx={{ color: '#510154', backgroundColor: '#FFFFFF' }}
+                            >
+                                OK
+                            </Button>
+                        </div>
+                    </div>
+                </Popover>
+            </div>
 
             <div className="relative">
                 <button
@@ -230,13 +589,16 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                         ref={horizontalMenuRef}
                         className="absolute top-full left-0 mt-2 flex bg-gray-800 p-2 rounded shadow-lg z-10"
                     >
-                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Left" disabled={isDisabled}>
+                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Left" disabled={isDisabled}
+                            onClick={() => { setHorizontalAlignment(HorizontalAlignment.LEFT) }}>
                             <img src={horizontalLeftAlignmentImg} alt="Align on Left" className="w-5 h-5" style={{ maxWidth: 'none' }} />
                         </button>
-                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Center" disabled={isDisabled}>
+                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Center" disabled={isDisabled}
+                            onClick={() => { setHorizontalAlignment(HorizontalAlignment.CENTER) }}>
                             <img src={horizontalCenterAlignmentImg} alt="Align on Center" className="w-5 h-5" style={{ maxWidth: 'none' }} />
                         </button>
-                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Right" disabled={isDisabled}>
+                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Right" disabled={isDisabled}
+                            onClick={() => { setHorizontalAlignment(HorizontalAlignment.RIGHT) }}>
                             <img src={horizontalRightAlignmentImg} alt="Align on Right" className="w-5 h-5" style={{ maxWidth: 'none' }} />
                         </button>
                     </div>
@@ -258,13 +620,16 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                         ref={verticalMenuRef}
                         className="absolute top-full left-0 mt-2 flex bg-gray-800 p-2 rounded shadow-lg z-10"
                     >
-                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Top" disabled={isDisabled}>
+                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Top" disabled={isDisabled}
+                            onClick={() => { setVerticalAlignment(VerticalAlignment.TOP) }}>
                             <img src={verticalTopAlignmentImg} alt="Align on Top" className="w-5 h-5" style={{ maxWidth: 'none' }} />
                         </button>
-                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Center" disabled={isDisabled}>
+                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Center" disabled={isDisabled}
+                            onClick={() => { setVerticalAlignment(VerticalAlignment.CENTER) }}>
                             <img src={verticalCenterAlignmentImg} alt="Align on Center" className="w-5 h-5" style={{ maxWidth: 'none' }} />
                         </button>
-                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Bottom" disabled={isDisabled}>
+                        <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Align on Bottom" disabled={isDisabled}
+                            onClick={() => { setVerticalAlignment(VerticalAlignment.BOTTOM) }}>
                             <img src={verticalBottomAlignmentImg} alt="Align on Bottom" className="w-5 h-5" style={{ maxWidth: 'none' }} />
                         </button>
                     </div>

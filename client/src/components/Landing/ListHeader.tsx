@@ -12,7 +12,7 @@ const ListHeader: React.FC<ListHeaderProps> = ({ onFiltersChange }) => {
     const [owner, setOwner] = useState<Filters['owner']>('ALL');
     const [type, setType] = useState<Filters['type']>('ALL');
     const [orderBy, setOrderBy] = useState<string | number>('LAST_OPENED');
-    const [orderType, setOrderType] = useState<string | number>('asc');
+    const [orderType, setOrderType] = useState<string | number>('desc');
 
     const orderAndSortOptions = [
         {

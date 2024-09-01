@@ -9,7 +9,9 @@ export const fetchSpreadsheet = async (spreadsheetId: number): Promise<any> => {
     });
 
     if (!response.ok) {
-        throw new Error('Failed to fetch spreadsheet');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to fetch spreadsheet';
+        throw new Error(errorMessage);
     }
 
     return response.json();
@@ -28,7 +30,9 @@ export const updateRowHeight = async ({ sheetId, rowIndex, height }: { sheetId: 
     });
 
     if (!response.ok) {
-        throw new Error('Failed to update row height');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to update row height';
+        throw new Error(errorMessage);
     }
     return response.json();
 };
@@ -46,7 +50,9 @@ export const updateColWidth = async ({ sheetId, colIndex, width }: { sheetId: nu
     });
 
     if (!response.ok) {
-        throw new Error('Failed to update column width');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to update column width';
+        throw new Error(errorMessage);
     }
     return response.json();
 };
@@ -65,7 +71,9 @@ export const updateHiddenRows = async ({ sheetId, rowIndex, hidden }: { sheetId:
     });
 
     if (!response.ok) {
-        throw new Error('Failed to update hidden row');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to update hidden row';
+        throw new Error(errorMessage);
     }
     return response.json();
 };
@@ -83,7 +91,9 @@ export const updateHiddenCols = async ({ sheetId, colIndex, hidden }: { sheetId:
     });
 
     if (!response.ok) {
-        throw new Error('Failed to update hidden column');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to update hidden column';
+        throw new Error(errorMessage);
     }
     return response.json();
 };
@@ -101,7 +111,9 @@ export const deleteSheetRows = async ({ sheetId, startIndex, rowsNumber }: { she
     });
 
     if (!response.ok) {
-        throw new Error('Failed to delete rows.');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to delete rows.';
+        throw new Error(errorMessage);
     }
 
     return response.json();
@@ -121,7 +133,9 @@ export const deleteSheetCols = async ({ sheetId, startIndex, colsNumber }: { she
     });
 
     if (!response.ok) {
-        throw new Error('Failed to delete cols.');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to delete cols.';
+        throw new Error(errorMessage);
     }
 
     return response.json();
@@ -140,7 +154,9 @@ export const addRows = async ({ sheetId, startIndex, rowsNumber }: { sheetId: nu
     });
 
     if (!response.ok) {
-        throw new Error('Failed to add row(s)');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to add row(s)';
+        throw new Error(errorMessage);
     }
     return response.json();
 };
@@ -159,7 +175,9 @@ export const addCols = async ({ sheetId, startIndex, colsNumber }: { sheetId: nu
     });
 
     if (!response.ok) {
-        throw new Error('Failed to add column(s)');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to add column(s)';
+        throw new Error(errorMessage);
     }
     return response.json();
 };
@@ -174,7 +192,9 @@ export const deleteSheet = async (sheetId: number): Promise<any> => {
     });
 
     if (!response.ok) {
-        throw new Error('Failed to delete sheet');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to delete sheet';
+        throw new Error(errorMessage);
     }
 
     return response.json();
@@ -189,20 +209,22 @@ export const deleteSheet = async (sheetId: number): Promise<any> => {
 //
 //
 
-export const updateCellContent = async ({ cellId, content }: { cellId: Number, content: string }) => {
+export const updateCellContent = async (contents: { cellId: number, content: string }[]) => {
     const headers = {
         'Content-Type': 'application/json',
         ...getAuthHeader(),
     };
 
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/cell/${cellId}/content`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/cells/content`, {
         method: 'PUT',
         headers: headers,
-        body: JSON.stringify({ cellId, content })
+        body: JSON.stringify({ contents })
     });
 
     if (!response.ok) {
-        throw new Error('Failed to save cell content');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to save cells content';
+        throw new Error(errorMessage);
     }
     return response.json();
 };

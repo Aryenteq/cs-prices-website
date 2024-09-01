@@ -1,5 +1,7 @@
 import { CS_PROTECTED_COLUMNS_LENGTH } from "../SpreadsheetTable";
 
+import { HorizontalAlignment, VerticalAlignment, TextAlign } from "./Types";
+
 export const getColumnLetter = (type: 'CS' | 'NORMAL', col: number) => {
     let title = '';
 
@@ -63,3 +65,49 @@ export const initializeVisibility = (
         return specificVisibility[index] !== undefined ? specificVisibility[index] : isVisible;
     });
 };
+
+
+export const getTextAlign = (alignment?: HorizontalAlignment): TextAlign | undefined => {
+    switch (alignment) {
+        case 'LEFT':
+            return 'left';
+        case 'CENTER':
+            return 'center';
+        case 'RIGHT':
+            return 'right';
+        default:
+            return undefined;
+    }
+};
+
+export const getVerticalAlign = (alignment?: VerticalAlignment): string => {
+    switch (alignment) {
+        case 'TOP':
+            return 'top';
+        case 'CENTER':
+            return 'middle';
+        case 'BOTTOM':
+            return 'bottom';
+        default:
+            return 'middle';
+    }
+};
+
+export const sketchColors = [
+    { color: '#000000', title: 'Black' },
+    { color: '#4D4D4D', title: 'Dark Gray 1' },
+    { color: '#999999', title: 'Dark Gray 2' },
+    { color: '#B3B3B3', title: 'Gray' },
+    { color: '#CCCCCC', title: 'Light Gray 1' },
+    { color: '#E6E6E6', title: 'Light Gray 2' },
+    { color: '#F2F2F2', title: 'Light Gray 3' },
+    { color: '#FFFFFF', title: 'White' },
+    { color: '#FF0000', title: 'Red' },
+    { color: '#FF9900', title: 'Orange' },
+    { color: '#FFFF00', title: 'Yellow' },
+    { color: '#00FF00', title: 'Green' },
+    { color: '#00FFFF', title: 'Cyan' },
+    { color: '#0066FF', title: 'Blue' },
+    { color: '#6600FF', title: 'Purple' },
+    { color: '#FF00FF', title: 'Pink' },
+];

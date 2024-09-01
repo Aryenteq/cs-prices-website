@@ -24,7 +24,9 @@ const fetchSpreadsheetShares = async (spreadsheetId: number): Promise<ShareInfo[
     });
 
     if (!response.ok) {
-        throw new Error('Failed to fetch spreadsheet shares');
+        const errorResponse = await response.json();
+        const errorMessage = errorResponse.message || 'Failed to fetch spreadsheet shares';
+        throw new Error(errorMessage);
     }
 
     return response.json();
