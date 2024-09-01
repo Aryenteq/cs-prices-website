@@ -8,8 +8,8 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import { useMutation, useQueryClient } from 'react-query';
 
-import csSheet from '../../media/imgs/cs-sheet.png';
-import normalSheet from '../../media/imgs/normal-sheet.png';
+import csSheet from '../../media/svgs/spreadsheet-cs.svg';
+import normalSheet from '../../media/svgs/spreadsheet-normal.svg';
 import edit from "../../media/svgs/edit.svg";
 import trash from "../../media/svgs/trash.svg";
 import rename from "../../media/svgs/rename.svg";

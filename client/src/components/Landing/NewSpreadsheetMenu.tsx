@@ -3,8 +3,8 @@ import { useMutation } from "react-query";
 import { useNavigate } from "react-router-dom";
 import { useInfo } from "../InfoContext";
 
-import csSheet from "../../media/imgs/cs-sheet.png";
-import normalSheet from "../../media/imgs/normal-sheet.png";
+import csSheet from "../../media/svgs/spreadsheet-cs.svg"
+import normalSheet from "../../media/svgs/spreadsheet-normal.svg";
 import { authTokensFetch } from "../../utils/authTokens";
 import { encryptData } from '../../utils/encrypt';
 
@@ -53,12 +53,12 @@ const NewSpreadsheetMenu: React.FC = () => {
         <div className="flex flex-col gap-3 items-center">
             <h2 className="text-2xl">Create a new spreadsheet</h2>
             <div className="w-full flex justify-center gap-10">
-                <button onClick={() => handleCreateSpreadsheet('NORMAL')} className="relative flex justify-center items-center border border-primary p-6 rounded hover:bg-gray-700 transition duration-300 ease-in-out">
-                    <p className="absolute text-shadow">Normal</p>
+                <button onClick={() => handleCreateSpreadsheet('NORMAL')} className="relative flex justify-center items-center p-4 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out">
+                    <p className="absolute text-black font-black">Normal</p>
                     <img src={normalSheet} alt="New Normal Sheet" className="w-24 h-24" />
                 </button>
-                <button onClick={() => handleCreateSpreadsheet('CS')} className="relative flex justify-center items-center border border-primary p-6 rounded hover:bg-gray-700 transition duration-300 ease-in-out">
-                    <p className="absolute text-shadow">CS</p>
+                <button onClick={() => handleCreateSpreadsheet('CS')} className="relative flex justify-center items-center p-4 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out">
+                    <p className="absolute text-white font-black">CS</p>
                     <img src={csSheet} alt="New CS Sheet" className="w-24 h-24" />
                 </button>
             </div>

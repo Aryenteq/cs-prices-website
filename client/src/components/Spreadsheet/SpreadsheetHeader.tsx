@@ -10,8 +10,8 @@ import { useInfo } from "../InfoContext";
 
 import cloudSavedImg from "../../media/svgs/cloud-saved.svg";
 import cloudSavingImg from "../../media/svgs/timer.svg";
-import normalSpreadsheetImg from "../../media/imgs/normal-sheet.png";
-import csSpreadsheetImg from "../../media/imgs/cs-sheet.png";
+import normalSpreadsheetImg from "../../media/svgs/spreadsheet-normal.svg";
+import csSpreadsheetImg from "../../media/svgs/spreadsheet-cs.svg";
 import accountImg from "../../media/svgs/user-edit.svg";
 import loadingImg from "../../media/svgs/loading.svg";
 
