@@ -34,7 +34,7 @@ const NewSpreadsheetMenu: React.FC = () => {
         onSuccess: (data) => {
             const spreadsheetId = data.id;
 
-            const encodedInfo = encodeURIComponent(encryptData(`${spreadsheetId}`));
+            const encodedInfo = encodeURIComponent(encryptData(`${spreadsheetId}?index=0`));
             navigate(`/spreadsheet/${encodedInfo}`);
         },
         onError: (error: any) => {

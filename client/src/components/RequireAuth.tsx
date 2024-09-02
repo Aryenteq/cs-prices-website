@@ -7,10 +7,11 @@ interface RequireAuthProps {
 }
 
 const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
-  const token = Cookies.get('access_token');
+  const accessToken = Cookies.get('access_token');
+  const refreshToken = Cookies.get('refresh_token');
   const location = useLocation();
 
-  if (!token) {
+  if (!accessToken && !refreshToken) {
     const isRoot = location.pathname === '/' && !location.search;
     const redirectTo = isRoot 
       ? '/connect' 

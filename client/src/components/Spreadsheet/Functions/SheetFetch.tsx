@@ -1,11 +1,5 @@
 import { authTokensFetch } from "../../../utils/authTokens";
 
-export const fetchSpreadsheet = async (spreadsheetId: number): Promise<any> => {
-    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}?index=0`, {
-        method: 'GET',
-    });
-};
-
 export const updateRowHeight = async ({ sheetId, rowIndex, height }: { sheetId: number, rowIndex: number, height: number }) => {
     return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/row-height`, {
         method: 'PATCH',
@@ -70,16 +64,50 @@ export const addCols = async ({ sheetId, startIndex, colsNumber }: { sheetId: nu
     });
 };
 
+
+// SHEET LIST
+
+export const getSheet = async (sheetId: number): Promise<any> => {
+    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}`, {
+        method: 'GET',
+    });
+};
+
+export const addSheet = async ({ spreadsheetId, index, name }: { spreadsheetId: number; index: number; name: string}): Promise<any> => {
+    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spreadsheetId, index, name }),
+    });
+};
+
 export const deleteSheet = async (sheetId: number): Promise<any> => {
     return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}`, {
         method: 'DELETE',
     });
 };
 
-export const updateCellContent = async (contents: { cellId: number, content: string }[]) => {
-    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/cells/content`, {
+export const setName = async ({ sheetId, name }: { sheetId: number, name: string }) => {
+    alert(sheetId);
+    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/name`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents }),
+        body: JSON.stringify({ name }),
+    });
+};
+
+export const setIndex = async ({ sheetId, newIndex }: { sheetId: number, newIndex: number }) => {
+    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/index`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newIndex }),
+    });
+};
+
+export const setColor = async ({ sheetId, color }: { sheetId: number, color: string }) => {
+    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/color`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ color }),
     });
 };

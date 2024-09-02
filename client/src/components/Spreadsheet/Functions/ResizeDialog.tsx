@@ -35,9 +35,9 @@ const ResizeDialog: React.FC<ResizeDialogProps> = ({ open, onClose, onSave, minS
 
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>{title}</DialogTitle>
+            <DialogTitle sx={{color: '#510154',}}>{title}</DialogTitle>
             <DialogContent>
-                <Typography variant="body1" gutterBottom>
+                <Typography variant="body1" gutterBottom sx={{color: '#510154',}}>
                     {`The default value is ${title === 'Resize Row' ? 21 : 100}px.`}
                 </Typography>
 
@@ -53,8 +53,8 @@ const ResizeDialog: React.FC<ResizeDialogProps> = ({ open, onClose, onSave, minS
                 />
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSave}>Save</Button>
+                <Button onClick={onClose} sx={{color: '#510154',}}>Cancel</Button>
+                <Button onClick={handleSave} sx={{color: '#510154',}}>Save</Button>
             </DialogActions>
         </Dialog>
     );

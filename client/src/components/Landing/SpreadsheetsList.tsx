@@ -6,7 +6,7 @@ import { useInfo } from "../InfoContext";
 
 import { authTokensFetch } from "../../utils/authTokens";
 
-// Define the types for spreadsheet items and filters
+// Custom spreadsheet interface for 'getAllSpreadsheets'
 export interface Spreadsheet {
     id: number;
     name: string;

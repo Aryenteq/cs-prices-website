@@ -93,7 +93,7 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
 
     const handleItemClick = () => {
         const spreadsheetId = spreadsheet.id;
-        const encodedInfo = encodeURIComponent(encryptData(`${spreadsheetId}`));
+        const encodedInfo = encodeURIComponent(encryptData(`${spreadsheetId}?index=0`));
         navigate(`/spreadsheet/${encodedInfo}`);
     };
 
@@ -117,7 +117,7 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
     const handleOpenInNewTab = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.stopPropagation();
         const spreadsheetId = spreadsheet.id;
-        const encodedInfo = encodeURIComponent(encryptData(`${spreadsheetId}`));
+        const encodedInfo = encodeURIComponent(encryptData(`${spreadsheetId}?index=0`));
         window.open(`/spreadsheet/${encodedInfo}`, '_blank');
         handleMenuToggle(spreadsheet.id);
     };
@@ -166,7 +166,7 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
             {/* Rename Dialog */}
             <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)}
                 onClick={(e) => e.stopPropagation()}>
-                <DialogTitle>Rename Spreadsheet</DialogTitle>
+                <DialogTitle sx={{color: '#510154',}}>Rename Spreadsheet</DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
@@ -179,21 +179,21 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={() => renameMutation.mutate()}>Ok</Button>
+                    <Button onClick={() => setRenameDialogOpen(false)} sx={{color: '#510154',}}>Cancel</Button>
+                    <Button onClick={() => renameMutation.mutate()} sx={{color: '#510154',}}>Ok</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Delete Dialog */}
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}
                 onClick={(e) => e.stopPropagation()}>
-                <DialogTitle>Delete Spreadsheet</DialogTitle>
-                <DialogContent>
+                <DialogTitle sx={{color: '#510154',}}>Delete Spreadsheet</DialogTitle>
+                <DialogContent sx={{color: '#510154',}}>
                     Are you sure you want to delete this spreadsheet? This action can not be reversed.
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={() => deleteMutation.mutate()}>Delete</Button>
+                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{color: '#510154',}}>Cancel</Button>
+                    <Button onClick={() => deleteMutation.mutate()} sx={{color: '#510154',}}>Delete</Button>
                 </DialogActions>
             </Dialog>
         </div>

@@ -7,7 +7,22 @@ import { CS_PROTECTED_COLUMNS_LENGTH, generateCells } from './spreadsheetService
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
 
-export const getSheet = async (spreadsheetId: number, index: number, userId: number) => {
+export const getSheet = async (sheetId: number, userId: number) => {
+    const spreadsheetData = await db.sheet.findUnique({
+        where: {
+            id: sheetId,
+        },
+        select: {
+            spreadsheetId: true,
+        }
+    });
+
+    if (!spreadsheetData) {
+        throw new Error('Spreadsheet not found!');
+    }
+
+    const spreadsheetId = spreadsheetData.spreadsheetId;
+
     const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
 
     if (!permission) {
@@ -16,8 +31,7 @@ export const getSheet = async (spreadsheetId: number, index: number, userId: num
 
     const sheet = await db.sheet.findFirst({
         where: {
-            spreadsheetId: spreadsheetId,
-            index: index,
+            id: sheetId,
         },
         include: {
             cells: true,
@@ -54,8 +68,16 @@ export const createSheet = async (sheet: PrismaSheet, userId: number) => {
         data: cellsData,
     });
 
+    const sheetWithCells = await db.sheet.findUnique({
+        where: {
+            id: newSheet.id,
+        },
+        include: {
+            cells: true,
+        },
+    });
 
-    return newSheet;
+    return sheetWithCells;
 };
 
 export const deleteSheet = async (sheetId: number, userId: number) => {
@@ -109,7 +131,7 @@ export const deleteSheet = async (sheetId: number, userId: number) => {
         },
     });
 
-    return { message: 'Sheet deleted successfully' };
+    return { sheetId };
 };
 
 export const setName = async (sheetId: number, name: string, userId: number) => {
@@ -135,6 +157,9 @@ export const setName = async (sheetId: number, name: string, userId: number) => 
         },
         data: {
             name
+        },
+        include: {
+            cells: true,
         }
     });
 };
@@ -164,7 +189,6 @@ export const setIndex = async (sheetId: number, newIndex: number, userId: number
     const currentIndex = sheet.index;
     const spreadsheetId = sheet.spreadsheetId;
 
-    // Fetch all sheets in the same spreadsheet to get the count
     const allSheets = await db.sheet.findMany({
         where: {
             spreadsheetId: spreadsheetId,
@@ -176,15 +200,14 @@ export const setIndex = async (sheetId: number, newIndex: number, userId: number
 
     const totalSheets = allSheets.length;
 
-    // Check if the new index is within the valid range
     if (newIndex < 0 || newIndex >= totalSheets) {
-        throw new Error(`Invalid index: Index should be between 0 and ${totalSheets - 1}`);
+        // real it is between 0 and totalSheets - 1, but for user-friendliness
+        throw new Error(`Invalid index: Index should be between 1 and ${totalSheets}`);
     }
 
-    // Begin transaction to ensure atomicity
     return await db.$transaction(async (transaction) => {
         if (newIndex > currentIndex) {
-            // Shift sheets down (decrement index) if the new index is greater than the current index
+            // Shift sheets down (decrement index)
             await transaction.sheet.updateMany({
                 where: {
                     spreadsheetId: spreadsheetId,
@@ -200,7 +223,7 @@ export const setIndex = async (sheetId: number, newIndex: number, userId: number
                 },
             });
         } else if (newIndex < currentIndex) {
-            // Shift sheets up (increment index) if the new index is less than the current index
+            // Shift sheets up (increment index)
             await transaction.sheet.updateMany({
                 where: {
                     spreadsheetId: spreadsheetId,
@@ -217,8 +240,7 @@ export const setIndex = async (sheetId: number, newIndex: number, userId: number
             });
         }
 
-        // Update the index of the target sheet
-        const updatedSheet = await transaction.sheet.update({
+        await transaction.sheet.update({
             where: {
                 id: sheetId,
             },
@@ -227,7 +249,54 @@ export const setIndex = async (sheetId: number, newIndex: number, userId: number
             },
         });
 
-        return updatedSheet;
+        const updatedSheets = await transaction.sheet.findMany({
+            where: {
+                spreadsheetId: spreadsheetId,
+            },
+            orderBy: {
+                index: 'asc',
+            },
+        });
+
+        // Map to return sheetsInfo
+        const sheetsInfo = updatedSheets.map(sheet => ({
+            id: sheet.id,
+            name: sheet.name,
+            index: sheet.index,
+            color: sheet.color,
+        }));
+
+        return { sheetsInfo, currentSheetId: sheetId };
+    });
+};
+
+export const setColor = async (sheetId: number, color: string, userId: number) => {
+    const sheet = await db.sheet.findFirst({
+        where: {
+            id: sheetId,
+        }
+    });
+
+    if (!sheet) {
+        throw new Error('Sheet not found');
+    }
+
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to recolor this sheet.');
+    }
+
+    return await db.sheet.update({
+        where: {
+            id: sheetId
+        },
+        data: {
+            color
+        },
+        include: {
+            cells: true,
+        }
     });
 };
 

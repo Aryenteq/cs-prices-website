@@ -33,6 +33,7 @@ export interface Sheet {
     spreadsheetId: number;
     name: string;
     index: number;
+    color: string;
     numRows: number;
     numCols: number;
     columnWidths?: Record<number, number>;
@@ -43,3 +44,36 @@ export interface Sheet {
     updatedAt: string;
     cells: Cell[];
 }
+
+export enum SpreadsheetTypes {
+    NORMAL = 'NORMAL',
+    CS = 'CS',
+}
+
+export interface SheetInfo {
+    id: number;
+    name: string;
+    index: number;
+    color: string;
+}
+
+export interface Spreadsheet {
+    id: number;
+    ownerId: number;
+    type: SpreadsheetTypes;
+    name: string;
+    lastOpened: string;
+    sheet: Sheet;
+    sheetsInfo: SheetInfo[];
+    created: string;
+    updatedAt: string;
+    permission: 'EDIT' | 'VIEW';
+}
+
+export type ShareInfo = {
+    uid: number;
+    username: string;
+    email: string;
+    photoURL: string;
+    permission: string;
+};

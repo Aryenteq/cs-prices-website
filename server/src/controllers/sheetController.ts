@@ -4,11 +4,10 @@ import type { Sheet as PrismaSheet } from '@prisma/client';
 
 export const getSheet = async (req: Request, res: Response) => {
     try {
-        const spreadsheetId = parseInt(req.params.spreadsheetId, 10);
-        const index = parseInt(req.query.index as string, 10);
+        const sheetId = parseInt(req.params.sheetId, 10);
         const userId = (req as any).user.uid;
 
-        const sheet = await sheetService.getSheet(spreadsheetId, index, userId);
+        const sheet = await sheetService.getSheet(sheetId, userId);
         res.status(200).json(sheet);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
@@ -32,8 +31,8 @@ export const deleteSheet = async (req: Request, res: Response) => {
         const sheetId = parseInt(req.params.sheetId, 10);
         const userId = (req as any).user.uid;
 
-        await sheetService.deleteSheet(sheetId, userId);
-        res.status(200).json({ message: 'Sheet deleted successfully' });
+        const oldId = await sheetService.deleteSheet(sheetId, userId);
+        res.status(200).json(oldId);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
     }
@@ -58,7 +57,20 @@ export const setIndex = async (req: Request, res: Response) => {
         const { newIndex } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedSheet = await sheetService.setIndex(sheetId, newIndex, userId);
+        const { sheetsInfo, currentSheetId } = await sheetService.setIndex(sheetId, newIndex, userId);
+        res.status(200).json({ sheetsInfo, currentSheetId });
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+export const setColor = async (req: Request, res: Response) => {
+    try {
+        const sheetId = parseInt(req.params.sheetId, 10);
+        const { color } = req.body;
+        const userId = (req as any).user.uid;
+
+        const updatedSheet = await sheetService.setColor(sheetId, color, userId);
         res.status(200).json(updatedSheet);
     } catch (error: any) {
         res.status(400).json({ message: error.message });

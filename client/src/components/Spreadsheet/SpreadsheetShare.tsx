@@ -2,37 +2,12 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { authTokensFetch } from "../../utils/authTokens";
 import { useInfo } from "../InfoContext";
+import { ShareInfo } from "./Functions/Types";
 
+import { fetchSpreadsheetShares, updatePermission } from "./Functions/SpreadsheetFetch";
 import Selector from "../MUI/Selector";
 
 import copyLinkImg from "../../media/svgs/copy-link.svg";
-
-type ShareInfo = {
-    uid: number;
-    username: string;
-    email: string;
-    photoURL: string;
-    permission: string;
-};
-
-const fetchSpreadsheetShares = async (spreadsheetId: number): Promise<ShareInfo[]> => {
-    const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shares`, {
-        method: 'GET',
-    });
-    return data;
-};
-
-const updatePermission = async (spreadsheetId: number, email: string, permission: string): Promise<void> => {
-    const headers = {
-        'Content-Type': 'application/json',
-    };
-
-    await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shared-users-ids`, {
-        method: 'PATCH',
-        headers: headers,
-        body: JSON.stringify({ email, permission }),
-    });
-};
 
 const shareSpreadsheet = async (spreadsheetId: number, email: string, permission: string): Promise<void> => {
     const headers = {
@@ -72,9 +47,9 @@ const SpreadsheetShare: React.FC<{ onClose: () => void, uid: number, spreadsheet
         () => shareSpreadsheet(spreadsheetId, email, permission),
         {
             onSuccess: () => {
-                queryClient.invalidateQueries(['spreadsheetShares', spreadsheetId]); // Refresh the list of shares
-                setEmail(''); // Clear the input field
-                setPermission('VIEW'); // Reset the permission
+                queryClient.invalidateQueries(['spreadsheetShares', spreadsheetId]);
+                setEmail('');
+                setPermission('VIEW');
             },
             onError: (error: any) => {
                 if (error.status !== 401) {

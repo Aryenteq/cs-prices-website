@@ -94,7 +94,7 @@ model Sheet {
   spreadsheetId Int
   name          String      @default("Sheet 1")
   index         Int
-  number        String      @default("#ffffff")
+  color         String      @default("#ffffff")
   numRows       Int         @default(100)
   numCols       Int         @default(26)
   columnWidths  Json?

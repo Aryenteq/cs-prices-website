@@ -271,17 +271,19 @@ export const getSpreadsheet = async (spreadsheetId: number, index: number, userI
     }
 
     const sheetInfo = spreadsheet.sheets.map(sheet => ({
+        id: sheet.id,
         name: sheet.name,
         index: sheet.index,
+        color: sheet.color,
     }));
 
     return {
         ...spreadsheet,
-        firstSheet: {
+        sheet: {
             ...firstSheet,
-            cells: firstSheet.cells, // cells for the first sheet
+            cells: firstSheet.cells,
         },
-        sheets: sheetInfo, // names and indexes of all sheets
+        sheetsInfo: sheetInfo, // all sheets basic info (w/o cells)
         permission,
     };
 };

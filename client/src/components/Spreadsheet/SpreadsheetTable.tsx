@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "react-query";
+import { useMutation } from "react-query";
 import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
 import { useInfo } from "../InfoContext";
 import ContextMenu from "./ContextMenu";
@@ -8,11 +8,13 @@ import {
     getTextAlign, getVerticalAlign
 } from "./Functions/Utils";
 import {
-    fetchSpreadsheet, updateColWidth, updateRowHeight, updateHiddenCols, updateHiddenRows,
-    deleteSheetCols, deleteSheetRows, addRows, addCols, updateCellContent
-} from "./Functions/Fetch";
-import type { Sheet } from "./Functions/Types";
+    updateColWidth, updateRowHeight, updateHiddenCols, updateHiddenRows,
+    deleteSheetCols, deleteSheetRows, addRows, addCols
+} from "./Functions/SheetFetch";
+import { updateCellContent } from "./Functions/CellFetch";
 import ResizeDialog from "./Functions/ResizeDialog";
+
+import type { Spreadsheet, Cell } from "./Functions/Types";
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
@@ -23,28 +25,11 @@ export const DEFAULT_FONT_SIZE = 12;
 export const DEFAULT_FONT_FAMILY = 'Arial';
 export const CS_PROTECTED_COLUMNS_LENGTH = 2;
 
-const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId, sheet, setSheet, selectedCellIds, setSelectedCellIds,
+const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellIds, setSelectedCellIds,
     currentFontFamily, setCurrentFontFamily, currentFontSize, setCurrentFontSize, currentTextColor, setCurrentTextColor, currentBgColor, setCurrentBgColor
 }) => {
     const { setInfo } = useInfo();
     const [isLoading, setIsLoading] = useState(true);
-
-    const { data: spreadsheet } = useQuery<any, Error>(
-        ['spreadsheet', spreadsheetId],
-        () => fetchSpreadsheet(spreadsheetId),
-        {
-            keepPreviousData: true,
-            onError: (error: any) => {
-                if (error.status !== 401) {
-                    console.error('Error getting spreadsheet:', error);
-                }
-                const parsedMessage = JSON.parse(error.message);
-                const errorMessage = parsedMessage.message || 'An unknown error occurred while getting the spreadsheet.';
-                setInfo({ message: errorMessage, isError: true });
-            },
-        }
-    );
-
     const [numRows, setNumRows] = useState<number>(100);
     const [numCols, setNumCols] = useState<number>(26);
     const [userPermission, setUserPermission] = useState<string | undefined>(undefined);
@@ -56,9 +41,8 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
     useEffect(() => {
         if (spreadsheet) {
-            setSheet(spreadsheet.firstSheet);
-            setNumRows(spreadsheet.firstSheet.numRows || 100);
-            setNumCols(spreadsheet.firstSheet.numCols || 26);
+            setNumRows(spreadsheet.sheet.numRows || 100);
+            setNumCols(spreadsheet.sheet.numCols || 26);
             setUserPermission(spreadsheet.permission);
             setSpreadsheetType(spreadsheet.type);
             setIsLoading(false);
@@ -73,18 +57,18 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; options: string[]; target: { row?: number, col?: number } } | null>(null);
 
     useEffect(() => {
-        if (sheet) {
-            const rowHeightsFromSheet = sheet.rowHeights || {};
-            const colWidthsFromSheet = sheet.columnWidths || {};
-            const hiddenRowsFromSheet = sheet.hiddenRows || {};
-            const hiddenColsFromSheet = sheet.hiddenCols || {};
+        if (spreadsheet?.sheet) {
+            const rowHeightsFromSheet = spreadsheet.sheet.rowHeights || {};
+            const colWidthsFromSheet = spreadsheet.sheet.columnWidths || {};
+            const hiddenRowsFromSheet = spreadsheet.sheet.hiddenRows || {};
+            const hiddenColsFromSheet = spreadsheet.sheet.hiddenCols || {};
 
             setRowHeights(initializeSizes(numRows, DEFAULT_ROW_HEIGHT, rowHeightsFromSheet));
             setColWidths(initializeSizes(numCols, DEFAULT_COL_WIDTH, colWidthsFromSheet));
             setHiddenRows(initializeVisibility(numRows, hiddenRowsFromSheet));
             setHiddenCols(initializeVisibility(numCols, hiddenColsFromSheet));
         }
-    }, [sheet, numRows, numCols]);
+    }, [spreadsheet, numRows, numCols]);
 
     const getColumnWidth = (colIndex: number) => {
         return colWidths[colIndex] || DEFAULT_COL_WIDTH;
@@ -134,7 +118,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                         }
                         setSaving(true);
                         setIsLoading(true);
-                        addColsMutation({ sheetId: Number(sheet.id), startIndex: col, colsNumber: 1 });
+                        addColsMutation({ sheetId: Number(spreadsheet!.sheet.id), startIndex: col, colsNumber: 1 });
                     }
                     break;
                 case "Insert 1 column right":
@@ -145,7 +129,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                         }
                         setSaving(true);
                         setIsLoading(true);
-                        addColsMutation({ sheetId: Number(sheet.id), startIndex: col + 1, colsNumber: 1 });
+                        addColsMutation({ sheetId: Number(spreadsheet!.sheet.id), startIndex: col + 1, colsNumber: 1 });
                     }
                     break;
                 case "Hide column":
@@ -164,7 +148,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                             newHidden[col] = true;
 
                             updateHiddenColsMutation({
-                                sheetId: sheet.id,
+                                sheetId: spreadsheet!.sheet.id,
                                 colIndex: col,
                                 hidden: true,
                             });
@@ -191,14 +175,14 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                         }
 
                         // CS Protected Columns: Index start from 0, therefore the "-1"
-                        if (spreadsheet.type === 'CS' && col <= CS_PROTECTED_COLUMNS_LENGTH - 1) {
+                        if (spreadsheet?.type === 'CS' && col <= CS_PROTECTED_COLUMNS_LENGTH - 1) {
                             setInfo({ message: 'Cannot delete this row.', isError: true });
                             break;
                         }
 
                         setSaving(true);
                         setIsLoading(true);
-                        deleteColsMutation({ sheetId: Number(sheet.id), startIndex: col, colsNumber });
+                        deleteColsMutation({ sheetId: Number(spreadsheet!.sheet.id), startIndex: col, colsNumber });
                     }
                     break;
                 case "Resize column":
@@ -216,7 +200,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                         }
                         setSaving(true);
                         setIsLoading(true);
-                        addRowsMutation({ sheetId: Number(sheet.id), startIndex: row, rowsNumber: 1 });
+                        addRowsMutation({ sheetId: Number(spreadsheet!.sheet.id), startIndex: row, rowsNumber: 1 });
                     }
                     break;
                 case "Insert 1 row below":
@@ -227,7 +211,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                         }
                         setSaving(true);
                         setIsLoading(true);
-                        addRowsMutation({ sheetId: Number(sheet.id), startIndex: row + 1, rowsNumber: 1 });
+                        addRowsMutation({ sheetId: Number(spreadsheet!.sheet.id), startIndex: row + 1, rowsNumber: 1 });
                     }
                     break;
                 case "Hide row":
@@ -246,7 +230,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                             newHidden[row] = true;
 
                             updateHiddenRowsMutation({
-                                sheetId: sheet.id,
+                                sheetId: spreadsheet!.sheet.id,
                                 rowIndex: row,
                                 hidden: true,
                             });
@@ -274,7 +258,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
                         setSaving(true);
                         setIsLoading(true);
-                        deleteRowsMutation({ sheetId: Number(sheet.id), startIndex: row, rowsNumber });
+                        deleteRowsMutation({ sheetId: Number(spreadsheet!.sheet.id), startIndex: row, rowsNumber });
                     }
                     break;
                 case "Resize row":
@@ -313,14 +297,23 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
         }
         else if (addRowsInputValue > 0) {
             setSaving(true);
-            addRowsMutation({ sheetId: Number(sheet.id), startIndex: numRows, rowsNumber: addRowsInputValue });
+            addRowsMutation({ sheetId: Number(spreadsheet!.sheet.id), startIndex: numRows, rowsNumber: addRowsInputValue });
         }
     };
 
     const { mutate: addRowsMutation } = useMutation(addRows, {
         onSuccess: (updatedSheet) => {
             setSaving(false);
-            setSheet(updatedSheet);
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
+            });
             setIsLoading(false);
         },
         onError: (error: any) => {
@@ -342,7 +335,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
     const { mutate: addColsMutation } = useMutation(addCols, {
         onSuccess: (updatedSheet) => {
             setSaving(false);
-            setSheet(updatedSheet);
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
+            });
             setIsLoading(false);
         },
         onError: (error: any) => {
@@ -370,7 +372,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
     const { mutate: deleteRowsMutation } = useMutation(deleteSheetRows, {
         onSuccess: (updatedSheet) => {
             setSaving(false);
-            setSheet(updatedSheet);
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
+            });
             setIsLoading(false);
         },
         onError: (error: any) => {
@@ -394,7 +405,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
     const { mutate: deleteColsMutation } = useMutation(deleteSheetCols, {
         onSuccess: (updatedSheet) => {
             setSaving(false);
-            setSheet(updatedSheet);
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
+            });
             setIsLoading(false);
         },
         onError: (error: any) => {
@@ -423,7 +443,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
         onSuccess: (updatedSheet) => {
             setSaving(false);
             //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
-            setSheet(updatedSheet);
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
+            });
             setIsLoading(false);
         },
         onError: (error: any) => {
@@ -445,7 +474,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
         onSuccess: (updatedSheet) => {
             setSaving(false);
             //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
-            setSheet(updatedSheet);
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
+            });
             setIsLoading(false);
         },
         onError: (error: any) => {
@@ -541,7 +579,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
                     setSaving(true);
                     updateColWidthMutation({
-                        sheetId: sheet.id,
+                        sheetId: spreadsheet!.sheet.id,
                         colIndex: currentResizeColIndex,
                         width: newWidth
                     });
@@ -555,7 +593,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
                     setSaving(true);
                     updateRowHeightMutation({
-                        sheetId: sheet.id,
+                        sheetId: spreadsheet!.sheet.id,
                         rowIndex: currentResizeRowIndex,
                         height: newHeight
                     });
@@ -587,7 +625,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
                 setSaving(true);
                 updateRowHeightMutation({
-                    sheetId: sheet.id,
+                    sheetId: spreadsheet!.sheet.id,
                     rowIndex: currentIndex,
                     height: newSize
                 });
@@ -600,7 +638,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
                 setSaving(true);
                 updateColWidthMutation({
-                    sheetId: sheet.id,
+                    sheetId: spreadsheet!.sheet.id,
                     colIndex: currentIndex,
                     width: newSize
                 });
@@ -619,7 +657,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
         onSuccess: (updatedSheet) => {
             setSaving(false);
             //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
-            setSheet(updatedSheet);
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
+            });
             setIsLoading(false);
         },
         onError: (error: any) => {
@@ -641,7 +688,16 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
         onSuccess: (updatedSheet) => {
             setSaving(false);
             //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
-            setSheet(updatedSheet);
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
+            });
             setIsLoading(false);
         },
         onError: (error: any) => {
@@ -691,7 +747,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
             setSaving(true);
             updateHiddenColsMutation({
-                sheetId: sheet.id,
+                sheetId: spreadsheet!.sheet.id,
                 colIndex: revealStart,
                 hidden: false,
             });
@@ -732,7 +788,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
             setSaving(true);
             updateHiddenRowsMutation({
-                sheetId: sheet.id,
+                sheetId: spreadsheet!.sheet.id,
                 rowIndex: revealStart,
                 hidden: false,
             });
@@ -829,7 +885,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
         const finalContent = content !== undefined ? content : cellContent;
 
         if (editingCell) {
-            const cell = sheet.cells.find(c => c.id === editingCell.id);
+            const cell = spreadsheet?.sheet.cells.find(c => c.id === editingCell.id);
 
             const currentContent = cell?.content ?? '';
             const newContent = finalContent ?? '';
@@ -840,11 +896,22 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 return;
             }
 
-            setSheet((prevSheet: Sheet) => {
-                const updatedCells = prevSheet.cells.map(cell =>
-                    cell.id === editingCell.id ? { ...cell, content: finalContent } : cell
-                );
-                return { ...prevSheet, cells: updatedCells };
+            setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                const updatedSheet = {
+                    ...prevSpreadsheet.sheet,
+                    cells: prevSpreadsheet.sheet.cells.map(cell =>
+                        cell.id === editingCell.id ? { ...cell, content: finalContent } : cell
+                    )
+                };
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
             });
 
             const updatedCellData = [{
@@ -907,7 +974,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
 
         for (let rowIndex = startRow; rowIndex <= endRow; rowIndex++) {
             for (let colIndex = startCol; colIndex <= endCol; colIndex++) {
-                const cell = sheet?.cells!.find((c: any) => c.row === rowIndex && c.col === colIndex);
+                const cell = spreadsheet?.sheet?.cells?.find((c: any) => c.row === rowIndex && c.col === colIndex);
                 if (cell) {
                     selectedIds.push(cell.id);
                 }
@@ -940,11 +1007,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
     };
 
     useEffect(() => {
-        if (selectedCellIds.length > 0 && sheet) {
+        if (selectedCellIds.length > 0 && spreadsheet!.sheet) {
             const calculatedRange = calculateSelectedRange(selectedCellIds);
             setSelectedRange(calculatedRange);
 
-            const cell = sheet.cells.find(c => c.id === selectedCellIds[0]);
+            const cell = spreadsheet?.sheet.cells.find(c => c.id === selectedCellIds[0]);
             if (cell) {
                 setCurrentFontFamily(cell.style?.fontFamily || DEFAULT_FONT_FAMILY);
                 setCurrentFontSize(cell.style?.fontSize || DEFAULT_FONT_SIZE);
@@ -952,15 +1019,19 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 setCurrentBgColor(cell.bgColor || '#242424');
             }
         }
-    }, [selectedCellIds, sheet]);
+    }, [selectedCellIds, spreadsheet!.sheet]);
 
     const calculateSelectedRange = (selectedIds: number[]) => {
-        if (!sheet || !sheet.cells) return null;
-        const selectedCells = selectedIds.map(id => sheet?.cells!.find((c: any) => c.id === id)!);
+        if (!spreadsheet!.sheet || !spreadsheet!.sheet.cells) return null;
+
+        const selectedCells = selectedIds
+            .map(id => spreadsheet!.sheet?.cells?.find((c: any) => c.id === id))
+            .filter((c): c is Cell => c !== undefined);
+
+        if (selectedCells.length === 0) return null;
+
         const rows = selectedCells.map(c => c.row);
         const cols = selectedCells.map(c => c.col);
-
-        if (rows.length === 0 || cols.length === 0) return null;
 
         const minRow = Math.min(...rows) + 1;
         const maxRow = Math.max(...rows) + 1;
@@ -978,7 +1049,6 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
     };
 
 
-
     const getBorderClasses = (id: number, rowIndex: number, colIndex: number) => {
         const isSelected = selectedCellIds.includes(id);
 
@@ -986,7 +1056,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
             return;
         }
 
-        const selectedCells = selectedCellIds.map(id => sheet?.cells!.find((c: any) => c.id === id)!);
+        const selectedCells = selectedCellIds.map(id => spreadsheet!.sheet?.cells?.find((c: any) => c.id === id)!);
         const rows = selectedCells.map(c => c.row);
         const cols = selectedCells.map(c => c.col);
 
@@ -1011,9 +1081,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
     };
 
     const getSelectedHeaders = () => {
-        const selectedCells = selectedCellIds.map(id => sheet?.cells!.find((c: any) => c.id === id)!);
-        const selectedRows = Array.from(new Set(selectedCells.map(c => c.row)));
-        const selectedCols = Array.from(new Set(selectedCells.map(c => c.col)));
+        const selectedCells = selectedCellIds.map(id => spreadsheet!.sheet?.cells?.find((c: any) => c.id === id)!);
+        const selectedRows = Array.from(new Set(selectedCells.map(c => c?.row)));
+        const selectedCols = Array.from(new Set(selectedCells.map(c => c?.col)));
 
         return { selectedRows, selectedCols };
     };
@@ -1030,13 +1100,13 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                             className="sticky left-0 z-20 border border-gray-400 p-2 bg-primary-lightest text-black text-xs break-words overflow-hidden"
                             style={{ width: FIRST_COLUMN_WIDTH, wordBreak: 'break-word' }}
                         >
-                            {selectedRange}
+                            {selectedRange === null ? '' : selectedRange}
                         </th>
 
 
                         {Array.from({ length: numCols }, (_, i) => {
                             if (!hiddenCols[i]) {
-                                const isSelected = selectedCols.includes(i);
+                                const isSelected = selectedCols?.includes(i);
 
                                 return (
                                     <th
@@ -1069,7 +1139,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                 <tbody>
                     {Array.from({ length: numRows }, (_, rowIndex) => {
                         if (!hiddenRows[rowIndex]) {
-                            const isRowSelected = selectedRows.includes(rowIndex);
+                            const isRowSelected = selectedRows?.includes(rowIndex);
 
                             return (
                                 <tr key={rowIndex} style={{ height: getRowHeight(rowIndex) }}>
@@ -1097,7 +1167,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId
                                     {Array.from({ length: numCols }, (_, colIndex) => {
                                         if (hiddenCols[colIndex]) return null;
 
-                                        const cell = sheet?.cells!.find(
+                                        const cell = spreadsheet?.sheet?.cells?.find(
                                             (c: any) => c.row === rowIndex && c.col === colIndex
                                         );
 

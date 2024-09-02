@@ -44,3 +44,11 @@ export const updateCellsBgColor = async (bgColors: { cellId: number, bgColor: st
     });
     return data;
 };
+
+export const updateCellContent = async (contents: { cellId: number, content: string }[]) => {
+    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/cells/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents }),
+    });
+};

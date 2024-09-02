@@ -56,7 +56,10 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
 
             return retryResponse.json();
         } else {
-            throw new Error('Failed to refresh token.');
+            Cookies.remove('access_token');
+            Cookies.remove('refresh_token');
+            window.location.href = '/';
+            return;
         }
     }
 

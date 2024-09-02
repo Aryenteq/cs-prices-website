@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useMutation, useQuery } from "react-query";
+import { useMutation } from "react-query";
 import { Button, Popover } from '@mui/material';
 import { SketchPicker } from 'react-color';
 
 import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
-import { authTokensFetch } from "../../utils/authTokens";
 import { useInfo } from "../InfoContext";
 import { sketchColors } from "./Functions/Utils";
 import {
     updateCellsStyle, updateCellsHorizontalAlignment,
     updateCellsVerticalAlignment, updateCellsColor, updateCellsBgColor
 } from "./Functions/CellFetch";
-import { Sheet, HorizontalAlignment, VerticalAlignment } from "./Functions/Types";
+import { Spreadsheet, HorizontalAlignment, VerticalAlignment } from "./Functions/Types";
 
 import { DEFAULT_FONT_SIZE } from "./SpreadsheetTable";
 
@@ -32,20 +31,11 @@ import verticalTopAlignmentImg from "../../media/svgs/vertical-top.svg";
 const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Helvetica', 'Georgia', 'Courier New',
     'Trebuchet MS', 'Impact', 'Open Sans', 'Playfair Display', 'Roboto', 'Dancing Script'];
 
-const fetchSpreadsheetPermission = async (spreadsheetId: number): Promise<string> => {
-    const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/permission`, {
-        method: 'GET',
-    });
-    return data;
-};
-
-
-const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheetId, sheet, setSheet, selectedCellIds, setSelectedCellIds,
+const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellIds, setSelectedCellIds,
     currentFontFamily, setCurrentFontFamily, currentFontSize, setCurrentFontSize, currentTextColor, setCurrentTextColor, currentBgColor, setCurrentBgColor
 }) => {
 
     const { setInfo } = useInfo();
-    const [permission, setPermission] = useState<string>('VIEW');
     const [isHorizontalAlignmentOpen, setHorizontalAlignmentOpen] = useState(false);
     const horizontalMenuRef = useRef<HTMLDivElement | null>(null);
     const [isVerticalAlignmentOpen, setVerticalAlignmentOpen] = useState(false);
@@ -67,23 +57,6 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
             e.currentTarget.value = lastValidValue;
         }
     };
-
-    useQuery<string, Error>(
-        ['spreadsheetPermission', spreadsheetId],
-        () => fetchSpreadsheetPermission(spreadsheetId),
-        {
-            keepPreviousData: true,
-            onSuccess: (data) => setPermission(data),
-            onError: (error: any) => {
-                if (error.status !== 401) {
-                    console.error('Error getting spreadsheet permission:', error);
-                }
-                const parsedMessage = JSON.parse(error.message);
-                const errorMessage = parsedMessage.message || 'An unknown error occurred while getting your permissions.';
-                setInfo({ message: errorMessage, isError: true });
-            },
-        }
-    );
 
     const showVerticalMenu = () => {
         setVerticalAlignmentOpen((prev) => !prev);
@@ -147,7 +120,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
 
 
 
-    const isDisabled = permission === 'VIEW';
+    const isDisabled = spreadsheet!.permission === 'VIEW';
 
 
 
@@ -226,7 +199,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
     const toggleTextStyle = (styleProperty: 'fontFamily' | 'fontSize' | 'fontWeight' | 'fontStyle' | 'textDecoration', toggleValue: string) => {
         if (selectedCellIds.length > 0) {
             const allHaveStyle = selectedCellIds.every((cellId) => {
-                const cell = sheet.cells.find(cell => cell.id === cellId);
+                const cell = spreadsheet?.sheet?.cells.find(cell => cell.id === cellId);
                 return cell?.style?.[styleProperty] === toggleValue;
             });
 
@@ -239,13 +212,24 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
                 newValue = Number(toggleValue);
             }
 
-            setSheet((prevSheet: Sheet) => {
-                const updatedCells = prevSheet.cells.map(cell =>
-                    selectedCellIds.includes(cell.id)
-                        ? { ...cell, style: { ...cell.style, [styleProperty]: newValue } }
-                        : cell
-                );
-                return { ...prevSheet, cells: updatedCells };
+            setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                const updatedSheet = {
+                    ...prevSpreadsheet.sheet,
+                    cells: prevSpreadsheet.sheet.cells.map(cell =>
+                        selectedCellIds.includes(cell.id)
+                            ? { ...cell, style: { ...cell.style, [styleProperty]: newValue } }
+                            : cell
+                    )
+                };
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
             });
 
             const stylesToUpdate = selectedCellIds.map((cellId) => ({
@@ -261,14 +245,26 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
 
     const setHorizontalAlignment = (value: HorizontalAlignment) => {
         if (selectedCellIds.length > 0) {
-            setSheet((prevSheet: Sheet) => {
-                const updatedCells = prevSheet.cells.map(cell =>
-                    selectedCellIds.includes(cell.id)
-                        ? { ...cell, hAlignment: value }
-                        : cell
-                );
-                return { ...prevSheet, cells: updatedCells };
+            setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                const updatedSheet = {
+                    ...prevSpreadsheet.sheet,
+                    cells: prevSpreadsheet.sheet.cells.map(cell =>
+                        selectedCellIds.includes(cell.id)
+                            ? { ...cell, hAlignment: value }
+                            : cell
+                    )
+                };
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
             });
+
 
             const hAlignmentsToUpdate = selectedCellIds.map((cellId) => ({
                 cellId: cellId,
@@ -282,14 +278,26 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
 
     const setVerticalAlignment = (value: VerticalAlignment) => {
         if (selectedCellIds.length > 0) {
-            setSheet((prevSheet: Sheet) => {
-                const updatedCells = prevSheet.cells.map(cell =>
-                    selectedCellIds.includes(cell.id)
-                        ? { ...cell, vAlignment: value }
-                        : cell
-                );
-                return { ...prevSheet, cells: updatedCells };
+            setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                const updatedSheet = {
+                    ...prevSpreadsheet.sheet,
+                    cells: prevSpreadsheet.sheet.cells.map(cell =>
+                        selectedCellIds.includes(cell.id)
+                            ? { ...cell, vAlignment: value }
+                            : cell
+                    )
+                };
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
             });
+
 
             const vAlignmentsToUpdate = selectedCellIds.map((cellId) => ({
                 cellId: cellId,
@@ -303,14 +311,26 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
 
     const setTextColor = (value: string) => {
         if (selectedCellIds.length > 0) {
-            setSheet((prevSheet: Sheet) => {
-                const updatedCells = prevSheet.cells.map(cell =>
-                    selectedCellIds.includes(cell.id)
-                        ? { ...cell, color: value }
-                        : cell
-                );
-                return { ...prevSheet, cells: updatedCells };
+            setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                const updatedSheet = {
+                    ...prevSpreadsheet.sheet,
+                    cells: prevSpreadsheet.sheet.cells.map(cell =>
+                        selectedCellIds.includes(cell.id)
+                            ? { ...cell, color: value }
+                            : cell
+                    )
+                };
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
             });
+
 
             const colorsToUpdate = selectedCellIds.map((cellId) => ({
                 cellId: cellId,
@@ -324,14 +344,26 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps> = ({ setSaving, spreadshe
 
     const setBgColor = (value: string) => {
         if (selectedCellIds.length > 0) {
-            setSheet((prevSheet: Sheet) => {
-                const updatedCells = prevSheet.cells.map(cell =>
-                    selectedCellIds.includes(cell.id)
-                        ? { ...cell, bgColor: value }
-                        : cell
-                );
-                return { ...prevSheet, cells: updatedCells };
+            setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
+                if (!prevSpreadsheet) {
+                    return prevSpreadsheet;
+                }
+
+                const updatedSheet = {
+                    ...prevSpreadsheet.sheet,
+                    cells: prevSpreadsheet.sheet.cells.map(cell =>
+                        selectedCellIds.includes(cell.id)
+                            ? { ...cell, bgColor: value }
+                            : cell
+                    )
+                };
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet,
+                };
             });
+
 
             const colorsToUpdate = selectedCellIds.map((cellId) => ({
                 cellId: cellId,
