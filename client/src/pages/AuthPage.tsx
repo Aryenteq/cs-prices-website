@@ -19,7 +19,7 @@ export const handleLogInSubmit = async (data: Record<string, string>, setInfo: (
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, data);
     const { accessToken, refreshToken } = response.data;
     Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
-    Cookies.set('refresh_token', refreshToken, { expires: 7 });
+    Cookies.set('refresh_token', refreshToken, { expires: 30 });
 
     const next = location.get('next');
     navigate(next ? `/${next}` : '/');
@@ -52,7 +52,7 @@ export const handleSignUpSubmit = async (data: Record<string, string>, setInfo: 
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/signup`, data);
     const { accessToken, refreshToken } = response.data;
     Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
-    Cookies.set('refresh_token', refreshToken, { expires: 7 });
+    Cookies.set('refresh_token', refreshToken, { expires: 30 });
 
     const next = location.get('next');
     navigate(next ? `/${next}` : '/');

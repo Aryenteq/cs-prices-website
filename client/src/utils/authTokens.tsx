@@ -15,7 +15,7 @@ const getAuthHeader = () => {
 
 export const saveTokens = (accessToken: string, refreshToken: string) => {
     Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
-    Cookies.set('refresh_token', refreshToken, { expires: 7 });
+    Cookies.set('refresh_token', refreshToken, { expires: 30 });
 };
 
 export const authTokensFetch = async (url: string, options: RequestInit): Promise<any> => {
@@ -62,7 +62,8 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
             Cookies.remove('refresh_token');
 
             // timing issues, let the prev req handle the cookies
-            // will change to navigate
+            // navigate() doesn't solve the issue - integrating it means passing the navigate through MULTIPLE functions
+            // would be innefficient
             setTimeout(() => {
                 window.location.href = '/connect';
             }, 100);

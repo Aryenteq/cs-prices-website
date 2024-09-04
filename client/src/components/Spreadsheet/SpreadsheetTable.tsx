@@ -1093,7 +1093,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps> = ({ setSaving, spreadsheet, 
 
     return (
         <div className="flex-grow overflow-auto custom-scrollbar">
-            <table className="table-fixed border-collapse border border-gray-400 w-full">
+            <table className="table-fixed border-collapse border border-gray-400 max-w-full max-h-full">
                 <thead className="sticky top-0 bg-gray-100">
                     <tr>
                         <th
