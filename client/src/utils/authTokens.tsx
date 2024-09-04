@@ -7,11 +7,11 @@ export const getRefreshToken = () => {
 const getAuthHeader = () => {
     const token = Cookies.get('access_token');
     if (!token) {
-      return {} as Record<string, string>;
+        return {} as Record<string, string>;
     }
     return { Authorization: `Bearer ${token}` };
-  };
-  
+};
+
 
 export const saveTokens = (accessToken: string, refreshToken: string) => {
     Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
@@ -38,6 +38,7 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
 
         if (refreshResponse.ok) {
             const data = await refreshResponse.json();
+
             saveTokens(data.accessToken, data.refreshToken);
 
             // original req
@@ -49,6 +50,7 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
                 },
             });
 
+
             if (!retryResponse.ok) {
                 const errorResponse = await retryResponse.json();
                 throw new Error(errorResponse.message || 'Failed to complete request after token refresh.');
@@ -58,8 +60,12 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
         } else {
             Cookies.remove('access_token');
             Cookies.remove('refresh_token');
-            window.location.href = '/';
-            return;
+
+            // timing issues, let the prev req handle the cookies
+            // will change to navigate
+            setTimeout(() => {
+                window.location.href = '/connect';
+            }, 100);
         }
     }
 

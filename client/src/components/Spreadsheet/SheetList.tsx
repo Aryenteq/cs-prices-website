@@ -375,7 +375,7 @@ const SheetList: React.FC<SpreadsheetProps> = ({
 
             {/* Rename Dialog */}
             <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{color: '#510154',}}>Rename Sheet</DialogTitle>
+                <DialogTitle sx={{ color: '#510154', }}>Rename Sheet</DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
@@ -388,26 +388,26 @@ const SheetList: React.FC<SpreadsheetProps> = ({
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setRenameDialogOpen(false)} sx={{color: '#510154',}}>Cancel</Button>
-                    <Button onClick={handleRenameConfirm} sx={{color: '#510154',}}>Ok</Button>
+                    <Button onClick={() => setRenameDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                    <Button onClick={handleRenameConfirm} sx={{ color: '#510154', }}>Ok</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Delete Dialog */}
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{color: '#510154',}}>Delete Sheet</DialogTitle>
-                <DialogContent sx={{color: '#510154',}}>
+                <DialogTitle sx={{ color: '#510154', }}>Delete Sheet</DialogTitle>
+                <DialogContent sx={{ color: '#510154', }}>
                     Are you sure you want to delete this sheet? This action cannot be reversed.
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{color: '#510154',}}>Cancel</Button>
-                    <Button onClick={handleDeleteConfirm} sx={{color: '#510154',}}>Delete</Button>
+                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                    <Button onClick={handleDeleteConfirm} sx={{ color: '#510154', }}>Delete</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Change Index Dialog */}
             <Dialog open={indexDialogOpen} onClose={() => setIndexDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{color: '#510154',}}>Change Sheet Index</DialogTitle>
+                <DialogTitle sx={{ color: '#510154', }}>Change Sheet Index</DialogTitle>
                 <Typography align="center" gutterBottom color="textSecondary">
                     {`Index can be between 1 and ${SheetList.length + 1}`}
                 </Typography>
@@ -427,14 +427,14 @@ const SheetList: React.FC<SpreadsheetProps> = ({
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setIndexDialogOpen(false)} sx={{color: '#510154',}}>Cancel</Button>
-                    <Button onClick={handleIndexConfirm} sx={{color: '#510154',}}>Ok</Button>
+                    <Button onClick={() => setIndexDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                    <Button onClick={handleIndexConfirm} sx={{ color: '#510154', }}>Ok</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Color Dialog */}
             <Dialog open={colorDialogOpen} onClose={() => setColorDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{color: '#510154',}}>Recolor Sheet</DialogTitle>
+                <DialogTitle sx={{ color: '#510154', }}>Recolor Sheet</DialogTitle>
                 <DialogContent>
                     <SketchPicker
                         color={newColor}
@@ -444,8 +444,8 @@ const SheetList: React.FC<SpreadsheetProps> = ({
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setColorDialogOpen(false)} sx={{color: '#510154',}}>Cancel</Button>
-                    <Button onClick={handleColorConfirm} sx={{color: '#510154',}}>Ok</Button>
+                    <Button onClick={() => setColorDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                    <Button onClick={handleColorConfirm} sx={{ color: '#510154', }}>Ok</Button>
                 </DialogActions>
             </Dialog>
         </div>
