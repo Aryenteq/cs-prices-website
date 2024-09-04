@@ -12,7 +12,6 @@ import TextField from '@mui/material/TextField';
 import { SketchPicker } from 'react-color';
 import { sketchColors } from "./Functions/Utils";
 
-import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
 import { getSheet, addSheet, deleteSheet, setName, setIndex, setColor } from "./Functions/SheetFetch";
 import { useInfo } from "../InfoContext";
 import type { SheetInfo, Spreadsheet, Sheet } from "./Functions/Types";
@@ -20,436 +19,430 @@ import { encryptData } from "../../utils/encrypt";
 import ContextMenu from "./ContextMenu";
 import { Typography } from "@mui/material";
 
-const SheetList: React.FC<SpreadsheetProps> = ({
-    setSaving,
+
+
+const SheetList: React.FC<{
+    spreadsheet: Spreadsheet | undefined;
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
+}> = ({
     spreadsheet,
     setSpreadsheet,
-    selectedCellIds,
-    setSelectedCellIds,
-    currentFontFamily,
-    setCurrentFontFamily,
-    currentFontSize,
-    setCurrentFontSize,
-    currentTextColor,
-    setCurrentTextColor,
-    currentBgColor,
-    setCurrentBgColor
 }) => {
-    const { setInfo } = useInfo();
-    const navigate = useNavigate();
-    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; sheetId: number } | null>(null);
-    const canEdit = spreadsheet!.permission !== 'VIEW';
+        const { setInfo } = useInfo();
+        const navigate = useNavigate();
+        const [contextMenu, setContextMenu] = useState<{ x: number; y: number; sheetId: number } | null>(null);
+        const canEdit = spreadsheet!.permission !== 'VIEW';
 
-    const [renameDialogOpen, setRenameDialogOpen] = useState<boolean>(false);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-    const [indexDialogOpen, setIndexDialogOpen] = useState<boolean>(false);
-    const [colorDialogOpen, setColorDialogOpen] = useState<boolean>(false);
+        const [renameDialogOpen, setRenameDialogOpen] = useState<boolean>(false);
+        const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+        const [indexDialogOpen, setIndexDialogOpen] = useState<boolean>(false);
+        const [colorDialogOpen, setColorDialogOpen] = useState<boolean>(false);
 
-    const [currentSheetId, setCurrentSheetId] = useState<number>(0);
-    const [currentRightClickedSheetId, setCurrentRightClickedSheetId] = useState<number>(0);
-    const [newName, setNewName] = useState<string>('');
-    const [newColor, setNewColor] = useState<string>('');
-    const [newIndex, setNewIndex] = useState<number>(1); // normalized for users
+        const [currentSheetId, setCurrentSheetId] = useState<number>(0);
+        const [currentRightClickedSheetId, setCurrentRightClickedSheetId] = useState<number>(0);
+        const [newName, setNewName] = useState<string>('');
+        const [newColor, setNewColor] = useState<string>('');
+        const [newIndex, setNewIndex] = useState<number>(1); // normalized for users
 
-    const { mutate: changeSheetMutation } = useMutation(
-        async ({ sheetId }: { sheetId: number }) => {
-            return await getSheet(sheetId);
-        },
-        {
-            onSuccess: (updatedSheet) => {
-                setSpreadsheet((prevSpreadsheet) => {
-                    if (!prevSpreadsheet) {
-                        return prevSpreadsheet;
+        const { mutate: changeSheetMutation } = useMutation(
+            async ({ sheetId }: { sheetId: number }) => {
+                return await getSheet(sheetId);
+            },
+            {
+                onSuccess: (updatedSheet) => {
+                    setSpreadsheet((prevSpreadsheet) => {
+                        if (!prevSpreadsheet) {
+                            return prevSpreadsheet;
+                        }
+
+                        return {
+                            ...prevSpreadsheet,
+                            sheet: updatedSheet,
+                        };
+                    });
+
+                    setCurrentSheetId(updatedSheet.id);
+                    const encodedInfo = encodeURIComponent(encryptData(`${updatedSheet.spreadsheetId}?index=${updatedSheet.index}`));
+                    navigate(`/spreadsheet/${encodedInfo}`);
+                },
+                onError: (error: any) => {
+                    let errorMessage = 'Something went wrong getting the sheet. Try again';
+
+                    if (error instanceof Error) {
+                        errorMessage = error.message;
                     }
 
-                    return {
-                        ...prevSpreadsheet,
-                        sheet: updatedSheet,
-                    };
-                });
-
-                setCurrentSheetId(updatedSheet.id);
-                const encodedInfo = encodeURIComponent(encryptData(`${updatedSheet.spreadsheetId}?index=${updatedSheet.index}`));
-                navigate(`/spreadsheet/${encodedInfo}`);
-            },
-            onError: (error: any) => {
-                let errorMessage = 'Something went wrong getting the sheet. Try again';
-
-                if (error instanceof Error) {
-                    errorMessage = error.message;
+                    if (error.status !== 401) {
+                        console.error('Error getting sheet:', errorMessage);
+                    }
+                    setInfo({ message: errorMessage, isError: true });
                 }
-
-                if (error.status !== 401) {
-                    console.error('Error getting sheet:', errorMessage);
-                }
-                setInfo({ message: errorMessage, isError: true });
             }
-        }
-    );
-
-    const updateSheetInfo = (prevSpreadsheet: Spreadsheet, updatedSheet: Sheet): Spreadsheet => {
-        if (!prevSpreadsheet) {
-            return prevSpreadsheet;
-        }
-
-        const newSheetInfo: SheetInfo = {
-            id: updatedSheet.id,
-            name: updatedSheet.name,
-            index: updatedSheet.index,
-            color: updatedSheet.color,
-        };
-
-        const updatedSheetsInfo = prevSpreadsheet.sheetsInfo.map(sheet =>
-            sheet.id === updatedSheet.id ? newSheetInfo : sheet
         );
 
-        const sheetExists = prevSpreadsheet.sheetsInfo.some(sheet => sheet.id === updatedSheet.id);
-        const finalSheetsInfo = sheetExists
-            ? updatedSheetsInfo
-            : [...updatedSheetsInfo, newSheetInfo];
+        const updateSheetInfo = (prevSpreadsheet: Spreadsheet, updatedSheet: Sheet): Spreadsheet => {
+            if (!prevSpreadsheet) {
+                return prevSpreadsheet;
+            }
 
-        return {
-            ...prevSpreadsheet,
-            sheet: updatedSheet,
-            sheetsInfo: finalSheetsInfo,
+            const newSheetInfo: SheetInfo = {
+                id: updatedSheet.id,
+                name: updatedSheet.name,
+                index: updatedSheet.index,
+                color: updatedSheet.color,
+            };
+
+            const updatedSheetsInfo = prevSpreadsheet.sheetsInfo.map(sheet =>
+                sheet.id === updatedSheet.id ? newSheetInfo : sheet
+            );
+
+            const sheetExists = prevSpreadsheet.sheetsInfo.some(sheet => sheet.id === updatedSheet.id);
+            const finalSheetsInfo = sheetExists
+                ? updatedSheetsInfo
+                : [...updatedSheetsInfo, newSheetInfo];
+
+            return {
+                ...prevSpreadsheet,
+                sheet: updatedSheet,
+                sheetsInfo: finalSheetsInfo,
+            };
         };
-    };
 
-    const { mutate: addSheetMutation } = useMutation(
-        (params: { spreadsheetId: number; index: number, name: string }) => addSheet(params),
-        {
-            onSuccess: (updatedSheet) => {
-                setSpreadsheet((prevSpreadsheet) => {
-                    const newSpreadsheet = updateSheetInfo(prevSpreadsheet!, updatedSheet);
-                    return newSpreadsheet;
-                });
-            },
-            onError: (error: any) => {
-                let errorMessage = 'Something went wrong creating the sheet. Try again';
+        const { mutate: addSheetMutation } = useMutation(
+            (params: { spreadsheetId: number; index: number, name: string }) => addSheet(params),
+            {
+                onSuccess: (updatedSheet) => {
+                    setSpreadsheet((prevSpreadsheet) => {
+                        const newSpreadsheet = updateSheetInfo(prevSpreadsheet!, updatedSheet);
+                        return newSpreadsheet;
+                    });
+                },
+                onError: (error: any) => {
+                    let errorMessage = 'Something went wrong creating the sheet. Try again';
 
-                if (error instanceof Error) {
-                    errorMessage = error.message;
-                }
+                    if (error instanceof Error) {
+                        errorMessage = error.message;
+                    }
 
-                if (error.status !== 401) {
-                    console.error('Error creating sheet:', errorMessage);
-                }
-                setInfo({ message: errorMessage, isError: true });
-            },
-        }
-    );
+                    if (error.status !== 401) {
+                        console.error('Error creating sheet:', errorMessage);
+                    }
+                    setInfo({ message: errorMessage, isError: true });
+                },
+            }
+        );
 
-    const { mutate: renameSheetMutation } = useMutation(
-        ({ sheetId, newName }: { sheetId: number; newName: string }) => setName({ sheetId, name: newName }),
-        {
-            onSuccess: (updatedSheet) => {
-                setSpreadsheet((prevSpreadsheet) =>
-                    updateSheetInfo(prevSpreadsheet!, updatedSheet)
-                );
-            },
-            onError: (error: any) => {
-                let errorMessage = 'Something went wrong renaming the sheet. Try again';
+        const { mutate: renameSheetMutation } = useMutation(
+            ({ sheetId, newName }: { sheetId: number; newName: string }) => setName({ sheetId, name: newName }),
+            {
+                onSuccess: (updatedSheet) => {
+                    setSpreadsheet((prevSpreadsheet) =>
+                        updateSheetInfo(prevSpreadsheet!, updatedSheet)
+                    );
+                },
+                onError: (error: any) => {
+                    let errorMessage = 'Something went wrong renaming the sheet. Try again';
 
-                if (error instanceof Error) {
-                    errorMessage = error.message;
-                }
+                    if (error instanceof Error) {
+                        errorMessage = error.message;
+                    }
 
-                if (error.status !== 401) {
-                    console.error('Error renaming sheet:', errorMessage);
-                }
-                setInfo({ message: errorMessage, isError: true });
-            },
-        }
-    );
+                    if (error.status !== 401) {
+                        console.error('Error renaming sheet:', errorMessage);
+                    }
+                    setInfo({ message: errorMessage, isError: true });
+                },
+            }
+        );
 
-    const { mutate: deleteSheetMutation } = useMutation(
-        ({ sheetId }: { sheetId: number }) => deleteSheet(sheetId),
-        {
-            onSuccess: (deletedSheet) => {
-                setSpreadsheet((prevSpreadsheet) => {
-                    if (!prevSpreadsheet) return prevSpreadsheet;
+        const { mutate: deleteSheetMutation } = useMutation(
+            ({ sheetId }: { sheetId: number }) => deleteSheet(sheetId),
+            {
+                onSuccess: (deletedSheet) => {
+                    setSpreadsheet((prevSpreadsheet) => {
+                        if (!prevSpreadsheet) return prevSpreadsheet;
 
-                    const updatedSheetsInfo = prevSpreadsheet.sheetsInfo.filter(
-                        (sheet) => sheet.id !== deletedSheet.sheetId
+                        const updatedSheetsInfo = prevSpreadsheet.sheetsInfo.filter(
+                            (sheet) => sheet.id !== deletedSheet.sheetId
+                        );
+
+                        const newSheetId = updatedSheetsInfo.length > 0 ? updatedSheetsInfo[0].id : null;
+
+                        return {
+                            ...prevSpreadsheet,
+                            sheet: newSheetId ? { ...prevSpreadsheet.sheet, id: newSheetId } : prevSpreadsheet.sheet,
+                            sheetsInfo: updatedSheetsInfo,
+                        };
+                    });
+
+                    setTimeout(() => {
+                        if (spreadsheet!.sheetsInfo.length > 0) {
+                            changeSheetMutation({ sheetId: spreadsheet!.sheetsInfo[0].id });
+                        }
+                    }, 0);
+                },
+                onError: (error: any) => {
+                    let errorMessage = 'Something went wrong deleting the sheet. Try again';
+
+                    if (error instanceof Error) {
+                        errorMessage = error.message;
+                    }
+
+                    if (error.status !== 401) {
+                        console.error('Error deleting sheet:', errorMessage);
+                    }
+                    setInfo({ message: errorMessage, isError: true });
+                },
+            }
+        );
+
+        const { mutate: indexSheetMutation } = useMutation(
+            ({ sheetId, newIndex }: { sheetId: number; newIndex: number }) => setIndex({ sheetId, newIndex }),
+            {
+                onSuccess: (updatedSheetsInfo) => {
+                    setSpreadsheet((prevSpreadsheet) => {
+                        if (!prevSpreadsheet)
+                            return prevSpreadsheet;
+                        return {
+                            ...prevSpreadsheet,
+                            sheetsInfo: updatedSheetsInfo,
+                        };
+                    }
                     );
 
-                    const newSheetId = updatedSheetsInfo.length > 0 ? updatedSheetsInfo[0].id : null;
+                    setTimeout(() => {
+                        if (spreadsheet!.sheetsInfo.length > 0) {
+                            changeSheetMutation({ sheetId: currentSheetId });
+                        }
+                    }, 0);
+                },
+                onError: (error: any) => {
+                    let errorMessage = 'Something went wrong renaming the sheet. Try again';
 
-                    return {
-                        ...prevSpreadsheet,
-                        sheet: newSheetId ? { ...prevSpreadsheet.sheet, id: newSheetId } : prevSpreadsheet.sheet,
-                        sheetsInfo: updatedSheetsInfo,
-                    };
-                });
-
-                setTimeout(() => {
-                    if (spreadsheet!.sheetsInfo.length > 0) {
-                        changeSheetMutation({ sheetId: spreadsheet!.sheetsInfo[0].id });
+                    if (error instanceof Error) {
+                        errorMessage = error.message;
                     }
-                }, 0);
-            },
-            onError: (error: any) => {
-                let errorMessage = 'Something went wrong deleting the sheet. Try again';
 
-                if (error instanceof Error) {
-                    errorMessage = error.message;
-                }
-
-                if (error.status !== 401) {
-                    console.error('Error deleting sheet:', errorMessage);
-                }
-                setInfo({ message: errorMessage, isError: true });
-            },
-        }
-    );
-
-    const { mutate: indexSheetMutation } = useMutation(
-        ({ sheetId, newIndex }: { sheetId: number; newIndex: number }) => setIndex({ sheetId, newIndex }),
-        {
-            onSuccess: (updatedSheetsInfo) => {
-                setSpreadsheet((prevSpreadsheet) => {
-                    if (!prevSpreadsheet)
-                        return prevSpreadsheet;
-                    return {
-                        ...prevSpreadsheet,
-                        sheetsInfo: updatedSheetsInfo,
-                    };
-                }
-                );
-
-                setTimeout(() => {
-                    if (spreadsheet!.sheetsInfo.length > 0) {
-                        changeSheetMutation({ sheetId: currentSheetId });
+                    if (error.status !== 401) {
+                        console.error('Error renaming sheet:', errorMessage);
                     }
-                }, 0);
-            },
-            onError: (error: any) => {
-                let errorMessage = 'Something went wrong renaming the sheet. Try again';
-
-                if (error instanceof Error) {
-                    errorMessage = error.message;
-                }
-
-                if (error.status !== 401) {
-                    console.error('Error renaming sheet:', errorMessage);
-                }
-                setInfo({ message: errorMessage, isError: true });
-            },
-        }
-    );
-
-    const { mutate: colorSheetMutation } = useMutation(
-        ({ sheetId, newColor }: { sheetId: number; newColor: string }) => setColor({ sheetId, color: newColor }),
-        {
-            onSuccess: (updatedSheet) => {
-                setSpreadsheet((prevSpreadsheet) =>
-                    updateSheetInfo(prevSpreadsheet!, updatedSheet)
-                );
-            },
-            onError: (error: any) => {
-                let errorMessage = 'Something went wrong recoloring the sheet. Try again';
-
-                if (error instanceof Error) {
-                    errorMessage = error.message;
-                }
-
-                if (error.status !== 401) {
-                    console.error('Error recoloring sheet:', errorMessage);
-                }
-                setInfo({ message: errorMessage, isError: true });
-            },
-        }
-    );
-
-    const handleRightClick = (e: React.MouseEvent, sheetId: number, sheetName: string, sheetColor: string, sheetIndex: number) => {
-        e.preventDefault();
-        setContextMenu({ x: e.clientX, y: e.clientY, sheetId });
-        setCurrentRightClickedSheetId(sheetId);
-        setNewName(sheetName);
-        setNewColor(sheetColor);
-        setNewIndex(sheetIndex + 1);
-    };
-
-    const handleContextMenuClick = (option: string) => {
-        if (contextMenu) {
-
-            switch (option) {
-                case "Rename Sheet":
-                    setRenameDialogOpen(true);
-                    break;
-                case "Delete Sheet":
-                    setDeleteDialogOpen(true);
-                    break;
-                case "Change Index":
-                    setIndexDialogOpen(true);
-                    break;
-                case "Change Color":
-                    setColorDialogOpen(true);
-                    break;
-                default:
-                    break;
+                    setInfo({ message: errorMessage, isError: true });
+                },
             }
+        );
+
+        const { mutate: colorSheetMutation } = useMutation(
+            ({ sheetId, newColor }: { sheetId: number; newColor: string }) => setColor({ sheetId, color: newColor }),
+            {
+                onSuccess: (updatedSheet) => {
+                    setSpreadsheet((prevSpreadsheet) =>
+                        updateSheetInfo(prevSpreadsheet!, updatedSheet)
+                    );
+                },
+                onError: (error: any) => {
+                    let errorMessage = 'Something went wrong recoloring the sheet. Try again';
+
+                    if (error instanceof Error) {
+                        errorMessage = error.message;
+                    }
+
+                    if (error.status !== 401) {
+                        console.error('Error recoloring sheet:', errorMessage);
+                    }
+                    setInfo({ message: errorMessage, isError: true });
+                },
+            }
+        );
+
+        const handleRightClick = (e: React.MouseEvent, sheetId: number, sheetName: string, sheetColor: string, sheetIndex: number) => {
+            e.preventDefault();
+            setContextMenu({ x: e.clientX, y: e.clientY, sheetId });
+            setCurrentRightClickedSheetId(sheetId);
+            setNewName(sheetName);
+            setNewColor(sheetColor);
+            setNewIndex(sheetIndex + 1);
+        };
+
+        const handleContextMenuClick = (option: string) => {
+            if (contextMenu) {
+
+                switch (option) {
+                    case "Rename Sheet":
+                        setRenameDialogOpen(true);
+                        break;
+                    case "Delete Sheet":
+                        setDeleteDialogOpen(true);
+                        break;
+                    case "Change Index":
+                        setIndexDialogOpen(true);
+                        break;
+                    case "Change Color":
+                        setColorDialogOpen(true);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            setContextMenu(null);
+        };
+
+        const handleRenameConfirm = () => {
+            renameSheetMutation({ sheetId: currentRightClickedSheetId, newName });
+            setRenameDialogOpen(false);
+            setContextMenu(null);
+        };
+
+        const handleDeleteConfirm = () => {
+            deleteSheetMutation({ sheetId: currentRightClickedSheetId });
+            setDeleteDialogOpen(false);
+            setContextMenu(null);
+        };
+
+        const handleIndexConfirm = () => {
+            indexSheetMutation({ sheetId: currentRightClickedSheetId, newIndex: newIndex - 1 });
+            setIndexDialogOpen(false);
+            setContextMenu(null);
+        };
+
+        const handleColorConfirm = () => {
+            console.log('bb');
+            colorSheetMutation({ sheetId: currentRightClickedSheetId, newColor });
+            setColorDialogOpen(false);
+            setContextMenu(null);
+        };
+
+        const handleColorChange = (color: any) => {
+            console.log('aa');
+            setNewColor(color.hex);
         }
-        setContextMenu(null);
-    };
-
-    const handleRenameConfirm = () => {
-        renameSheetMutation({ sheetId: currentRightClickedSheetId, newName });
-        setRenameDialogOpen(false);
-        setContextMenu(null);
-    };
-
-    const handleDeleteConfirm = () => {
-        deleteSheetMutation({ sheetId: currentRightClickedSheetId });
-        setDeleteDialogOpen(false);
-        setContextMenu(null);
-    };
-
-    const handleIndexConfirm = () => {
-        indexSheetMutation({ sheetId: currentRightClickedSheetId, newIndex: newIndex - 1 });
-        setIndexDialogOpen(false);
-        setContextMenu(null);
-    };
-
-    const handleColorConfirm = () => {
-        console.log('bb');
-        colorSheetMutation({ sheetId: currentRightClickedSheetId, newColor });
-        setColorDialogOpen(false);
-        setContextMenu(null);
-    };
-
-    const handleColorChange = (color: any) => {
-        console.log('aa');
-        setNewColor(color.hex);
-    }
 
 
-    return (
-        <div className="w-full h-[150px] flex overflow-x-auto custom-scrollbar items-center gap-1">
-            {spreadsheet!.sheetsInfo
-                ?.sort((a, b) => a.index - b.index)
-                .map((sheetInfo) => {
-                    return (
-                        <div
-                            key={sheetInfo.id}
-                            className={`h-full w-32 flex items-center justify-center border-b-4 truncate outline outline-1 outline-gray-500
+        return (
+            <div className="w-full h-[150px] flex overflow-x-auto custom-scrollbar items-center gap-1">
+                {spreadsheet!.sheetsInfo
+                    ?.sort((a, b) => a.index - b.index)
+                    .map((sheetInfo) => {
+                        return (
+                            <div
+                                key={sheetInfo.id}
+                                className={`h-full w-32 flex items-center justify-center border-b-4 truncate outline outline-1 outline-gray-500
                                         outline-offset-[-1px] cursor-pointer 
                                         ${sheetInfo.id === currentSheetId ? 'bg-primary-lightest text-black' : ''}`}
-                            style={{ borderBottomColor: sheetInfo.color }}
-                            onClick={() => changeSheetMutation({ sheetId: sheetInfo.id })}
-                            onContextMenu={(e) => handleRightClick(e, sheetInfo.id, sheetInfo.name, sheetInfo.color, sheetInfo.index)}
-                        >
-                            {sheetInfo.name}
-                        </div>
-                    );
-                })}
+                                style={{ borderBottomColor: sheetInfo.color }}
+                                onClick={() => changeSheetMutation({ sheetId: sheetInfo.id })}
+                                onContextMenu={(e) => handleRightClick(e, sheetInfo.id, sheetInfo.name, sheetInfo.color, sheetInfo.index)}
+                            >
+                                {sheetInfo.name}
+                            </div>
+                        );
+                    })}
 
 
-            {canEdit &&
-                <button className="h-7 w-7 flex justify-center bg-primary rounded-lg" title="New sheet"
-                    onClick={() =>
-                        addSheetMutation({
-                            spreadsheetId: spreadsheet!.id,
-                            index: spreadsheet!.sheetsInfo.length,
-                            name: `Sheet ${spreadsheet!.sheetsInfo.length + 1}`
-                        })
-                    }>
-                    +
-                </button>
-            }
+                {canEdit &&
+                    <button className="h-7 w-7 flex justify-center bg-primary rounded-lg" title="New sheet"
+                        onClick={() =>
+                            addSheetMutation({
+                                spreadsheetId: spreadsheet!.id,
+                                index: spreadsheet!.sheetsInfo.length,
+                                name: `Sheet ${spreadsheet!.sheetsInfo.length + 1}`
+                            })
+                        }>
+                        +
+                    </button>
+                }
 
-            {contextMenu && canEdit && (
-                <ContextMenu
-                    x={contextMenu.x}
-                    y={contextMenu.y}
-                    options={[
-                        'Rename Sheet',
-                        ...(spreadsheet!.sheetsInfo.length > 1 ? ['Delete Sheet'] : []),
-                        ...(spreadsheet!.sheetsInfo.length > 1 ? ['Change Index'] : []),
-                        'Change Color'
-                    ]}
-                    onClick={handleContextMenuClick}
-                    onClose={() => setContextMenu(null)}
-                />
-            )}
-
-            {/* Rename Dialog */}
-            <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{ color: '#510154', }}>Rename Sheet</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="New Name"
-                        type="text"
-                        fullWidth
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
+                {contextMenu && canEdit && (
+                    <ContextMenu
+                        x={contextMenu.x}
+                        y={contextMenu.y}
+                        options={[
+                            'Rename Sheet',
+                            ...(spreadsheet!.sheetsInfo.length > 1 ? ['Delete Sheet'] : []),
+                            ...(spreadsheet!.sheetsInfo.length > 1 ? ['Change Index'] : []),
+                            'Change Color'
+                        ]}
+                        onClick={handleContextMenuClick}
+                        onClose={() => setContextMenu(null)}
                     />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setRenameDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
-                    <Button onClick={handleRenameConfirm} sx={{ color: '#510154', }}>Ok</Button>
-                </DialogActions>
-            </Dialog>
+                )}
 
-            {/* Delete Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{ color: '#510154', }}>Delete Sheet</DialogTitle>
-                <DialogContent sx={{ color: '#510154', }}>
-                    Are you sure you want to delete this sheet? This action cannot be reversed.
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
-                    <Button onClick={handleDeleteConfirm} sx={{ color: '#510154', }}>Delete</Button>
-                </DialogActions>
-            </Dialog>
+                {/* Rename Dialog */}
+                <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
+                    <DialogTitle sx={{ color: '#510154', }}>Rename Sheet</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            label="New Name"
+                            type="text"
+                            fullWidth
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setRenameDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                        <Button onClick={handleRenameConfirm} sx={{ color: '#510154', }}>Ok</Button>
+                    </DialogActions>
+                </Dialog>
 
-            {/* Change Index Dialog */}
-            <Dialog open={indexDialogOpen} onClose={() => setIndexDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{ color: '#510154', }}>Change Sheet Index</DialogTitle>
-                <Typography align="center" gutterBottom color="textSecondary">
-                    {`Index can be between 1 and ${SheetList.length + 1}`}
-                </Typography>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="New Index"
-                        type="number"
-                        fullWidth
-                        value={newIndex}
-                        onChange={(e) => setNewIndex(Number(e.target.value))}
-                        inputProps={{
-                            min: 1,
-                            max: spreadsheet!.sheetsInfo.length,
-                        }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setIndexDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
-                    <Button onClick={handleIndexConfirm} sx={{ color: '#510154', }}>Ok</Button>
-                </DialogActions>
-            </Dialog>
+                {/* Delete Dialog */}
+                <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
+                    <DialogTitle sx={{ color: '#510154', }}>Delete Sheet</DialogTitle>
+                    <DialogContent sx={{ color: '#510154', }}>
+                        Are you sure you want to delete this sheet? This action cannot be reversed.
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                        <Button onClick={handleDeleteConfirm} sx={{ color: '#510154', }}>Delete</Button>
+                    </DialogActions>
+                </Dialog>
 
-            {/* Color Dialog */}
-            <Dialog open={colorDialogOpen} onClose={() => setColorDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{ color: '#510154', }}>Recolor Sheet</DialogTitle>
-                <DialogContent>
-                    <SketchPicker
-                        color={newColor}
-                        onChangeComplete={handleColorChange}
-                        disableAlpha
-                        presetColors={sketchColors}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setColorDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
-                    <Button onClick={handleColorConfirm} sx={{ color: '#510154', }}>Ok</Button>
-                </DialogActions>
-            </Dialog>
-        </div>
-    );
-};
+                {/* Change Index Dialog */}
+                <Dialog open={indexDialogOpen} onClose={() => setIndexDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
+                    <DialogTitle sx={{ color: '#510154', }}>Change Sheet Index</DialogTitle>
+                    <Typography align="center" gutterBottom color="textSecondary">
+                        {`Index can be between 1 and ${SheetList.length + 1}`}
+                    </Typography>
+                    <DialogContent>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            label="New Index"
+                            type="number"
+                            fullWidth
+                            value={newIndex}
+                            onChange={(e) => setNewIndex(Number(e.target.value))}
+                            inputProps={{
+                                min: 1,
+                                max: spreadsheet!.sheetsInfo.length,
+                            }}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setIndexDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                        <Button onClick={handleIndexConfirm} sx={{ color: '#510154', }}>Ok</Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Color Dialog */}
+                <Dialog open={colorDialogOpen} onClose={() => setColorDialogOpen(false)} onClick={(e) => e.stopPropagation()}>
+                    <DialogTitle sx={{ color: '#510154', }}>Recolor Sheet</DialogTitle>
+                    <DialogContent>
+                        <SketchPicker
+                            color={newColor}
+                            onChangeComplete={handleColorChange}
+                            disableAlpha
+                            presetColors={sketchColors}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setColorDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                        <Button onClick={handleColorConfirm} sx={{ color: '#510154', }}>Ok</Button>
+                    </DialogActions>
+                </Dialog>
+            </div>
+        );
+    };
 
 export default SheetList;

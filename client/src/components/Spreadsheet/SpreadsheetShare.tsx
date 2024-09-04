@@ -83,7 +83,7 @@ const SpreadsheetShare: React.FC<{ onClose: () => void, uid: number, spreadsheet
         updatePermissionMutation.mutate({ email, permission: newPermission });
     };
 
-    const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const handleBackgroundClick = () => {
         onClose();
     };
 

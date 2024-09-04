@@ -20,16 +20,11 @@ import { useQuery } from "react-query";
 export interface SpreadsheetProps {
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
     selectedCellIds: number[];
-    setSelectedCellIds: React.Dispatch<React.SetStateAction<number[]>>;
     spreadsheet: Spreadsheet | undefined;
     setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
-    currentFontFamily: string;
     setCurrentFontFamily: React.Dispatch<React.SetStateAction<string>>;
-    currentFontSize: number;
     setCurrentFontSize: React.Dispatch<React.SetStateAction<number>>;
-    currentTextColor: string;
     setCurrentTextColor: React.Dispatch<React.SetStateAction<string>>;
-    currentBgColor: string;
     setCurrentBgColor: React.Dispatch<React.SetStateAction<string>>;
 }
 
@@ -131,7 +126,6 @@ const SpreadsheetPage: React.FC = () => {
                     spreadsheet={spreadsheet}
                     setSpreadsheet={setSpreadsheet}
                     selectedCellIds={selectedCellIds}
-                    setSelectedCellIds={setSelectedCellIds}
                     currentFontFamily={currentFontFamily}
                     setCurrentFontFamily={setCurrentFontFamily}
                     currentFontSize={currentFontSize}
@@ -148,29 +142,14 @@ const SpreadsheetPage: React.FC = () => {
                 setSelectedCellIds={setSelectedCellIds}
                 spreadsheet={spreadsheet}
                 setSpreadsheet={setSpreadsheet}
-                currentFontFamily={currentFontFamily}
                 setCurrentFontFamily={setCurrentFontFamily}
-                currentFontSize={currentFontSize}
                 setCurrentFontSize={setCurrentFontSize}
-                currentTextColor={currentTextColor}
                 setCurrentTextColor={setCurrentTextColor}
-                currentBgColor={currentBgColor}
                 setCurrentBgColor={setCurrentBgColor}
             />
             <SheetList
-                setSaving={setSaving}
-                selectedCellIds={selectedCellIds}
-                setSelectedCellIds={setSelectedCellIds}
                 spreadsheet={spreadsheet}
                 setSpreadsheet={setSpreadsheet}
-                currentFontFamily={currentFontFamily}
-                setCurrentFontFamily={setCurrentFontFamily}
-                currentFontSize={currentFontSize}
-                setCurrentFontSize={setCurrentFontSize}
-                currentTextColor={currentTextColor}
-                setCurrentTextColor={setCurrentTextColor}
-                currentBgColor={currentBgColor}
-                setCurrentBgColor={setCurrentBgColor}
             />
         </div>
     );
