@@ -66,8 +66,8 @@ export const setContent = async (req: Request, res: Response) => {
         const { contents } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedCell = await cellService.setContent(contents, userId);
-        res.status(200).json(updatedCell);
+        const updatedSheet = await cellService.setContent(contents, userId);
+        res.status(200).json(updatedSheet);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
     }

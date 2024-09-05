@@ -24,10 +24,25 @@ export const getColumnLetter = (type: 'CS' | 'NORMAL', col: number) => {
 
     switch (col) {
         case 0:
-            title = 'Item name'
+            title = 'Link'
             break;
         case 1:
-            title = 'Price'
+            title = 'Quantity'
+            break;
+        case 2:
+            title = "Latest price"
+            break;
+        case 3:
+            title = "Latest price sum"
+            break;
+        case 4:
+            title = "Real price"
+            break;
+        case 5:
+            title = "Real price sum"
+            break;
+        case 6:
+            title = "Buy Order Price"
             break;
         default:
             break;

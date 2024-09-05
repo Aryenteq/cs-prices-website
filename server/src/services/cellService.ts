@@ -1,7 +1,10 @@
 import { db } from '../db';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Cell } from '@prisma/client';
+import { findSheetIdByCellId } from '../utils/findSheetId';
 import { findSpreadsheetIdByCellId } from '../utils/findSpreadsheetId';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
+
+import { CS_PROTECTED_COLUMNS_EDITABLE_LENGTH } from './spreadsheetService';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_FONT_SIZE = 12;
@@ -55,7 +58,7 @@ const updateCellStyle = async (cellId: number, newStyle: object, userId: number)
         const existingFontSize = parseInt((existingStyle?.['fontSize'] as string) || `${DEFAULT_FONT_SIZE}`, 10);
         const newFontSize = parseInt((newStyle?.['fontSize'] as string) || existingFontSize.toString(), 10);
 
-        if(newFontSize > 48 || newFontSize < 8) {
+        if (newFontSize > 48 || newFontSize < 8) {
             throw new Error('Font size must be between 5 and 48');
         }
 
@@ -166,7 +169,7 @@ export const setVerticalAlignment = async (vAlignments: { cellId: number; vAlign
 };
 
 export const setContent = async (contents: { cellId: number; content: string }[], userId: number) => {
-    const updatedCells = [];
+    const updatedCellIds = [];
 
     for (const contentObj of contents) {
         const { cellId, content } = contentObj;
@@ -175,47 +178,123 @@ export const setContent = async (contents: { cellId: number; content: string }[]
             throw new Error(`Invalid cell data: cellId=${cellId}, content=${content}`);
         }
 
-        const updatedCell = await updateCell(cellId, { content }, userId);
-        updatedCells.push(updatedCell);
+        await updateCell(cellId, { content }, userId);
+        updatedCellIds.push(cellId);
     }
 
-    return updatedCells;
-};
+    const firstCellId = updatedCellIds[0];
+    const spreadsheetId = await findSheetIdByCellId(firstCellId);
 
-const updateCell = async (cellId: number, data: object, userId: number) => {
-    const cell = await db.cell.findFirst({
-        where: {
-            id: cellId
-        },
-    });
-
-    if (!cell) {
-        throw new Error('Cell not found');
-    }
-
-    const spreadsheetId = await findSpreadsheetIdByCellId(cellId);
 
     if (!spreadsheetId) {
         throw new Error('Associated spreadsheet not found');
     }
 
-    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
-
-    if (permission !== 'EDIT') {
-        throw new Error('You do not have permission to edit this cell.');
-    }
-
-    // Can't edit protected cells content
-    if ('content' in data) {
-        if (cell.protected && cell.col !== 0) {
-            throw new Error(`Cannot edit cells in protected columns, except for column 0`);
-        }
-    }
-
-    return await db.cell.update({
-        where: {
-            id: cellId,
+    const updatedSheet = await db.sheet.findUnique({
+        where: { id: spreadsheetId },
+        include: {
+            cells: true,
         },
-        data,
+    });
+
+    return updatedSheet;
+};
+
+const updateCell = async (cellId: number, data: object, userId: number) => {
+    // Using transaction to do a rollback to the update if an error occurs
+    return await db.$transaction(async (transaction) => {
+        const cell = await transaction.cell.findFirst({
+            where: {
+                id: cellId
+            },
+        });
+
+        if (!cell) {
+            throw new Error('Cell not found');
+        }
+
+        const spreadsheetId = await findSpreadsheetIdByCellId(cellId);
+
+        if (!spreadsheetId) {
+            throw new Error('Associated spreadsheet not found');
+        }
+
+        const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+        if (permission !== 'EDIT') {
+            throw new Error('You do not have permission to edit this cell.');
+        }
+
+        const updatedCell = await transaction.cell.update({
+            where: { id: cellId },
+            data,
+        });
+
+        // Changes made to content = may be a protected cell, which requires additional operations
+        if ('content' in data) {
+            try {
+                await handleCellEdit(cell, transaction);
+            } catch (error: any) {
+                throw new Error(`Error processing cell update: ${error.message}`);
+            }
+        }
+
+        return updatedCell;
     });
 };
+
+
+// transaction is passed to keep it consistent
+const handleCellEdit = async (cell: Cell, transaction: Prisma.TransactionClient): Promise<void | null> => {
+    if (cell.protected) {
+        if (cell.col >= CS_PROTECTED_COLUMNS_EDITABLE_LENGTH) {
+            throw new Error(`Cannot edit cells in protected columns, except for columns lower than ${CS_PROTECTED_COLUMNS_EDITABLE_LENGTH}`);
+        }
+
+        const cellsInRow = await db.cell.findMany({
+            where: {
+                sheetId: cell.sheetId,
+                row: cell.row,
+            },
+        });
+
+        const column0Cell = cellsInRow.find(c => c.col === 0);
+        if (!column0Cell || !column0Cell.content) {
+            throw new Error('No valid URL found in column 0.');
+        }
+        const decodedUrl = decodeURIComponent(column0Cell.content);
+        const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
+
+        const column1Cell = cellsInRow.find(c => c.col === 1);
+        let quantity = column1Cell && column1Cell.content ? parseFloat(column1Cell.content) : 1;
+        if (isNaN(quantity)) {
+            quantity = 1; // Default to 1 if invalid
+        }
+
+        const steamPrice = await db.steamPrices.findFirst({
+            where: { name: lastPart },
+        });
+
+        if (!steamPrice) {
+            throw new Error(`No SteamPrice entry found for name: ${lastPart}`);
+        }
+
+        const { priceLatest, priceReal, buyOrderPrice } = steamPrice;
+
+        const updates = [
+            { col: 2, content: priceLatest.toNumber().toString() },
+            { col: 3, content: (priceLatest.toNumber() * quantity).toString() },
+            { col: 4, content: priceReal.toNumber().toString() },
+            { col: 5, content: (priceReal.toNumber() * quantity).toString() },
+            { col: 6, content: buyOrderPrice.toNumber().toString() },
+        ];
+
+        await db.$transaction(async (prisma) => {
+            for (const update of updates) {
+                await prisma.cell.updateMany({
+                    where: { sheetId: cell.sheetId, row: cell.row, col: update.col },
+                    data: { content: update.content },
+                });
+            }
+        });
+    }
+}

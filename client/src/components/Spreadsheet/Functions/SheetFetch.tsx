@@ -88,7 +88,6 @@ export const deleteSheet = async (sheetId: number): Promise<any> => {
 };
 
 export const setName = async ({ sheetId, name }: { sheetId: number, name: string }) => {
-    alert(sheetId);
     return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/name`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

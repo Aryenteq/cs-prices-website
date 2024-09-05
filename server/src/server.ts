@@ -9,6 +9,8 @@ import sheetRoutes from './routes/sheetRoutes';
 import cellRoutes from './routes/cellRoutes';
 import userRoutes from './routes/userRoutes';
 
+import { refreshItems } from './steamAPI/fetch';
+
 dotenv.config({ path: '../.env' });
 
 const app = express();
@@ -28,6 +30,9 @@ app.use(cors({
     .use(cellRoutes)
     .use(userRoutes);
 
+// CS2 items actualization
+//refreshItems();
+setInterval(refreshItems, 12 * 60 * 60 * 1000);
 
 
 const ip = process.env.SERVER_IP || '127.0.0.1';

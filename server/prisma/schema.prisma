@@ -139,3 +139,11 @@ model Cell {
 
   @@index([sheetId])
 }
+
+model SteamPrices {
+  id             Int     @id @default(autoincrement())
+  name           String  @unique
+  priceLatest    Decimal
+  priceReal      Decimal
+  buyOrderPrice  Decimal
+}

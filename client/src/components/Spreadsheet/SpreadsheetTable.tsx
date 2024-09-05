@@ -23,7 +23,8 @@ const EDGE_THRESHOLD = 10;
 const MINIMUM_SIZE = 20;
 export const DEFAULT_FONT_SIZE = 12;
 export const DEFAULT_FONT_FAMILY = 'Arial';
-export const CS_PROTECTED_COLUMNS_LENGTH = 2;
+export const CS_PROTECTED_COLUMNS_LENGTH: number = 7;
+export const CS_PROTECTED_COLUMNS_EDITABLE_LENGTH: number = 2;
 
 const SpreadsheetTable: React.FC<SpreadsheetProps & {
     setSelectedCellIds: React.Dispatch<React.SetStateAction<number[]>>;
@@ -815,9 +816,17 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         const inputRef = useRef<HTMLInputElement>(null);
 
         const { mutate: saveCellContentMutation } = useMutation(updateCellContent, {
-            onSuccess: () => {
+            onSuccess: (updatedSheet) => {
                 setSaving(false);
-                //queryClient.invalidateQueries(['spreadsheet', spreadsheetId]);
+
+                setSpreadsheet((prevSpreadsheet) => {
+                    if (!prevSpreadsheet) return prevSpreadsheet;
+
+                    return {
+                        ...prevSpreadsheet,
+                        sheet: updatedSheet
+                    };
+                });
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -876,6 +885,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                     return;
                 }
 
+                // optimistic UI
                 setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
                     if (!prevSpreadsheet) {
                         return prevSpreadsheet;
@@ -914,12 +924,6 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                 setEditingCell(null);
             }
         };
-
-        // const handleInvalidCellEdit = (row?: number, col?: number) => {
-        //     if (editingCell?.row === row || editingCell?.col === col) {
-        //         handleCellBlur();
-        //     }
-        // };
 
 
         //
@@ -999,7 +1003,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                     setCurrentBgColor(cell.bgColor || '#242424');
                 }
             }
-        }, [selectedCellIds, spreadsheet!.sheet]);
+        }, [selectedCellIds]);
 
         const calculateSelectedRange = (selectedIds: number[]) => {
             if (!spreadsheet!.sheet || !spreadsheet!.sheet.cells) return null;
@@ -1073,11 +1077,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
 
         return (
             <div className="flex-grow overflow-auto custom-scrollbar">
-                <table className="table-fixed border-collapse border border-gray-400 max-w-full max-h-full">
+                <table className="table-fixed border-collapse border border-gray-400">
                     <thead className="sticky top-0 bg-gray-100">
                         <tr>
                             <th
-                                className="sticky left-0 z-20 border border-gray-400 p-2 bg-primary-lightest text-black text-xs break-words overflow-hidden"
+                                className="left-0 z-200 border border-gray-400 p-2 bg-primary-lightest text-black text-xs break-words overflow-hidden"
                                 style={{ width: FIRST_COLUMN_WIDTH, wordBreak: 'break-word' }}
                             >
                                 {selectedRange === null ? '' : selectedRange}
@@ -1219,7 +1223,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
 
                                                             if (userPermission !== 'VIEW' &&
                                                                 ((spreadsheetType === 'NORMAL') ||
-                                                                    (spreadsheetType === 'CS' && (colIndex >= CS_PROTECTED_COLUMNS_LENGTH || colIndex == 0)))) {
+                                                                    (spreadsheetType === 'CS' && (colIndex >= CS_PROTECTED_COLUMNS_LENGTH || colIndex < CS_PROTECTED_COLUMNS_EDITABLE_LENGTH)))) {
                                                                 handleCellClick(cell.id, rowIndex, colIndex, cell.content || '');
                                                             }
                                                         }
