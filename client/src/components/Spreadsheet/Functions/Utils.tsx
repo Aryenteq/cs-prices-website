@@ -2,7 +2,7 @@ import { CS_PROTECTED_COLUMNS_LENGTH } from "../SpreadsheetTable";
 
 import { HorizontalAlignment, VerticalAlignment, TextAlign } from "./Types";
 
-export const getColumnLetter = (type: 'CS' | 'NORMAL', col: number) => {
+export const getColumnLetter = (abbreviated: boolean = true, type: 'CS' | 'NORMAL', col: number) => {
     let title = '';
 
     if (type === 'NORMAL') {
@@ -24,31 +24,84 @@ export const getColumnLetter = (type: 'CS' | 'NORMAL', col: number) => {
 
     switch (col) {
         case 0:
-            title = 'Link'
+            title = abbreviated ? 'a' : 'Link (a)';
             break;
         case 1:
-            title = 'Quantity'
+            title = abbreviated ? 'b' : 'Quantity (b)';
             break;
         case 2:
-            title = "Latest price"
+            title = abbreviated ? 'c' : 'Latest price (c)';
             break;
         case 3:
-            title = "Latest price sum"
+            title = abbreviated ? 'd' : 'Latest price sum (d)';
             break;
         case 4:
-            title = "Real price"
+            title = abbreviated ? 'e' : 'Real price (e)';
             break;
         case 5:
-            title = "Real price sum"
+            title = abbreviated ? 'f' : 'Real price sum (f)';
             break;
         case 6:
-            title = "Buy Order Price"
+            title = abbreviated ? 'g' : 'Buy Order Price (g)';
             break;
         default:
             break;
     }
+    
     return title;
 };
+
+export const getColIndexFromLetter = (
+    letter: string,
+    type: 'CS' | 'NORMAL',
+    CS_PROTECTED_COLUMNS_LENGTH: number
+): number | string => {
+    if (type === 'NORMAL') {
+        if (letter.length === 1 && letter >= 'a' && letter <= 'z') {
+            return '#ERROR';
+        }
+        
+        let colIndex = 0;
+        for (let i = 0; i < letter.length; i++) {
+            colIndex = colIndex * 26 + (letter.charCodeAt(i) - 65 + 1);
+        }
+
+        return colIndex - 1;
+    }
+
+    if (type === 'CS') {
+        if (letter.length === 1 && letter >= 'a' && letter <= 'g') {
+            switch (letter) {
+                case 'a':
+                    return 0;
+                case 'b':
+                    return 1;
+                case 'c':
+                    return 2;
+                case 'd':
+                    return 3;
+                case 'e':
+                    return 4;
+                case 'f':
+                    return 5;
+                case 'g':
+                    return 6;
+                default:
+                    return '#ERROR';
+            }
+        }
+
+        let colIndex = 0;
+        for (let i = 0; i < letter.length; i++) {
+            colIndex = colIndex * 26 + (letter.charCodeAt(i) - 65 + 1);
+        }
+
+        return colIndex - 1 + CS_PROTECTED_COLUMNS_LENGTH;
+    }
+
+    return '#ERROR';
+};
+
 
 // Combine JSON to Array (numbers)
 export const initializeSizes = (

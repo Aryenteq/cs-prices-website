@@ -254,12 +254,22 @@ const handleCellEdit = async (cell: Cell, content: string, transaction: Prisma.T
             where: {
                 sheetId: cell.sheetId,
                 row: cell.row,
+                col: {
+                    lt: CS_PROTECTED_COLUMNS_LENGTH
+                }
             },
+            orderBy: {
+                col: 'asc'
+            }
         });
 
         let link: string | null = null;
         let quantity: number | null = null;
 
+        // cell.content is not saved yet (transition)
+        // so get the content directly
+
+        // based on the col index of the edited cell, get the link and quantity
         if (cell.col === 0) {
             link = content || null;
             quantity = cellsInRow[1].content ? parseFloat(cellsInRow[1].content) : 1;
@@ -281,8 +291,8 @@ const handleCellEdit = async (cell: Cell, content: string, transaction: Prisma.T
             quantity = 1;
         }
 
-        if(quantity < 0) {
-            throw new Error ("Quantity can not be negative");
+        if (quantity < 0) {
+            throw new Error("Quantity can not be negative");
         }
 
         const decodedUrl = decodeURIComponent(link);
@@ -319,20 +329,18 @@ const handleCellEdit = async (cell: Cell, content: string, transaction: Prisma.T
 
 const deleteCSRow = async (exceptedCell: Cell): Promise<void> => {
     const sheetId = exceptedCell.sheetId;
-    const exceptedCellId = exceptedCell.id;
     const row = exceptedCell.row;
 
-    const cellsInRow = await db.cell.findMany({
+    const cellsToUpdate = await db.cell.findMany({
         where: {
             sheetId: sheetId,
             row: row,
             col: {
                 lt: CS_PROTECTED_COLUMNS_LENGTH,
+                gt: 1,
             },
         },
     });
-
-    const cellsToUpdate = cellsInRow.filter(cell => cell.id !== exceptedCellId);
 
     await db.$transaction(async (transaction) => {
         for (const cell of cellsToUpdate) {

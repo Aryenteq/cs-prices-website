@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useMutation } from "react-query";
 import { useNavigate } from "react-router-dom";
 
@@ -22,9 +22,11 @@ import { Typography } from "@mui/material";
 
 
 const SheetList: React.FC<{
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>;
     spreadsheet: Spreadsheet | undefined;
     setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
 }> = ({
+    setSaving,
     spreadsheet,
     setSpreadsheet,
 }) => {
@@ -44,12 +46,19 @@ const SheetList: React.FC<{
         const [newColor, setNewColor] = useState<string>('');
         const [newIndex, setNewIndex] = useState<number>(1); // normalized for users
 
+        useEffect(() => {
+            if (spreadsheet!.sheet) {
+                setCurrentSheetId(spreadsheet!.sheet.id);
+            }
+        }, [spreadsheet]);
+
         const { mutate: changeSheetMutation } = useMutation(
             async ({ sheetId }: { sheetId: number }) => {
                 return await getSheet(sheetId);
             },
             {
                 onSuccess: (updatedSheet) => {
+                    setSaving(false);
                     setSpreadsheet((prevSpreadsheet) => {
                         if (!prevSpreadsheet) {
                             return prevSpreadsheet;
@@ -112,6 +121,7 @@ const SheetList: React.FC<{
             (params: { spreadsheetId: number; index: number, name: string }) => addSheet(params),
             {
                 onSuccess: (updatedSheet) => {
+                    setSaving(false);
                     setSpreadsheet((prevSpreadsheet) => {
                         const newSpreadsheet = updateSheetInfo(prevSpreadsheet!, updatedSheet);
                         return newSpreadsheet;
@@ -136,6 +146,7 @@ const SheetList: React.FC<{
             ({ sheetId, newName }: { sheetId: number; newName: string }) => setName({ sheetId, name: newName }),
             {
                 onSuccess: (updatedSheet) => {
+                    setSaving(false);
                     setSpreadsheet((prevSpreadsheet) =>
                         updateSheetInfo(prevSpreadsheet!, updatedSheet)
                     );
@@ -159,6 +170,7 @@ const SheetList: React.FC<{
             ({ sheetId }: { sheetId: number }) => deleteSheet(sheetId),
             {
                 onSuccess: (deletedSheet) => {
+                    setSaving(false);
                     setSpreadsheet((prevSpreadsheet) => {
                         if (!prevSpreadsheet) return prevSpreadsheet;
 
@@ -200,6 +212,7 @@ const SheetList: React.FC<{
             ({ sheetId, newIndex }: { sheetId: number; newIndex: number }) => setIndex({ sheetId, newIndex }),
             {
                 onSuccess: (updatedSheetsInfo) => {
+                    setSaving(false);
                     setSpreadsheet((prevSpreadsheet) => {
                         if (!prevSpreadsheet)
                             return prevSpreadsheet;
@@ -235,6 +248,7 @@ const SheetList: React.FC<{
             ({ sheetId, newColor }: { sheetId: number; newColor: string }) => setColor({ sheetId, color: newColor }),
             {
                 onSuccess: (updatedSheet) => {
+                    setSaving(false);
                     setSpreadsheet((prevSpreadsheet) =>
                         updateSheetInfo(prevSpreadsheet!, updatedSheet)
                     );
@@ -287,32 +301,34 @@ const SheetList: React.FC<{
         };
 
         const handleRenameConfirm = () => {
+            setSaving(true);
             renameSheetMutation({ sheetId: currentRightClickedSheetId, newName });
             setRenameDialogOpen(false);
             setContextMenu(null);
         };
 
         const handleDeleteConfirm = () => {
+            setSaving(true);
             deleteSheetMutation({ sheetId: currentRightClickedSheetId });
             setDeleteDialogOpen(false);
             setContextMenu(null);
         };
 
         const handleIndexConfirm = () => {
+            setSaving(true);
             indexSheetMutation({ sheetId: currentRightClickedSheetId, newIndex: newIndex - 1 });
             setIndexDialogOpen(false);
             setContextMenu(null);
         };
 
         const handleColorConfirm = () => {
-            console.log('bb');
+            setSaving(true);
             colorSheetMutation({ sheetId: currentRightClickedSheetId, newColor });
             setColorDialogOpen(false);
             setContextMenu(null);
         };
 
         const handleColorChange = (color: any) => {
-            console.log('aa');
             setNewColor(color.hex);
         }
 

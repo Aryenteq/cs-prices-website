@@ -224,3 +224,8 @@ body {
 .border-r-3 {
   border-right-width: 3px;
 }
+
+th, td {
+  box-sizing: border-box;
+}
+

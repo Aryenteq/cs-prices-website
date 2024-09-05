@@ -148,6 +148,7 @@ const SpreadsheetPage: React.FC = () => {
                 setCurrentBgColor={setCurrentBgColor}
             />
             <SheetList
+                setSaving={setSaving}
                 spreadsheet={spreadsheet}
                 setSpreadsheet={setSpreadsheet}
             />

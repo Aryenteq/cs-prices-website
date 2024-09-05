@@ -7,6 +7,7 @@ import {
     getColumnLetter, initializeSizes, initializeVisibility,
     getTextAlign, getVerticalAlign
 } from "./Functions/Utils";
+import { computeCellFunction } from "./Functions/computeCellFunction";
 import {
     updateColWidth, updateRowHeight, updateHiddenCols, updateHiddenRows,
     deleteSheetCols, deleteSheetRows, addRows, addCols
@@ -1022,8 +1023,8 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             const minCol = Math.min(...cols);
             const maxCol = Math.max(...cols);
 
-            const minColLetter = getColumnLetter(spreadsheetType, minCol);
-            const maxColLetter = getColumnLetter(spreadsheetType, maxCol);
+            const minColLetter = getColumnLetter(true, spreadsheetType, minCol);
+            const maxColLetter = getColumnLetter(true, spreadsheetType, maxCol);
 
             if (minRow === maxRow && minCol === maxCol) {
                 return `${minColLetter}${minRow}`;
@@ -1113,7 +1114,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                             onMouseDown={userPermission !== 'VIEW' ? (e) => handleMouseDown(e, 'col') : undefined}
                                             onClick={userPermission !== 'VIEW' ? (e) => handlePseudoElementClick(e, i, 'col') : undefined}
                                         >
-                                            {getColumnLetter(spreadsheetType, i)}
+                                            {getColumnLetter(false, spreadsheetType, i)}
                                         </th>
                                     );
                                 }
@@ -1134,7 +1135,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                         ${hiddenRows[rowIndex - 1] ? 'hidden-row-before' : ''}
                                         ${hiddenRows[rowIndex + 1] ? 'hidden-row-after' : ''}
                                         ${isRowSelected ? 'bg-selectedHeader' : ''}`}
-                                            style={{ width: FIRST_COLUMN_WIDTH }}
+                                            style={{ maxWidth: FIRST_COLUMN_WIDTH, minWidth: FIRST_COLUMN_WIDTH }}
                                             onContextMenu={userPermission !== 'VIEW' ? (e) => handleContextMenu(e, { row: rowIndex }) : undefined}
                                             onMouseMove={userPermission !== 'VIEW' ? (e) => handleMouseMove(e, 'row', rowIndex) : undefined}
                                             onMouseLeave={userPermission !== 'VIEW' ? () => {
@@ -1181,8 +1182,10 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                                                 color: cell?.color || '#ffffff',
                                                                 textAlign: getTextAlign(cell?.hAlignment),
                                                                 verticalAlign: getVerticalAlign(cell?.vAlignment),
-                                                                width: getColumnWidth(colIndex),
-                                                                height: getRowHeight(rowIndex),
+                                                                maxWidth: getColumnWidth(colIndex),
+                                                                minWidth: getColumnWidth(colIndex),
+                                                                maxHeight: getRowHeight(rowIndex),
+                                                                minHeight: getRowHeight(rowIndex),
                                                                 fontWeight: isBold ? 'bold' : 'normal',
                                                                 fontStyle: isItalic ? 'italic' : 'normal',
                                                                 textDecoration: isStrikethrough ? 'line-through' : 'none',
@@ -1205,8 +1208,12 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                                         color: cell?.color || '#ffffff',
                                                         textAlign: getTextAlign(cell?.hAlignment),
                                                         verticalAlign: getVerticalAlign(cell?.vAlignment),
-                                                        width: getColumnWidth(colIndex),
-                                                        height: getRowHeight(rowIndex),
+                                                        // Both max and min needed because that's how tables work
+                                                        // they try to fit the content inside them, so force them not to
+                                                        maxWidth: getColumnWidth(colIndex),
+                                                        minWidth: getColumnWidth(colIndex),
+                                                        maxHeight: getRowHeight(rowIndex),
+                                                        minHeight: getRowHeight(rowIndex),
                                                         fontWeight: isBold ? 'bold' : 'normal',
                                                         fontStyle: isItalic ? 'italic' : 'normal',
                                                         textDecoration: isStrikethrough ? 'line-through' : 'none',
@@ -1219,7 +1226,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                                     onClick={() => {
                                                         if (cell && cell.id !== undefined) {
                                                             setSelectedCellIds([cell.id]);
-                                                            setSelectedRange(`${getColumnLetter(spreadsheetType, colIndex)}${rowIndex}`);
+                                                            setSelectedRange(`${getColumnLetter(true, spreadsheetType, colIndex)}${rowIndex}`);
 
                                                             if (userPermission !== 'VIEW' &&
                                                                 ((spreadsheetType === 'NORMAL') ||
@@ -1229,7 +1236,10 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                                         }
                                                     }}
                                                 >
-                                                    {cell?.content || ''}
+                                                    {cell?.content?.startsWith('=')
+                                                        ? computeCellFunction(cell.content, spreadsheet!)
+                                                        : (cell?.content || '')
+                                                    }
                                                 </td>
                                             );
                                         })}
