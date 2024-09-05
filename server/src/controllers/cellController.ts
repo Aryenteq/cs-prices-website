@@ -61,6 +61,7 @@ export const setVerticalAlignment = async (req: Request, res: Response) => {
     }
 };
 
+// this is the only one that RETURNS an actualized sheet, not just the updated cells
 export const setContent = async (req: Request, res: Response) => {
     try {
         const { contents } = req.body;

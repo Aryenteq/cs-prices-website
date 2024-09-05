@@ -281,6 +281,10 @@ const handleCellEdit = async (cell: Cell, content: string, transaction: Prisma.T
             quantity = 1;
         }
 
+        if(quantity < 0) {
+            throw new Error ("Quantity can not be negative");
+        }
+
         const decodedUrl = decodeURIComponent(link);
         const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
 
