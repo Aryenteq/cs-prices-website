@@ -1,4 +1,4 @@
-import { db } from '../db'; // Prisma client
+import { db } from '../db';
 
 export const updateUserItems = async (): Promise<void> => {
     try {

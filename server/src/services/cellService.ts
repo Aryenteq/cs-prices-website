@@ -4,7 +4,7 @@ import { findSheetIdByCellId } from '../utils/findSheetId';
 import { findSpreadsheetIdByCellId } from '../utils/findSpreadsheetId';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
-import { CS_PROTECTED_COLUMNS_EDITABLE_LENGTH } from './spreadsheetService';
+import { CS_PROTECTED_COLUMNS_LENGTH, CS_PROTECTED_COLUMNS_EDITABLE_LENGTH } from './spreadsheetService';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_FONT_SIZE = 12;
@@ -232,7 +232,7 @@ const updateCell = async (cellId: number, data: object, userId: number) => {
         // Changes made to content = may be a protected cell, which requires additional operations
         if ('content' in data) {
             try {
-                await handleCellEdit(cell, transaction);
+                await handleCellEdit(cell, data.content as string, transaction);
             } catch (error: any) {
                 throw new Error(`Error processing cell update: ${error.message}`);
             }
@@ -244,7 +244,7 @@ const updateCell = async (cellId: number, data: object, userId: number) => {
 
 
 // transaction is passed to keep it consistent
-const handleCellEdit = async (cell: Cell, transaction: Prisma.TransactionClient): Promise<void | null> => {
+const handleCellEdit = async (cell: Cell, content: string, transaction: Prisma.TransactionClient): Promise<void | null> => {
     if (cell.protected) {
         if (cell.col >= CS_PROTECTED_COLUMNS_EDITABLE_LENGTH) {
             throw new Error(`Cannot edit cells in protected columns, except for columns lower than ${CS_PROTECTED_COLUMNS_EDITABLE_LENGTH}`);
@@ -257,25 +257,39 @@ const handleCellEdit = async (cell: Cell, transaction: Prisma.TransactionClient)
             },
         });
 
-        const column0Cell = cellsInRow.find(c => c.col === 0);
-        if (!column0Cell || !column0Cell.content) {
-            throw new Error('No valid URL found in column 0.');
-        }
-        const decodedUrl = decodeURIComponent(column0Cell.content);
-        const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
+        let link: string | null = null;
+        let quantity: number | null = null;
 
-        const column1Cell = cellsInRow.find(c => c.col === 1);
-        let quantity = column1Cell && column1Cell.content ? parseFloat(column1Cell.content) : 1;
-        if (isNaN(quantity)) {
-            quantity = 1; // Default to 1 if invalid
+        if (cell.col === 0) {
+            link = content || null;
+            quantity = cellsInRow[1].content ? parseFloat(cellsInRow[1].content) : 1;
+        } else {
+            link = cellsInRow[0].content;
+            if (!content) {
+                await deleteCSRow(cell);
+                return;
+            }
+            quantity = parseFloat(content);
         }
+
+        if (!link) {
+            await deleteCSRow(cell);
+            return;
+        }
+
+        if (isNaN(quantity)) {
+            quantity = 1;
+        }
+
+        const decodedUrl = decodeURIComponent(link);
+        const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
 
         const steamPrice = await db.steamPrices.findFirst({
             where: { name: lastPart },
         });
 
         if (!steamPrice) {
-            throw new Error(`No SteamPrice entry found for name: ${lastPart}`);
+            throw new Error(`No Steam Market item found for name: ${lastPart}`);
         }
 
         const { priceLatest, priceReal, buyOrderPrice } = steamPrice;
@@ -297,4 +311,31 @@ const handleCellEdit = async (cell: Cell, transaction: Prisma.TransactionClient)
             }
         });
     }
+}
+
+const deleteCSRow = async (exceptedCell: Cell): Promise<void> => {
+    const sheetId = exceptedCell.sheetId;
+    const exceptedCellId = exceptedCell.id;
+    const row = exceptedCell.row;
+
+    const cellsInRow = await db.cell.findMany({
+        where: {
+            sheetId: sheetId,
+            row: row,
+            col: {
+                lt: CS_PROTECTED_COLUMNS_LENGTH,
+            },
+        },
+    });
+
+    const cellsToUpdate = cellsInRow.filter(cell => cell.id !== exceptedCellId);
+
+    await db.$transaction(async (transaction) => {
+        for (const cell of cellsToUpdate) {
+            await transaction.cell.update({
+                where: { id: cell.id },
+                data: { content: null },
+            });
+        }
+    });
 }
