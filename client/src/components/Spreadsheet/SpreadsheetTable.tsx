@@ -858,6 +858,17 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         const handleCellContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             setSaving(true);
             const updatedContent = e.target.value;
+
+            if (editingCell) {
+                if (spreadsheetType === 'CS' && editingCell.col === 1) {
+                    const numericRegex = /^\d*$/;
+
+                    if (!numericRegex.test(updatedContent)) {
+                        return;
+                    }
+                }
+            }
+
             setCellContent(updatedContent);
 
             if (timeoutId) {
