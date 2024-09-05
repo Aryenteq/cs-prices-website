@@ -27,27 +27,33 @@ export const getColumnLetter = (abbreviated: boolean = true, type: 'CS' | 'NORMA
             title = abbreviated ? 'a' : 'Link (a)';
             break;
         case 1:
-            title = abbreviated ? 'b' : 'Quantity (b)';
+            title = abbreviated ? 'b' : 'Name (b)';
             break;
         case 2:
-            title = abbreviated ? 'c' : 'Latest price (c)';
+            title = abbreviated ? 'c' : 'Float (c)';
             break;
         case 3:
-            title = abbreviated ? 'd' : 'Latest price sum (d)';
+            title = abbreviated ? 'd' : 'Quantity (d)';
             break;
         case 4:
-            title = abbreviated ? 'e' : 'Real price (e)';
+            title = abbreviated ? 'e' : 'Latest price (e)';
             break;
         case 5:
-            title = abbreviated ? 'f' : 'Real price sum (f)';
+            title = abbreviated ? 'f' : 'Latest price sum (f)';
             break;
         case 6:
-            title = abbreviated ? 'g' : 'Buy Order Price (g)';
+            title = abbreviated ? 'g' : 'Real price (g)';
+            break;
+        case 7:
+            title = abbreviated ? 'h' : 'Real price sum (h)';
+            break;
+        case 8:
+            title = abbreviated ? 'i' : 'Buy Order Price (i)';
             break;
         default:
             break;
     }
-    
+
     return title;
 };
 
@@ -60,7 +66,7 @@ export const getColIndexFromLetter = (
         if (letter.length === 1 && letter >= 'a' && letter <= 'z') {
             return '#ERROR';
         }
-        
+
         let colIndex = 0;
         for (let i = 0; i < letter.length; i++) {
             colIndex = colIndex * 26 + (letter.charCodeAt(i) - 65 + 1);
@@ -170,6 +176,7 @@ export const sketchColors = [
     { color: '#E6E6E6', title: 'Light Gray 2' },
     { color: '#F2F2F2', title: 'Light Gray 3' },
     { color: '#FFFFFF', title: 'White' },
+    { color: '#242424', title: 'Background' },
     { color: '#FF0000', title: 'Red' },
     { color: '#FF9900', title: 'Orange' },
     { color: '#FFFF00', title: 'Yellow' },
@@ -177,5 +184,4 @@ export const sketchColors = [
     { color: '#00FFFF', title: 'Cyan' },
     { color: '#0066FF', title: 'Blue' },
     { color: '#6600FF', title: 'Purple' },
-    { color: '#FF00FF', title: 'Pink' },
 ];

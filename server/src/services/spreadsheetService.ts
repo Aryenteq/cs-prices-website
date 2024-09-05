@@ -9,8 +9,8 @@ type SpreadsheetOwner = 'ME' | 'OTHER' | 'ALL';
 type SpreadsheetOrderBy = 'NAME' | 'LAST_OPENED' | 'CREATED';
 type SpreadsheetOrderType = 'asc' | 'desc';
 
-export const CS_PROTECTED_COLUMNS_LENGTH: number = 7;
-export const CS_PROTECTED_COLUMNS_EDITABLE_LENGTH: number = 2;
+export const CS_PROTECTED_COLUMNS_LENGTH: number = 9;
+export const CS_PROTECTED_COLUMNS_EDITABLE: number[] = [0, 3];
 
 export const getAllSpreadsheets = async (
     userId: number,

@@ -24,8 +24,8 @@ const EDGE_THRESHOLD = 10;
 const MINIMUM_SIZE = 20;
 export const DEFAULT_FONT_SIZE = 12;
 export const DEFAULT_FONT_FAMILY = 'Arial';
-export const CS_PROTECTED_COLUMNS_LENGTH: number = 7;
-export const CS_PROTECTED_COLUMNS_EDITABLE_LENGTH: number = 2;
+export const CS_PROTECTED_COLUMNS_LENGTH: number = 9;
+export const CS_PROTECTED_COLUMNS_EDITABLE: number[] = [0, 3];
 
 const SpreadsheetTable: React.FC<SpreadsheetProps & {
     setSelectedCellIds: React.Dispatch<React.SetStateAction<number[]>>;
@@ -1241,7 +1241,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
 
                                                             if (userPermission !== 'VIEW' &&
                                                                 ((spreadsheetType === 'NORMAL') ||
-                                                                    (spreadsheetType === 'CS' && (colIndex >= CS_PROTECTED_COLUMNS_LENGTH || colIndex < CS_PROTECTED_COLUMNS_EDITABLE_LENGTH)))) {
+                                                                    (spreadsheetType === 'CS' && (colIndex >= CS_PROTECTED_COLUMNS_LENGTH || CS_PROTECTED_COLUMNS_EDITABLE.includes(colIndex))))) {
                                                                 handleCellClick(cell.id, rowIndex, colIndex, cell.content || '');
                                                             }
                                                         }

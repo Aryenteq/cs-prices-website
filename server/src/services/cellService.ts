@@ -4,7 +4,7 @@ import { findSheetIdByCellId } from '../utils/findSheetId';
 import { findSpreadsheetIdByCellId } from '../utils/findSpreadsheetId';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
-import { CS_PROTECTED_COLUMNS_LENGTH, CS_PROTECTED_COLUMNS_EDITABLE_LENGTH } from './spreadsheetService';
+import { CS_PROTECTED_COLUMNS_LENGTH, CS_PROTECTED_COLUMNS_EDITABLE } from './spreadsheetService';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_FONT_SIZE = 12;
@@ -201,153 +201,189 @@ export const setContent = async (contents: { cellId: number; content: string }[]
 };
 
 const updateCell = async (cellId: number, data: object, userId: number) => {
-    // Using transaction to do a rollback to the update if an error occurs
+    const cell = await fetchCellById(cellId, db);
+
+    // We'll need the old values for protected cell edits (quantity)
+    let cellsInRow: Cell[];
+    if (cell.protected) {
+        cellsInRow = await fetchRowCells(cell, db);
+    }
+
     return await db.$transaction(async (transaction) => {
-        const cell = await transaction.cell.findFirst({
-            where: {
-                id: cellId
-            },
-        });
-
-        if (!cell) {
-            throw new Error('Cell not found');
-        }
-
-        const spreadsheetId = await findSpreadsheetIdByCellId(cellId);
-
-        if (!spreadsheetId) {
-            throw new Error('Associated spreadsheet not found');
-        }
-
-        const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
-        if (permission !== 'EDIT') {
-            throw new Error('You do not have permission to edit this cell.');
-        }
+        await validateSpreadsheetAndPermissions(cellId, userId, transaction);
 
         const updatedCell = await transaction.cell.update({
             where: { id: cellId },
             data,
         });
 
-        // Changes made to content = may be a protected cell, which requires additional operations
         if ('content' in data) {
-            try {
-                await handleCellEdit(cell, data.content as string, transaction);
-            } catch (error: any) {
-                throw new Error(`Error processing cell update: ${error.message}`);
-            }
+            await handleContentUpdate(cell, data.content as string, cellsInRow, transaction);
         }
 
         return updatedCell;
     });
 };
 
-
-// transaction is passed to keep it consistent
-const handleCellEdit = async (cell: Cell, content: string, transaction: Prisma.TransactionClient): Promise<void | null> => {
-    if (cell.protected) {
-        if (cell.col >= CS_PROTECTED_COLUMNS_EDITABLE_LENGTH) {
-            throw new Error(`Cannot edit cells in protected columns, except for columns lower than ${CS_PROTECTED_COLUMNS_EDITABLE_LENGTH}`);
-        }
-
-        const cellsInRow = await db.cell.findMany({
-            where: {
-                sheetId: cell.sheetId,
-                row: cell.row,
-                col: {
-                    lt: CS_PROTECTED_COLUMNS_LENGTH
-                }
-            },
-            orderBy: {
-                col: 'asc'
-            }
-        });
-
-        let link: string | null = null;
-        let quantity: number | null = null;
-
-        // cell.content is not saved yet (transition)
-        // so get the content directly
-
-        // based on the col index of the edited cell, get the link and quantity
-        if (cell.col === 0) {
-            link = content || null;
-            quantity = cellsInRow[1].content ? parseFloat(cellsInRow[1].content) : 1;
-        } else {
-            link = cellsInRow[0].content;
-            if (!content) {
-                await deleteCSRow(cell);
-                return;
-            }
-            quantity = parseFloat(content);
-        }
-
-        if (!link) {
-            await deleteCSRow(cell);
-            return;
-        }
-
-        if (isNaN(quantity)) {
-            quantity = 1;
-        }
-
-        if (quantity < 0) {
-            throw new Error("Quantity can not be negative");
-        }
-
-        const decodedUrl = decodeURIComponent(link);
-        const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
-
-        const steamPrice = await db.steamPrices.findFirst({
-            where: { name: lastPart },
-        });
-
-        if (!steamPrice) {
-            throw new Error(`No Steam Market item found for name: ${lastPart}`);
-        }
-
-        const { priceLatest, priceReal, buyOrderPrice } = steamPrice;
-
-        const updates = [
-            { col: 2, content: priceLatest.toNumber().toString() },
-            { col: 3, content: (priceLatest.toNumber() * quantity).toString() },
-            { col: 4, content: priceReal.toNumber().toString() },
-            { col: 5, content: (priceReal.toNumber() * quantity).toString() },
-            { col: 6, content: buyOrderPrice.toNumber().toString() },
-        ];
-
-        await db.$transaction(async (prisma) => {
-            for (const update of updates) {
-                await prisma.cell.updateMany({
-                    where: { sheetId: cell.sheetId, row: cell.row, col: update.col },
-                    data: { content: update.content },
-                });
-            }
-        });
+const fetchCellById = async (cellId: number, transaction: Prisma.TransactionClient) => {
+    const cell = await transaction.cell.findFirst({ where: { id: cellId } });
+    if (!cell) {
+        throw new Error('Cell not found');
     }
-}
+    return cell;
+};
 
-const deleteCSRow = async (exceptedCell: Cell): Promise<void> => {
-    const sheetId = exceptedCell.sheetId;
-    const row = exceptedCell.row;
+const validateSpreadsheetAndPermissions = async (cellId: number, userId: number, transaction: Prisma.TransactionClient) => {
+    const spreadsheetId = await findSpreadsheetIdByCellId(cellId);
+    if (!spreadsheetId) {
+        throw new Error('Associated spreadsheet not found');
+    }
 
-    const cellsToUpdate = await db.cell.findMany({
+    const permission = await getUserPermissionForSpreadsheet(spreadsheetId, userId);
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to edit this cell.');
+    }
+
+    return spreadsheetId;
+};
+
+
+const handleContentUpdate = async (cell: Cell, content: string, cellsInRow: Cell[], transaction: Prisma.TransactionClient) => {
+    if (cell.protected) {
+        if (!CS_PROTECTED_COLUMNS_EDITABLE.includes(cell.col)) {
+            throw new Error(`Cannot edit cells in protected columns, except for columns ${CS_PROTECTED_COLUMNS_EDITABLE.join(', ')}`);
+        }
+
+        const { link, quantity } = await processCellUpdate(cell, content, cellsInRow, transaction);
+
+        if (link && quantity !== null) {
+            await updateSteamPrices(link, quantity, cell, transaction);
+        } else {
+            await deleteCSRow(cell, transaction);
+        }
+    }
+};
+
+const fetchRowCells = async (cell: Cell, transaction: Prisma.TransactionClient) => {
+    return await transaction.cell.findMany({
+        where: {
+            sheetId: cell.sheetId,
+            row: cell.row,
+            col: { lt: CS_PROTECTED_COLUMNS_LENGTH },
+        },
+        orderBy: { col: 'asc' },
+    });
+};
+
+const processCellUpdate = async (cell: Cell, content: string, cellsInRow: Cell[], transaction: Prisma.TransactionClient) => {
+    let link = null;
+    let quantity = null;
+
+    // get old qunatity content -- too complicated parsers for this
+    const quantityContent = cellsInRow[CS_PROTECTED_COLUMNS_EDITABLE[1]].content;
+    const parsedQuantity = quantityContent === null || quantityContent === undefined ? NaN : parseFloat(quantityContent);
+    const oldQuantity = isNaN(parsedQuantity) ? 1 : parsedQuantity;
+    const oldColor = cellsInRow[CS_PROTECTED_COLUMNS_EDITABLE[1]].bgColor;
+
+    // link edited
+    if (cell.col === CS_PROTECTED_COLUMNS_EDITABLE[0]) {
+        link = content || null;
+        quantity = oldQuantity;
+    } else {
+        // quantity edited
+        link = cellsInRow[CS_PROTECTED_COLUMNS_EDITABLE[0]].content;
+        quantity = content ? parseFloat(content) : 1;
+    }
+
+    // recolor (quantity goes to 0 or > 0 & not recolored by user)
+    if (quantity === 0) {
+        await colorRow(cell, transaction, '#FF0000');
+    } else if (quantity > 0 && oldQuantity === 0 && oldColor === '#FF0000') {
+        await colorRow(cell, transaction, '#242424');
+    }
+
+    if (isNaN(quantity) || quantity < 0) {
+        throw new Error('Quantity cannot be negative or NaN');
+    }
+
+    return { link, quantity };
+};
+
+const updateSteamPrices = async (link: string, quantity: number, cell: Cell, transaction: Prisma.TransactionClient) => {
+    const decodedUrl = decodeURIComponent(link);
+    const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
+    const steamPrice = await transaction.steamPrices.findFirst({ where: { name: lastPart } });
+
+    if (!steamPrice) {
+        throw new Error(`No Steam Market item found for name: ${lastPart}`);
+    }
+
+    const updates = preparePriceUpdates(steamPrice, quantity);
+
+    const lastPipeIndex = lastPart.lastIndexOf('|');
+    if (lastPipeIndex !== -1) {
+        const name = lastPart.substring(0, lastPipeIndex).trim();
+        const float = lastPart.substring(lastPipeIndex + 1).trim();
+
+        updates.push(
+            { col: 1, content: name },
+            { col: 2, content: float }
+        );
+    }
+
+    await Promise.all(
+        updates.map(async (update) => {
+            await transaction.cell.updateMany({
+                where: {
+                    sheetId: cell.sheetId,
+                    row: cell.row,
+                    col: update.col,
+                },
+                data: { content: update.content },
+            });
+        })
+    );
+
+};
+
+
+const preparePriceUpdates = (steamPrice: any, quantity: number) => {
+    const { priceLatest, priceReal, buyOrderPrice } = steamPrice;
+
+    return [
+        { col: 4, content: priceLatest.toNumber().toString() },
+        { col: 5, content: (priceLatest.toNumber() * quantity).toString() },
+        { col: 6, content: priceReal.toNumber().toString() },
+        { col: 7, content: (priceReal.toNumber() * quantity).toString() },
+        { col: 8, content: buyOrderPrice.toNumber().toString() },
+    ];
+};
+
+
+const deleteCSRow = async (cell: Cell, transaction: Prisma.TransactionClient): Promise<void> => {
+    await transaction.cell.updateMany({
+        where: {
+            sheetId: cell.sheetId,
+            row: cell.row,
+            col: { lt: CS_PROTECTED_COLUMNS_LENGTH, notIn: CS_PROTECTED_COLUMNS_EDITABLE },
+        },
+        data: { content: null },
+    });
+};
+
+const colorRow = async (cell: Cell, transaction: Prisma.TransactionClient, color: string): Promise<void> => {
+    const sheetId = await findSheetIdByCellId(cell.id);
+
+    if (!sheetId) {
+        throw new Error('Sheet ID not found');
+    }
+
+    await transaction.cell.updateMany({
         where: {
             sheetId: sheetId,
-            row: row,
-            col: {
-                lt: CS_PROTECTED_COLUMNS_LENGTH,
-                gt: 1,
-            },
+            row: cell.row,
+            col: { lt: CS_PROTECTED_COLUMNS_LENGTH },
         },
+        data: { bgColor: color },
     });
-
-    await db.$transaction(async (transaction) => {
-        for (const cell of cellsToUpdate) {
-            await transaction.cell.update({
-                where: { id: cell.id },
-                data: { content: null },
-            });
-        }
-    });
-}
+};
