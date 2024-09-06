@@ -10,6 +10,6 @@ cellRoutes.patch('/cells/style', isAuthenticated, cellController.updateStyle);
 cellRoutes.put('/cells/h-alignment', isAuthenticated, cellController.setHorizontalAlignment);
 cellRoutes.put('/cells/v-alignment', isAuthenticated, cellController.setVerticalAlignment);
 cellRoutes.put('/cells/content', isAuthenticated, cellController.setContent);
-
+cellRoutes.put('/cells/pasted-content', isAuthenticated, cellController.setPastedContent);
 
 export default cellRoutes;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useMutation } from "react-query";
-import { SpreadsheetProps } from "../../pages/SpreadsheetPage";
+import { SelectedCellsContent, SpreadsheetProps } from "../../pages/SpreadsheetPage";
 import { useInfo } from "../InfoContext";
 import ContextMenu from "./ContextMenu";
 import {
@@ -28,8 +28,12 @@ export const CS_PROTECTED_COLUMNS_LENGTH: number = 9;
 export const CS_PROTECTED_COLUMNS_EDITABLE: number[] = [0, 3];
 
 const SpreadsheetTable: React.FC<SpreadsheetProps & {
-    setSelectedCellIds: React.Dispatch<React.SetStateAction<number[]>>;
-}> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellIds, setSelectedCellIds,
+    setSelectedCellsId: React.Dispatch<React.SetStateAction<number[]>>;
+    setSelectedCellsContent: React.Dispatch<React.SetStateAction<SelectedCellsContent>>;
+    editingCell: { id: number, row: number, col: number } | null;
+    setEditingCell: React.Dispatch<React.SetStateAction<{ id: number, row: number, col: number } | null>>;
+}> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellsId, setSelectedCellsId,
+    setSelectedCellsContent, editingCell, setEditingCell,
     setCurrentFontFamily, setCurrentFontSize, setCurrentTextColor, setCurrentBgColor
 }) => {
         const { setInfo } = useInfo();
@@ -810,7 +814,6 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         //
         //
 
-        const [editingCell, setEditingCell] = useState<{ id: number, row: number, col: number } | null>(null);
         const [cellContent, setCellContent] = useState<string>("");
         const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
@@ -962,7 +965,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         }, []);
 
         const getSelectedCells = (start: { row: number, col: number }, end: { row: number, col: number }) => {
-            let selectedIds: number[] = [];
+            let selectedCells: { row: number, col: number, id: number, content: string | null }[] = [];
             const startRow = Math.min(start.row, end.row);
             const endRow = Math.max(start.row, end.row);
             const startCol = Math.min(start.col, end.col);
@@ -972,12 +975,17 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                 for (let colIndex = startCol; colIndex <= endCol; colIndex++) {
                     const cell = spreadsheet?.sheet?.cells?.find((c: any) => c.row === rowIndex && c.col === colIndex);
                     if (cell) {
-                        selectedIds.push(cell.id);
+                        selectedCells.push({
+                            row: rowIndex,
+                            col: colIndex,
+                            id: cell.id,
+                            content: cell.content ? cell.content : null
+                        });
                     }
                 }
             }
 
-            return selectedIds;
+            return selectedCells;
         };
 
         const handleCellMouseDown = (e: React.MouseEvent, rowIndex: number, colIndex: number) => {
@@ -985,7 +993,8 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             handleCellBlur();
             isSelecting.current = true;
             startCell.current = { row: rowIndex, col: colIndex };
-            setSelectedCellIds([]);
+            setSelectedCellsId([]);
+            setSelectedCellsContent({});
             setSelectedRange(null);
         };
 
@@ -993,9 +1002,30 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             e.preventDefault();
             if (isSelecting.current && startCell.current) {
                 const newSelectedCells = getSelectedCells(startCell.current, { row: rowIndex, col: colIndex });
-                setSelectedCellIds(newSelectedCells);
+        
+                // sort needed for Ctrl+V (selectedCellsId[0] needs to be top-left cell)
+                const sortedSelectedCells = newSelectedCells.sort((a, b) => {
+                    if (a.row === b.row) {
+                        return a.col - b.col;
+                    }
+                    return a.row - b.row;
+                });
+        
+                const selectedCellsId = sortedSelectedCells.map(cell => cell.id);
+        
+                const selectedCellsContent = sortedSelectedCells.reduce((acc, cell) => {
+                    if (!acc[cell.row]) {
+                        acc[cell.row] = {};
+                    }
+                    acc[cell.row][cell.col] = cell.content;
+                    return acc;
+                }, {} as { [row: number]: { [col: number]: string | null } });
+        
+                setSelectedCellsId(selectedCellsId);
+                setSelectedCellsContent(selectedCellsContent);
             }
         };
+        
 
         const handleCellMouseUp = () => {
             isSelecting.current = false;
@@ -1003,11 +1033,11 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         };
 
         useEffect(() => {
-            if (selectedCellIds.length > 0 && spreadsheet!.sheet) {
-                const calculatedRange = calculateSelectedRange(selectedCellIds);
+            if (selectedCellsId.length > 0 && spreadsheet!.sheet) {
+                const calculatedRange = calculateSelectedRange(selectedCellsId);
                 setSelectedRange(calculatedRange);
 
-                const cell = spreadsheet?.sheet.cells.find(c => c.id === selectedCellIds[0]);
+                const cell = spreadsheet?.sheet.cells.find(c => c.id === selectedCellsId[0]);
                 if (cell) {
                     setCurrentFontFamily(cell.style?.fontFamily || DEFAULT_FONT_FAMILY);
                     setCurrentFontSize(cell.style?.fontSize || DEFAULT_FONT_SIZE);
@@ -1015,7 +1045,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                     setCurrentBgColor(cell.bgColor || '#242424');
                 }
             }
-        }, [selectedCellIds]);
+        }, [selectedCellsId]);
 
         const calculateSelectedRange = (selectedIds: number[]) => {
             if (!spreadsheet!.sheet || !spreadsheet!.sheet.cells) return null;
@@ -1046,13 +1076,13 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
 
 
         const getBorderClasses = (id: number, rowIndex: number, colIndex: number) => {
-            const isSelected = selectedCellIds.includes(id);
+            const isSelected = selectedCellsId.includes(id);
 
             if (!isSelected) {
                 return;
             }
 
-            const selectedCells = selectedCellIds.map(id => spreadsheet!.sheet?.cells?.find((c: any) => c.id === id)!);
+            const selectedCells = selectedCellsId.map(id => spreadsheet!.sheet?.cells?.find((c: any) => c.id === id)!);
             const rows = selectedCells.map(c => c.row);
             const cols = selectedCells.map(c => c.col);
 
@@ -1077,7 +1107,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
         };
 
         const getSelectedHeaders = () => {
-            const selectedCells = selectedCellIds.map(id => spreadsheet!.sheet?.cells?.find((c: any) => c.id === id)!);
+            const selectedCells = selectedCellsId.map(id => spreadsheet!.sheet?.cells?.find((c: any) => c.id === id)!);
             const selectedRows = Array.from(new Set(selectedCells.map(c => c?.row)));
             const selectedCols = Array.from(new Set(selectedCells.map(c => c?.col)));
 
@@ -1168,7 +1198,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                             );
 
                                             const borderClasses = cell ? getBorderClasses(cell.id, rowIndex, colIndex) : '';
-                                            const isSelected = selectedCellIds.includes(cell?.id || -1);
+                                            const isSelected = selectedCellsId.includes(cell?.id || -1);
 
                                             // Styles
                                             const isBold = cell?.style?.fontWeight === 'bold';
@@ -1236,7 +1266,13 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                                     onMouseMove={(e) => handleCellMouseMove(e, rowIndex, colIndex)}
                                                     onClick={() => {
                                                         if (cell && cell.id !== undefined) {
-                                                            setSelectedCellIds([cell.id]);
+                                                            setSelectedCellsId([cell.id]);
+                                                            setSelectedCellsContent({
+                                                                [rowIndex]: {
+                                                                    [colIndex]: cell.content ? cell.content : null,
+                                                                }
+                                                            });
+
                                                             setSelectedRange(`${getColumnLetter(true, spreadsheetType, colIndex)}${rowIndex}`);
 
                                                             if (userPermission !== 'VIEW' &&

@@ -36,7 +36,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
     currentFontSize: number;
     currentTextColor: string;
     currentBgColor: string;
-}> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellIds,
+}> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellsId,
     currentFontFamily, setCurrentFontFamily, currentFontSize, setCurrentFontSize, currentTextColor, setCurrentTextColor, currentBgColor, setCurrentBgColor
 }) => {
         const { setInfo } = useInfo();
@@ -201,8 +201,8 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
 
 
         const toggleTextStyle = (styleProperty: 'fontFamily' | 'fontSize' | 'fontWeight' | 'fontStyle' | 'textDecoration', toggleValue: string) => {
-            if (selectedCellIds.length > 0) {
-                const allHaveStyle = selectedCellIds.every((cellId) => {
+            if (selectedCellsId.length > 0) {
+                const allHaveStyle = selectedCellsId.every((cellId) => {
                     const cell = spreadsheet?.sheet?.cells.find(cell => cell.id === cellId);
                     return cell?.style?.[styleProperty] === toggleValue;
                 });
@@ -224,7 +224,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                     const updatedSheet = {
                         ...prevSpreadsheet.sheet,
                         cells: prevSpreadsheet.sheet.cells.map(cell =>
-                            selectedCellIds.includes(cell.id)
+                            selectedCellsId.includes(cell.id)
                                 ? { ...cell, style: { ...cell.style, [styleProperty]: newValue } }
                                 : cell
                         )
@@ -236,7 +236,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                     };
                 });
 
-                const stylesToUpdate = selectedCellIds.map((cellId) => ({
+                const stylesToUpdate = selectedCellsId.map((cellId) => ({
                     cellId: cellId,
                     style: { [styleProperty]: newValue }
                 }));
@@ -248,7 +248,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
 
 
         const setHorizontalAlignment = (value: HorizontalAlignment) => {
-            if (selectedCellIds.length > 0) {
+            if (selectedCellsId.length > 0) {
                 setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
                     if (!prevSpreadsheet) {
                         return prevSpreadsheet;
@@ -257,7 +257,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                     const updatedSheet = {
                         ...prevSpreadsheet.sheet,
                         cells: prevSpreadsheet.sheet.cells.map(cell =>
-                            selectedCellIds.includes(cell.id)
+                            selectedCellsId.includes(cell.id)
                                 ? { ...cell, hAlignment: value }
                                 : cell
                         )
@@ -270,7 +270,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                 });
 
 
-                const hAlignmentsToUpdate = selectedCellIds.map((cellId) => ({
+                const hAlignmentsToUpdate = selectedCellsId.map((cellId) => ({
                     cellId: cellId,
                     hAlignment: value,
                 }));
@@ -281,7 +281,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         };
 
         const setVerticalAlignment = (value: VerticalAlignment) => {
-            if (selectedCellIds.length > 0) {
+            if (selectedCellsId.length > 0) {
                 setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
                     if (!prevSpreadsheet) {
                         return prevSpreadsheet;
@@ -290,7 +290,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                     const updatedSheet = {
                         ...prevSpreadsheet.sheet,
                         cells: prevSpreadsheet.sheet.cells.map(cell =>
-                            selectedCellIds.includes(cell.id)
+                            selectedCellsId.includes(cell.id)
                                 ? { ...cell, vAlignment: value }
                                 : cell
                         )
@@ -303,7 +303,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                 });
 
 
-                const vAlignmentsToUpdate = selectedCellIds.map((cellId) => ({
+                const vAlignmentsToUpdate = selectedCellsId.map((cellId) => ({
                     cellId: cellId,
                     vAlignment: value,
                 }));
@@ -314,7 +314,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         };
 
         const setTextColor = (value: string) => {
-            if (selectedCellIds.length > 0) {
+            if (selectedCellsId.length > 0) {
                 setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
                     if (!prevSpreadsheet) {
                         return prevSpreadsheet;
@@ -323,7 +323,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                     const updatedSheet = {
                         ...prevSpreadsheet.sheet,
                         cells: prevSpreadsheet.sheet.cells.map(cell =>
-                            selectedCellIds.includes(cell.id)
+                            selectedCellsId.includes(cell.id)
                                 ? { ...cell, color: value }
                                 : cell
                         )
@@ -336,7 +336,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                 });
 
 
-                const colorsToUpdate = selectedCellIds.map((cellId) => ({
+                const colorsToUpdate = selectedCellsId.map((cellId) => ({
                     cellId: cellId,
                     color: value,
                 }));
@@ -347,7 +347,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         };
 
         const setBgColor = (value: string) => {
-            if (selectedCellIds.length > 0) {
+            if (selectedCellsId.length > 0) {
                 setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
                     if (!prevSpreadsheet) {
                         return prevSpreadsheet;
@@ -356,7 +356,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                     const updatedSheet = {
                         ...prevSpreadsheet.sheet,
                         cells: prevSpreadsheet.sheet.cells.map(cell =>
-                            selectedCellIds.includes(cell.id)
+                            selectedCellsId.includes(cell.id)
                                 ? { ...cell, bgColor: value }
                                 : cell
                         )
@@ -369,7 +369,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
                 });
 
 
-                const colorsToUpdate = selectedCellIds.map((cellId) => ({
+                const colorsToUpdate = selectedCellsId.map((cellId) => ({
                     cellId: cellId,
                     bgColor: value,
                 }));

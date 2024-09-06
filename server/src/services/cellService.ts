@@ -5,6 +5,15 @@ import { findSpreadsheetIdByCellId } from '../utils/findSpreadsheetId';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
 import { CS_PROTECTED_COLUMNS_LENGTH, CS_PROTECTED_COLUMNS_EDITABLE } from './spreadsheetService';
+import { addCols, addRows } from './sheetService';
+import { getCellById, getSheetById } from '../utils/getById';
+import { getCellByPosition } from '../utils/getByPosition';
+
+export type SelectedCellsContent = {
+    [rowIndex: number]: {
+        [colIndex: number]: string | null;
+    };
+};
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_FONT_SIZE = 12;
@@ -199,6 +208,59 @@ export const setContent = async (contents: { cellId: number; content: string }[]
 
     return updatedSheet;
 };
+
+export const setPastedContent = async (firstCellId: number, contents: SelectedCellsContent, userId: number) => {
+    const firstCell = await getCellById(firstCellId);
+    if (!firstCell) throw new Error('First cell not found');
+
+    const { row: firstRow, col: firstCol, sheetId } = firstCell;
+
+    const rowIndices = Object.keys(contents).map(rowIndex => parseInt(rowIndex, 10));
+    const colIndices = Object.values(contents).flatMap(row => Object.keys(row).map(colIndex => parseInt(colIndex, 10)));
+
+    const requiredRows = Math.max(...rowIndices) - Math.min(...rowIndices) + 1;
+    const requiredCols = Math.max(...colIndices) - Math.min(...colIndices) + 1;
+
+    const lastRow = firstRow + requiredRows - 1;
+    const lastCol = firstCol + requiredCols - 1;
+
+    const sheet = await getSheetById(sheetId);
+    if (!sheet) throw new Error('Sheet not found');
+
+    // Adjust number of rows/col if necessary
+    // Weird calculations
+    if (sheet.numRows < lastRow - 1 + requiredRows) {
+        await addRows(sheetId, sheet.numRows, requiredRows - 1, userId); 
+    }
+
+    if (sheet.numCols < lastCol - 1 + requiredCols) {
+        await addCols(sheetId, sheet.numCols, requiredCols - 1, userId);
+    }
+
+    // Normalize contents
+    const normalizedContents: { cellId: number; content: string }[] = [];
+
+    for (const relativeRowIndex in contents) {
+        const rowContent = contents[relativeRowIndex];
+        for (const relativeColIndex in rowContent) {
+            const content = rowContent[relativeColIndex];
+            if (content !== null) {
+                const absoluteRow = firstRow + (parseInt(relativeRowIndex, 10) - Math.min(...rowIndices));
+                const absoluteCol = firstCol + (parseInt(relativeColIndex, 10) - Math.min(...colIndices));
+
+                // Retrieve the cellId based on the absoluteRow and absoluteCol
+                const cell = await getCellByPosition(sheetId, absoluteRow, absoluteCol);
+                if (cell) {
+                    normalizedContents.push({ cellId: cell.id, content });
+                }
+            }
+        }
+    }
+
+    const updatedSheet = await setContent(normalizedContents, userId);
+    return updatedSheet;
+};
+
 
 const updateCell = async (cellId: number, data: object, userId: number) => {
     const cell = await fetchCellById(cellId, db);

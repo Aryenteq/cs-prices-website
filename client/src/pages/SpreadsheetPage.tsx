@@ -16,10 +16,11 @@ import { useInfo } from "../components/InfoContext";
 
 import { DEFAULT_FONT_SIZE, DEFAULT_FONT_FAMILY } from "../components/Spreadsheet/SpreadsheetTable";
 import { useQuery } from "react-query";
+import KeyboardListener from "../components/Spreadsheet/Functions/KeyboardListener";
 
 export interface SpreadsheetProps {
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
-    selectedCellIds: number[];
+    selectedCellsId: number[];
     spreadsheet: Spreadsheet | undefined;
     setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
     setCurrentFontFamily: React.Dispatch<React.SetStateAction<string>>;
@@ -35,10 +36,18 @@ export interface SpreadsheetHeaderProps {
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+export type SelectedCellsContent = {
+    [rowIndex: number]: {
+        [colIndex: number]: string | null;
+    };
+};
+
 const SpreadsheetPage: React.FC = () => {
     const { setInfo } = useInfo();
     const [saving, setSaving] = useState<boolean>(false);
-    const [selectedCellIds, setSelectedCellIds] = useState<number[]>([]);
+    const [selectedCellsId, setSelectedCellsId] = useState<number[]>([]);
+    const [selectedCellsContent, setSelectedCellsContent] = useState<SelectedCellsContent>({});
+    const [editingCell, setEditingCell] = useState<{ id: number, row: number, col: number } | null>(null);
     const [currentFontFamily, setCurrentFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
     const [currentFontSize, setCurrentFontSize] = useState<number>(DEFAULT_FONT_SIZE);
     const [currentTextColor, setCurrentTextColor] = useState<string>('#FFFFFF');
@@ -125,7 +134,7 @@ const SpreadsheetPage: React.FC = () => {
                     setSaving={setSaving}
                     spreadsheet={spreadsheet}
                     setSpreadsheet={setSpreadsheet}
-                    selectedCellIds={selectedCellIds}
+                    selectedCellsId={selectedCellsId}
                     currentFontFamily={currentFontFamily}
                     setCurrentFontFamily={setCurrentFontFamily}
                     currentFontSize={currentFontSize}
@@ -138,8 +147,11 @@ const SpreadsheetPage: React.FC = () => {
             </div>
             <SpreadsheetTable
                 setSaving={setSaving}
-                selectedCellIds={selectedCellIds}
-                setSelectedCellIds={setSelectedCellIds}
+                selectedCellsId={selectedCellsId}
+                setSelectedCellsId={setSelectedCellsId}
+                editingCell={editingCell}
+                setEditingCell={setEditingCell}
+                setSelectedCellsContent={setSelectedCellsContent}
                 spreadsheet={spreadsheet}
                 setSpreadsheet={setSpreadsheet}
                 setCurrentFontFamily={setCurrentFontFamily}
@@ -152,6 +164,18 @@ const SpreadsheetPage: React.FC = () => {
                 spreadsheet={spreadsheet}
                 setSpreadsheet={setSpreadsheet}
             />
+            <KeyboardListener
+                setSaving={setSaving}
+                selectedCellsId={selectedCellsId}
+                selectedCellsContent={selectedCellsContent}
+                setEditingCell={setEditingCell}
+                setSpreadsheet={setSpreadsheet}
+                // onCopy={() => console.log('Copy action triggered')}
+                // onPaste={() => console.log('Paste action triggered')}
+                // onUndo={() => console.log('Undo action triggered')}
+                // onRedo={() => console.log('Redo action triggered')}
+            />
+
         </div>
     );
 }

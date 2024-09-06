@@ -73,3 +73,15 @@ export const setContent = async (req: Request, res: Response) => {
         res.status(400).json({ message: error.message });
     }
 };
+
+export const setPastedContent = async (req: Request, res: Response) => {
+    try {
+        const { firstCellId, contents } = req.body;
+        const userId = (req as any).user.uid;
+
+        const updatedSheet = await cellService.setPastedContent(firstCellId, contents, userId);
+        res.status(200).json(updatedSheet);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};

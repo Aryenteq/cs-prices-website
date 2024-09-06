@@ -1,3 +1,4 @@
+import { SelectedCellsContent } from "../../../pages/SpreadsheetPage";
 import { authTokensFetch } from "../../../utils/authTokens";
 
 export const updateCellsStyle = async (styles: { cellId: number, style: object }[]) => {
@@ -50,5 +51,13 @@ export const updateCellContent = async (contents: { cellId: number, content: str
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents }),
+    });
+};
+
+export const updatePastedCellsContent = async ({ firstCellId, contents }: { firstCellId: number, contents: SelectedCellsContent }) => {
+    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/cells/pasted-content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstCellId, contents }),
     });
 };
