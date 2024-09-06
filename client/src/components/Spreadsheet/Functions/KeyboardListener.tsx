@@ -29,7 +29,7 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
             return selectedCellsContent;
         });
 
-        // normalize text to copy on clipboard
+        // Normalize text
         const concatenatedContent = Object.keys(selectedCellsContent)
             .map(rowIndex => {
                 const numericRowIndex = parseInt(rowIndex, 10);
@@ -39,10 +39,13 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
             })
             .join('\n');
 
-        navigator.clipboard.writeText(concatenatedContent).catch(err => {
+        const clipboardContent = `IHMLegend.ary\n${concatenatedContent}`;
+
+        navigator.clipboard.writeText(clipboardContent).catch(err => {
             console.error("Failed to copy to clipboard: ", err);
         });
-    }
+    };
+
 
     const { mutate: saveCellContentMutation } = useMutation(updatePastedCellsContent, {
         onSuccess: (updatedSheet) => {
@@ -115,21 +118,21 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
         if (ctrlZSheets === null || ctrlZIndex === null) {
             return;
         }
-    
+
         setCtrlZIndex((prevIndex) => {
             const newIndex = prevIndex !== null && prevIndex > 0 ? prevIndex - 1 : 0;
-            
+
             const sheetToRevert = ctrlZSheets[newIndex];
             if (sheetToRevert) {
                 setSaving(true);
                 setEditingCell(null);
                 revertSheetMutation({ sheetId: sheetToRevert.id, sheet: sheetToRevert });
             }
-    
+
             return newIndex;
         });
     };
-    
+
 
     const onRedo = async () => {
         if (ctrlZSheets === null || ctrlZIndex === null || ctrlZIndex >= ctrlZSheets.length - 1) {
@@ -151,6 +154,19 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
     };
 
     useEffect(() => {
+        // horrible way to determine if the ctrl+v is from the website
+        const handleClipboardPaste = async (e: KeyboardEvent) => {
+            const clipboardText = await navigator.clipboard.readText();
+    
+            console.log(clipboardText);
+            if (!clipboardText.startsWith("IHMLegend.ary".toLowerCase())) {
+                return;
+            }
+    
+            e.preventDefault();
+            onPaste();
+        };
+
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key) {
                 switch (e.key.toLowerCase()) {
@@ -159,12 +175,7 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
                         onCopy();
                         break;
                     case 'v':
-                        // ????? normal paste
-                        if(selectedCellsId.length <= 1) {
-                            break;
-                        }
-                        e.preventDefault();
-                        onPaste();
+                        handleClipboardPaste(e);
                         break;
                     case 'z':
                         e.preventDefault();
