@@ -1,5 +1,13 @@
 import { db } from '../db';
 
+const LINK_INDEX: number = 0;
+const QUANTITY_INDEX: number = 3;
+const LATEST_PRICE_INDEX: number = 4;
+const SUM_LATEST_PRICE_INDEX: number = 5;
+const REAL_PRICE_INDEX: number = 6;
+const SUM_REAL_PRICE_INDEX: number = 7;
+const BUY_ORDER_PRICE_INDEX: number = 8;
+
 export const updateUserItems = async (): Promise<void> => {
     try {
         const steamPrices = await db.steamPrices.findMany();
@@ -23,51 +31,51 @@ export const updateUserItems = async (): Promise<void> => {
                 for (const row of sheet.sheets) {
                     for (const cell of row.cells) {
                         // (col 0) === steamPrice name
-                        if (cell.col === 0 && cell.content) {
+                        if (cell.col === LINK_INDEX && cell.content) {
                             const decodedUrl = decodeURIComponent(cell.content);
                             const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
 
                             if (lastPart === name) {
                                 // Retrieve quantity from col 1
-                                const quantityCell = row.cells.find(c => c.col === 1);
+                                const quantityCell = row.cells.find(c => c.col === QUANTITY_INDEX);
                                 let quantity = quantityCell ? parseFloat(quantityCell.content || '1') : 1;
                                 if (isNaN(quantity)) {
                                     quantity = 1; // Default to 1 if invalid
                                 }
 
                                 const priceLatestNumber = priceLatest.toNumber();
-                                const col2 = priceLatestNumber;
-                                const col3 = priceLatestNumber * quantity;
+                                const colLatestPrice = priceLatestNumber;
+                                const colSumLatestPrice = priceLatestNumber * quantity;
                                 const priceRealNumber = priceReal.toNumber();
-                                const col4 = priceRealNumber;
-                                const col5 = priceRealNumber * quantity;
+                                const colRealPrice = priceRealNumber;
+                                const colSumRealPrice = priceRealNumber * quantity;
                                 const buyOrderPriceNumber = buyOrderPrice.toNumber();
-                                const col6 = buyOrderPriceNumber;
+                                const colBuyOrderPrice = buyOrderPriceNumber;
 
                                 // Update cells
                                 await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: 2 },
-                                    data: { content: col2.toString() }
+                                    where: { sheetId: row.id, col: LATEST_PRICE_INDEX },
+                                    data: { content: colLatestPrice.toString() }
                                 });
 
                                 await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: 3 },
-                                    data: { content: col3.toString() }
+                                    where: { sheetId: row.id, col: SUM_LATEST_PRICE_INDEX },
+                                    data: { content: colSumLatestPrice.toString() }
                                 });
 
                                 await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: 4 },
-                                    data: { content: col4.toString() }
+                                    where: { sheetId: row.id, col: REAL_PRICE_INDEX },
+                                    data: { content: colRealPrice.toString() }
                                 });
 
                                 await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: 5 },
-                                    data: { content: col5.toString() }
+                                    where: { sheetId: row.id, col: SUM_REAL_PRICE_INDEX },
+                                    data: { content: colSumRealPrice.toString() }
                                 });
 
                                 await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: 6 },
-                                    data: { content: col6.toString() }
+                                    where: { sheetId: row.id, col: BUY_ORDER_PRICE_INDEX },
+                                    data: { content: colBuyOrderPrice.toString() }
                                 });
                             }
                         }
