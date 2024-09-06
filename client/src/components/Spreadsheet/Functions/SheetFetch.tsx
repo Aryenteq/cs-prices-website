@@ -1,4 +1,5 @@
 import { authTokensFetch } from "../../../utils/authTokens";
+import { Sheet } from "./Types";
 
 export const updateRowHeight = async ({ sheetId, rowIndex, height }: { sheetId: number, rowIndex: number, height: number }) => {
     return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/row-height`, {
@@ -73,7 +74,7 @@ export const getSheet = async (sheetId: number): Promise<any> => {
     });
 };
 
-export const addSheet = async ({ spreadsheetId, index, name }: { spreadsheetId: number; index: number; name: string}): Promise<any> => {
+export const addSheet = async ({ spreadsheetId, index, name }: { spreadsheetId: number; index: number; name: string }): Promise<any> => {
     return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,5 +109,15 @@ export const setColor = async ({ sheetId, color }: { sheetId: number, color: str
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ color }),
+    });
+};
+
+
+// CTRL + Z, CTRL+Y
+export const revertSheet = async ({ sheetId, sheet }: { sheetId: number, sheet: Sheet }) => {
+    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sheet),
     });
 };

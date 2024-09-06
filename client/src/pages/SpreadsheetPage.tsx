@@ -3,7 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
 import { JwtPayload } from '../utils/types';
-import type { Spreadsheet } from "../components/Spreadsheet/Functions/Types";
+import { Sheet, type Spreadsheet } from "../components/Spreadsheet/Functions/Types";
 
 import SpreadsheetHeader from "../components/Spreadsheet/SpreadsheetHeader";
 import SpreadsheetUtilities from "../components/Spreadsheet/SpreadsheetUtilities";
@@ -42,6 +42,8 @@ export type SelectedCellsContent = {
     };
 };
 
+export const CTRL_Z_MEMORY_LENGTH = 50;
+
 const SpreadsheetPage: React.FC = () => {
     const { setInfo } = useInfo();
     const [saving, setSaving] = useState<boolean>(false);
@@ -53,6 +55,36 @@ const SpreadsheetPage: React.FC = () => {
     const [currentTextColor, setCurrentTextColor] = useState<string>('#FFFFFF');
     const [currentBgColor, setCurrentBgColor] = useState<string>('#242424');
     const { encodedSpreadsheetId } = useParams<{ encodedSpreadsheetId: string }>();
+
+    const [isFirstRender, setIsFirstRender] = useState(true);
+    const [CtrlZSheets, setCtrlZSheets] = useState<Sheet[] | null>(null);
+    const [ctrlZIndex, setCtrlZIndex] = useState<number | null>(null);
+
+    const updateCtrlZMemory = (updatedSheet: any) => {
+        setCtrlZSheets((prevSheets) => {
+            const currentCtrlZIndex = ctrlZIndex !== null ? ctrlZIndex : 0;
+
+            const newSheets = prevSheets ? [...prevSheets] : [];
+
+            // avoid future history (Ctrl+Y)
+            const sheetsUpToCurrentIndex = newSheets.slice(0, currentCtrlZIndex + 1);
+
+            const lastSheet = sheetsUpToCurrentIndex[sheetsUpToCurrentIndex.length - 1];
+            if (lastSheet && JSON.stringify(lastSheet) === JSON.stringify(updatedSheet)) {
+                return prevSheets;
+            }
+
+            sheetsUpToCurrentIndex.push(updatedSheet);
+
+            if (sheetsUpToCurrentIndex.length > CTRL_Z_MEMORY_LENGTH) {
+                sheetsUpToCurrentIndex.shift();
+            }
+
+            setCtrlZIndex(sheetsUpToCurrentIndex.length - 1);
+
+            return sheetsUpToCurrentIndex;
+        });
+    };
 
     const [spreadsheetId, sheetIndex] = useMemo(() => {
         if (encodedSpreadsheetId) {
@@ -143,6 +175,11 @@ const SpreadsheetPage: React.FC = () => {
                     setCurrentTextColor={setCurrentTextColor}
                     currentBgColor={currentBgColor}
                     setCurrentBgColor={setCurrentBgColor}
+                    setEditingCell={setEditingCell}
+                    updateCtrlZMemory={updateCtrlZMemory}
+                    ctrlZSheets={CtrlZSheets}
+                    ctrlZIndex={ctrlZIndex}
+                    setCtrlZIndex={setCtrlZIndex}
                 />
             </div>
             <SpreadsheetTable
@@ -158,11 +195,15 @@ const SpreadsheetPage: React.FC = () => {
                 setCurrentFontSize={setCurrentFontSize}
                 setCurrentTextColor={setCurrentTextColor}
                 setCurrentBgColor={setCurrentBgColor}
+                updateCtrlZMemory={updateCtrlZMemory}
+                isFirstRender={isFirstRender}
+                setIsFirstRender={setIsFirstRender}
             />
             <SheetList
                 setSaving={setSaving}
                 spreadsheet={spreadsheet}
                 setSpreadsheet={setSpreadsheet}
+                updateCtrlZMemory={updateCtrlZMemory}
             />
             <KeyboardListener
                 setSaving={setSaving}
@@ -170,10 +211,10 @@ const SpreadsheetPage: React.FC = () => {
                 selectedCellsContent={selectedCellsContent}
                 setEditingCell={setEditingCell}
                 setSpreadsheet={setSpreadsheet}
-                // onCopy={() => console.log('Copy action triggered')}
-                // onPaste={() => console.log('Paste action triggered')}
-                // onUndo={() => console.log('Undo action triggered')}
-                // onRedo={() => console.log('Redo action triggered')}
+                updateCtrlZMemory={updateCtrlZMemory}
+                ctrlZSheets={CtrlZSheets}
+                ctrlZIndex={ctrlZIndex}
+                setCtrlZIndex={setCtrlZIndex}
             />
 
         </div>

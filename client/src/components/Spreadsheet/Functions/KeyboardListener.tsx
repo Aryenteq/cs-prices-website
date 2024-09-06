@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Spreadsheet } from "./Types";
+import { Sheet, Spreadsheet } from "./Types";
 import type { SelectedCellsContent } from "../../../pages/SpreadsheetPage";
 import { useMutation } from "react-query";
 import { useInfo } from "../../InfoContext";
 import { updatePastedCellsContent } from "./CellFetch";
+import { revertSheet } from "./SheetFetch";
 
 interface KeyboardListenerProps {
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
@@ -11,10 +12,14 @@ interface KeyboardListenerProps {
     selectedCellsId: number[];
     selectedCellsContent: SelectedCellsContent;
     setEditingCell: React.Dispatch<React.SetStateAction<{ id: number, row: number, col: number } | null>>;
+    updateCtrlZMemory: (updatedSheet: any) => void;
+    ctrlZSheets: Sheet[] | null;
+    ctrlZIndex: number | null;
+    setCtrlZIndex: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
 const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSpreadsheet, selectedCellsId, selectedCellsContent,
-    setEditingCell
+    setEditingCell, updateCtrlZMemory, ctrlZSheets, ctrlZIndex, setCtrlZIndex,
 }) => {
     const { setInfo } = useInfo();
     const [copiedCellsContent, setCopiedCellsContent] = useState<SelectedCellsContent>({});
@@ -51,6 +56,7 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
                     sheet: updatedSheet
                 };
             });
+            updateCtrlZMemory(updatedSheet);
         },
         onError: (error: any) => {
             setSaving(false);
@@ -74,13 +80,76 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
         }
     };
 
-    const onUndo = async () => {
 
-    }
+    // Duplicated code unfortunately in SpreadsheetUtilities
+    // Too many hooks rendered if function passed by props
+    const { mutate: revertSheetMutation } = useMutation(revertSheet, {
+        onSuccess: (updatedSheet) => {
+            setSaving(false);
+
+            setSpreadsheet((prevSpreadsheet) => {
+                if (!prevSpreadsheet) return prevSpreadsheet;
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet
+                };
+            });
+        },
+        onError: (error: any) => {
+            setSaving(false);
+            let errorMessage = 'Something went wrong saving the new content. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            if (error.status !== 401) {
+                console.error('Error updating cell content:', errorMessage);
+            }
+            setInfo({ message: errorMessage, isError: true });
+        }
+    });
+
+    const onUndo = async () => {
+        if (ctrlZSheets === null || ctrlZIndex === null) {
+            return;
+        }
+    
+        setCtrlZIndex((prevIndex) => {
+            const newIndex = prevIndex !== null && prevIndex > 0 ? prevIndex - 1 : 0;
+            
+            const sheetToRevert = ctrlZSheets[newIndex];
+            if (sheetToRevert) {
+                setSaving(true);
+                setEditingCell(null);
+                revertSheetMutation({ sheetId: sheetToRevert.id, sheet: sheetToRevert });
+            }
+    
+            return newIndex;
+        });
+    };
+    
 
     const onRedo = async () => {
+        if (ctrlZSheets === null || ctrlZIndex === null || ctrlZIndex >= ctrlZSheets.length - 1) {
+            return;
+        }
 
-    }
+        setCtrlZIndex((prevIndex) => {
+            const newIndex = prevIndex !== null ? prevIndex + 1 : 0;
+
+            const nextSheet = ctrlZSheets[newIndex];
+            if (nextSheet) {
+                setSaving(true);
+                setEditingCell(null);
+                revertSheetMutation({ sheetId: nextSheet.id, sheet: nextSheet });
+            }
+
+            return newIndex;
+        });
+    };
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key) {
@@ -100,6 +169,9 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
                     case 'y':
                         e.preventDefault();
                         onRedo();
+                        break;
+                    case 'b':
+                        e.preventDefault();
                         break;
                     default:
                         break;

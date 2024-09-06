@@ -10,7 +10,7 @@ import {
     updateCellsStyle, updateCellsHorizontalAlignment,
     updateCellsVerticalAlignment, updateCellsColor, updateCellsBgColor
 } from "./Functions/CellFetch";
-import { Spreadsheet, HorizontalAlignment, VerticalAlignment } from "./Functions/Types";
+import { Spreadsheet, HorizontalAlignment, VerticalAlignment, Sheet } from "./Functions/Types";
 
 import { DEFAULT_FONT_SIZE } from "./SpreadsheetTable";
 
@@ -27,6 +27,7 @@ import horizontalRightAlignmentImg from "../../media/svgs/horizontal-right.svg";
 import verticalBottomAlignmentImg from "../../media/svgs/vertical-bottom.svg";
 import verticalCenterAlignmentImg from "../../media/svgs/vertical-center.svg";
 import verticalTopAlignmentImg from "../../media/svgs/vertical-top.svg";
+import { revertSheet } from "./Functions/SheetFetch";
 
 const fonts = ['Arial', 'Times New Roman', 'Verdana', 'Helvetica', 'Georgia', 'Courier New',
     'Trebuchet MS', 'Impact', 'Open Sans', 'Playfair Display', 'Roboto', 'Dancing Script'];
@@ -36,8 +37,15 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
     currentFontSize: number;
     currentTextColor: string;
     currentBgColor: string;
+    setEditingCell: React.Dispatch<React.SetStateAction<{ id: number, row: number, col: number } | null>>;
+    updateCtrlZMemory: (updatedSheet: any) => void;
+    ctrlZSheets: Sheet[] | null;
+    ctrlZIndex: number | null;
+    setCtrlZIndex: React.Dispatch<React.SetStateAction<number | null>>;
 }> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellsId,
-    currentFontFamily, setCurrentFontFamily, currentFontSize, setCurrentFontSize, currentTextColor, setCurrentTextColor, currentBgColor, setCurrentBgColor
+    currentFontFamily, setCurrentFontFamily, currentFontSize, setCurrentFontSize, currentTextColor,
+    setCurrentTextColor, currentBgColor, setCurrentBgColor,
+    setEditingCell, updateCtrlZMemory, ctrlZSheets, ctrlZIndex, setCtrlZIndex,
 }) => {
         const { setInfo } = useInfo();
         const [isHorizontalAlignmentOpen, setHorizontalAlignmentOpen] = useState(false);
@@ -134,9 +142,86 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         //
         //
 
-        const { mutate: updateCellsStyleMutation } = useMutation(updateCellsStyle, {
-            onSuccess: () => {
+        const { mutate: revertSheetMutation } = useMutation(revertSheet, {
+            onSuccess: (updatedSheet) => {
                 setSaving(false);
+
+                setSpreadsheet((prevSpreadsheet) => {
+                    if (!prevSpreadsheet) return prevSpreadsheet;
+
+                    return {
+                        ...prevSpreadsheet,
+                        sheet: updatedSheet
+                    };
+                });
+            },
+            onError: (error: any) => {
+                setSaving(false);
+                let errorMessage = 'Something went wrong saving the new content. Try again';
+
+                if (error instanceof Error) {
+                    errorMessage = error.message;
+                }
+
+                if (error.status !== 401) {
+                    console.error('Error updating cell content:', errorMessage);
+                }
+                setInfo({ message: errorMessage, isError: true });
+            }
+        });
+
+        const onUndo = async () => {
+            if (ctrlZSheets === null || ctrlZIndex === null) {
+                return;
+            }
+
+            setCtrlZIndex((prevIndex) => {
+                const newIndex = prevIndex !== null && prevIndex > 0 ? prevIndex - 1 : 0;
+
+                const sheetToRevert = ctrlZSheets[newIndex];
+                if (sheetToRevert) {
+                    setSaving(true);
+                    setEditingCell(null);
+                    revertSheetMutation({ sheetId: sheetToRevert.id, sheet: sheetToRevert });
+                }
+
+                return newIndex;
+            });
+        };
+
+
+        const onRedo = async () => {
+            if (ctrlZSheets === null || ctrlZIndex === null || ctrlZIndex >= ctrlZSheets.length - 1) {
+                return;
+            }
+
+            setCtrlZIndex((prevIndex) => {
+                const newIndex = prevIndex !== null ? prevIndex + 1 : 0;
+
+                const nextSheet = ctrlZSheets[newIndex];
+                if (nextSheet) {
+                    setSaving(true);
+                    setEditingCell(null);
+                    revertSheetMutation({ sheetId: nextSheet.id, sheet: nextSheet });
+                }
+
+                return newIndex;
+            });
+        };
+
+        const { mutate: updateCellsStyleMutation } = useMutation(updateCellsStyle, {
+            onSuccess: (updatedSheet) => {
+                setSaving(false);
+
+                setSpreadsheet((prevSpreadsheet) => {
+                    if (!prevSpreadsheet) return prevSpreadsheet;
+
+                    return {
+                        ...prevSpreadsheet,
+                        sheet: updatedSheet
+                    };
+                });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -148,8 +233,18 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         });
 
         const { mutate: updateCellsHorizontalAlignmentMutation } = useMutation(updateCellsHorizontalAlignment, {
-            onSuccess: () => {
+            onSuccess: (updatedSheet) => {
                 setSaving(false);
+
+                setSpreadsheet((prevSpreadsheet) => {
+                    if (!prevSpreadsheet) return prevSpreadsheet;
+
+                    return {
+                        ...prevSpreadsheet,
+                        sheet: updatedSheet
+                    };
+                });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -161,8 +256,18 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         });
 
         const { mutate: updateCellsVerticalAlignmentMutation } = useMutation(updateCellsVerticalAlignment, {
-            onSuccess: () => {
+            onSuccess: (updatedSheet) => {
                 setSaving(false);
+
+                setSpreadsheet((prevSpreadsheet) => {
+                    if (!prevSpreadsheet) return prevSpreadsheet;
+
+                    return {
+                        ...prevSpreadsheet,
+                        sheet: updatedSheet
+                    };
+                });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -174,8 +279,18 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         });
 
         const { mutate: updateCellsColorMutation } = useMutation(updateCellsColor, {
-            onSuccess: () => {
+            onSuccess: (updatedSheet) => {
                 setSaving(false);
+
+                setSpreadsheet((prevSpreadsheet) => {
+                    if (!prevSpreadsheet) return prevSpreadsheet;
+
+                    return {
+                        ...prevSpreadsheet,
+                        sheet: updatedSheet
+                    };
+                });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -187,8 +302,18 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         });
 
         const { mutate: updateCellsBgColorMutation } = useMutation(updateCellsBgColor, {
-            onSuccess: () => {
+            onSuccess: (updatedSheet) => {
                 setSaving(false);
+
+                setSpreadsheet((prevSpreadsheet) => {
+                    if (!prevSpreadsheet) return prevSpreadsheet;
+
+                    return {
+                        ...prevSpreadsheet,
+                        sheet: updatedSheet
+                    };
+                });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -442,10 +567,12 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
 
         return (
             <div className="relative flex items-center mx-4 gap-2 flex-wrap">
-                <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Undo (Ctrl+Z)" disabled={isDisabled}>
+                <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Undo (Ctrl+Z)" disabled={isDisabled}
+                    onClick={onUndo}>
                     <img src={undoImg} alt="Undo" className="w-6 h-6" />
                 </button>
-                <button className="rounded-lg p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Redo (Ctrl+Y)" disabled={isDisabled}>
+                <button className="rounded-lg p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Redo (Ctrl+Y)" disabled={isDisabled}
+                    onClick={onRedo}>
                     <img src={redoImg} alt="Redo" className="w-6 h-6" />
                 </button>
 
@@ -509,11 +636,11 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
 
                 <div className="bg-accent w-[1px] h-5 py-[1px]"></div>
 
-                <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Bold (Ctrl+B)" disabled={isDisabled}
+                <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Bold" disabled={isDisabled}
                     onClick={() => toggleTextStyle('fontWeight', 'bold')}>
                     <img src={boldImg} alt="Bold" className="w-5 h-5" />
                 </button>
-                <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Italic (Ctrl+I)" disabled={isDisabled}
+                <button className="rounded p-1 hover:bg-gray-700 transition duration-300 ease-in-out" title="Italic" disabled={isDisabled}
                     onClick={() => toggleTextStyle('fontStyle', 'italic')}>
                     <img src={italicImg} alt="Italic" className="w-5 h-5" />
                 </button>

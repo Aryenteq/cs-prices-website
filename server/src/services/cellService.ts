@@ -110,7 +110,7 @@ const updateCellStyle = async (cellId: number, newStyle: object, userId: number)
 
 
 export const setBgColor = async (bgColors: { cellId: number; bgColor: string }[], userId: number) => {
-    const updatedCells = [];
+    const updatedCellIds = [];
 
     for (const bgColorObj of bgColors) {
         const { cellId, bgColor } = bgColorObj;
@@ -119,15 +119,30 @@ export const setBgColor = async (bgColors: { cellId: number; bgColor: string }[]
             throw new Error(`Invalid cell data: cellId=${cellId}, bgColor=${bgColor}`);
         }
 
-        const updatedCell = await updateCell(cellId, { bgColor }, userId);
-        updatedCells.push(updatedCell);
+        await updateCell(cellId, { bgColor }, userId);
+        updatedCellIds.push(cellId);
     }
 
-    return updatedCells;
+    const firstCellId = updatedCellIds[0];
+    const spreadsheetId = await findSheetIdByCellId(firstCellId);
+
+    if (!spreadsheetId) {
+        throw new Error('Associated spreadsheet not found');
+    }
+
+    const updatedSheet = await db.sheet.findUnique({
+        where: { id: spreadsheetId },
+        include: {
+            cells: true,
+        },
+    });
+
+    return updatedSheet;
 };
 
+
 export const setColor = async (colors: { cellId: number; color: string }[], userId: number) => {
-    const updatedCells = [];
+    const updatedCellIds = [];
 
     for (const colorObj of colors) {
         const { cellId, color } = colorObj;
@@ -136,15 +151,30 @@ export const setColor = async (colors: { cellId: number; color: string }[], user
             throw new Error(`Invalid cell data: cellId=${cellId}, color=${color}`);
         }
 
-        const updatedCell = await updateCell(cellId, { color }, userId);
-        updatedCells.push(updatedCell);
+        await updateCell(cellId, { color }, userId);
+        updatedCellIds.push(cellId);
     }
 
-    return updatedCells;
+    const firstCellId = updatedCellIds[0];
+    const spreadsheetId = await findSheetIdByCellId(firstCellId);
+
+    if (!spreadsheetId) {
+        throw new Error('Associated spreadsheet not found');
+    }
+
+    const updatedSheet = await db.sheet.findUnique({
+        where: { id: spreadsheetId },
+        include: {
+            cells: true,
+        },
+    });
+
+    return updatedSheet;
 };
 
+
 export const setHorizontalAlignment = async (hAlignments: { cellId: number; hAlignment: string }[], userId: number) => {
-    const updatedCells = [];
+    const updatedCellIds = [];
 
     for (const hAlignmentObj of hAlignments) {
         const { cellId, hAlignment } = hAlignmentObj;
@@ -153,15 +183,30 @@ export const setHorizontalAlignment = async (hAlignments: { cellId: number; hAli
             throw new Error(`Invalid cell data: cellId=${cellId}, hAlignment=${hAlignment}`);
         }
 
-        const updatedCell = await updateCell(cellId, { hAlignment }, userId);
-        updatedCells.push(updatedCell);
+        await updateCell(cellId, { hAlignment }, userId);
+        updatedCellIds.push(cellId);
     }
 
-    return updatedCells;
+    const firstCellId = updatedCellIds[0];
+    const spreadsheetId = await findSheetIdByCellId(firstCellId);
+
+    if (!spreadsheetId) {
+        throw new Error('Associated spreadsheet not found');
+    }
+
+    const updatedSheet = await db.sheet.findUnique({
+        where: { id: spreadsheetId },
+        include: {
+            cells: true,
+        },
+    });
+
+    return updatedSheet;
 };
 
+
 export const setVerticalAlignment = async (vAlignments: { cellId: number; vAlignment: string }[], userId: number) => {
-    const updatedCells = [];
+    const updatedCellIds = [];
 
     for (const vAlignmentObj of vAlignments) {
         const { cellId, vAlignment } = vAlignmentObj;
@@ -170,12 +215,27 @@ export const setVerticalAlignment = async (vAlignments: { cellId: number; vAlign
             throw new Error(`Invalid cell data: cellId=${cellId}, vAlignment=${vAlignment}`);
         }
 
-        const updatedCell = await updateCell(cellId, { vAlignment }, userId);
-        updatedCells.push(updatedCell);
+        await updateCell(cellId, { vAlignment }, userId);
+        updatedCellIds.push(cellId);
     }
 
-    return updatedCells;
+    const firstCellId = updatedCellIds[0];
+    const spreadsheetId = await findSheetIdByCellId(firstCellId);
+
+    if (!spreadsheetId) {
+        throw new Error('Associated spreadsheet not found');
+    }
+
+    const updatedSheet = await db.sheet.findUnique({
+        where: { id: spreadsheetId },
+        include: {
+            cells: true,
+        },
+    });
+
+    return updatedSheet;
 };
+
 
 export const setContent = async (contents: { cellId: number; content: string }[], userId: number) => {
     const updatedCellIds = [];
@@ -273,7 +333,6 @@ export const setPastedContent = async (firstCellId: number, contents: SelectedCe
         return updatedSheet;
     }
 
-    console.log(hasNonNullContent);
     const updatedSheet = await setContent(normalizedContents, userId);
     return updatedSheet;
 

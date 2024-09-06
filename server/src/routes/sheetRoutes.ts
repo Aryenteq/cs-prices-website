@@ -5,6 +5,7 @@ import { isAuthenticated } from '../middlewares/authMiddleware';
 const sheetRoutes = Router();
 
 sheetRoutes.get('/sheet/:sheetId', isAuthenticated, sheetController.getSheet);
+sheetRoutes.post('/sheet/:sheetId', isAuthenticated, sheetController.revertSheet);
 sheetRoutes.post('/sheet', isAuthenticated, sheetController.createSheet);
 sheetRoutes.delete('/sheet/:sheetId/rows', isAuthenticated, sheetController.deleteRows);
 sheetRoutes.delete('/sheet/:sheetId/cols', isAuthenticated, sheetController.deleteCols);

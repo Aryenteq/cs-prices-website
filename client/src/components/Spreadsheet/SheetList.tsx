@@ -25,10 +25,12 @@ const SheetList: React.FC<{
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
     spreadsheet: Spreadsheet | undefined;
     setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
+    updateCtrlZMemory: (updatedSheet: any) => void;
 }> = ({
     setSaving,
     spreadsheet,
     setSpreadsheet,
+    updateCtrlZMemory
 }) => {
         const { setInfo } = useInfo();
         const navigate = useNavigate();
@@ -73,6 +75,7 @@ const SheetList: React.FC<{
                     setCurrentSheetId(updatedSheet.id);
                     const encodedInfo = encodeURIComponent(encryptData(`${updatedSheet.spreadsheetId}?index=${updatedSheet.index}`));
                     navigate(`/spreadsheet/${encodedInfo}`);
+                    updateCtrlZMemory(updatedSheet);
                 },
                 onError: (error: any) => {
                     let errorMessage = 'Something went wrong getting the sheet. Try again';
@@ -126,6 +129,7 @@ const SheetList: React.FC<{
                         const newSpreadsheet = updateSheetInfo(prevSpreadsheet!, updatedSheet);
                         return newSpreadsheet;
                     });
+                    updateCtrlZMemory(updatedSheet);
                 },
                 onError: (error: any) => {
                     let errorMessage = 'Something went wrong creating the sheet. Try again';
@@ -150,6 +154,7 @@ const SheetList: React.FC<{
                     setSpreadsheet((prevSpreadsheet) =>
                         updateSheetInfo(prevSpreadsheet!, updatedSheet)
                     );
+                    updateCtrlZMemory(updatedSheet);
                 },
                 onError: (error: any) => {
                     let errorMessage = 'Something went wrong renaming the sheet. Try again';
@@ -252,6 +257,7 @@ const SheetList: React.FC<{
                     setSpreadsheet((prevSpreadsheet) =>
                         updateSheetInfo(prevSpreadsheet!, updatedSheet)
                     );
+                    updateCtrlZMemory(updatedSheet);
                 },
                 onError: (error: any) => {
                     let errorMessage = 'Something went wrong recoloring the sheet. Try again';

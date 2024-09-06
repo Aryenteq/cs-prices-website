@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import http from 'node:http';
 import cors from 'cors';
+import bodyParser from 'body-parser';
 
 import authRoutes from './routes/authRoutes';
 import spreadsheetRoutes from './routes/spreadsheetRoutes';
@@ -16,6 +17,8 @@ dotenv.config({ path: '../.env' });
 const app = express();
 
 
+app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
 app.use(cors({
     origin: "*",
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
@@ -29,6 +32,7 @@ app.use(cors({
     .use(sheetRoutes)
     .use(cellRoutes)
     .use(userRoutes);
+
 
 // CS2 items actualization
 //refreshItems();

@@ -1,3 +1,5 @@
+export type TextAlign = 'left' | 'right' | 'center' | 'justify';
+
 export enum HorizontalAlignment {
     LEFT = "LEFT",
     CENTER = "CENTER",
@@ -9,8 +11,6 @@ export enum VerticalAlignment {
     CENTER = "CENTER",
     BOTTOM = "BOTTOM"
 }
-
-export type TextAlign = 'left' | 'right' | 'center' | 'justify';
 
 export interface Cell {
     id: number;

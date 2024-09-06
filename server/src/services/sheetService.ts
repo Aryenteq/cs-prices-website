@@ -3,6 +3,10 @@ import type { Sheet as PrismaSheet } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 import { CS_PROTECTED_COLUMNS_LENGTH, generateCells } from './spreadsheetService';
+import type { Sheet } from '../controllers/sheetController';
+
+import { promises as fs } from 'fs';
+import { join } from 'path';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
@@ -43,6 +47,61 @@ export const getSheet = async (sheetId: number, userId: number) => {
     }
 
     return sheet;
+};
+
+export const revertSheet = async (sheet: Sheet, userId: number) => {
+    const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
+
+    if (permission !== 'EDIT') {
+        throw new Error('You do not have permission to edit this spreadsheet.');
+    }
+
+    await db.sheet.update({
+        where: { id: sheet.id },
+        data: {
+            name: sheet.name,
+            index: sheet.index,
+            color: sheet.color,
+            numRows: sheet.numRows,
+            numCols: sheet.numCols,
+            columnWidths: sheet.columnWidths ? JSON.stringify(sheet.columnWidths) : undefined,
+            rowHeights: sheet.rowHeights ? JSON.stringify(sheet.rowHeights) : undefined,
+            hiddenCols: sheet.hiddenCols ? JSON.stringify(sheet.hiddenCols) : undefined,
+            hiddenRows: sheet.hiddenRows ? JSON.stringify(sheet.hiddenRows) : undefined,
+        },
+    });
+
+    await db.cell.deleteMany({
+        where: { sheetId: sheet.id },
+    });
+
+    const newCellsData = sheet.cells.map(cell => ({
+        sheetId: sheet.id,
+        row: cell.row,
+        col: cell.col,
+        protected: cell.protected,
+        bgColor: cell.bgColor,
+        color: cell.color,
+        style: cell.style,
+        hAlignment: cell.hAlignment,
+        vAlignment: cell.vAlignment,
+        content: cell.content,
+        created: new Date(cell.created),
+        updatedAt: new Date(cell.updatedAt),
+    }));
+
+    await db.cell.createMany({
+        data: newCellsData,
+    });
+
+    const updatedSheet = await db.sheet.findUnique({
+        where: { id: sheet.id },
+        include: {
+            cells: true,
+        },
+    });
+
+    return updatedSheet;
 };
 
 export const createSheet = async (sheet: PrismaSheet, userId: number) => {

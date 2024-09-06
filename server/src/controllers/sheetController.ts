@@ -2,6 +2,51 @@ import type { Request, Response } from 'express';
 import * as sheetService from '../services/sheetService';
 import type { Sheet as PrismaSheet } from '@prisma/client';
 
+export enum HorizontalAlignment {
+    LEFT = "LEFT",
+    CENTER = "CENTER",
+    RIGHT = "RIGHT"
+}
+
+export enum VerticalAlignment {
+    TOP = "TOP",
+    CENTER = "CENTER",
+    BOTTOM = "BOTTOM"
+}
+
+export interface Cell {
+    id: number;
+    sheetId: number;
+    row: number;
+    col: number;
+    protected: boolean;
+    bgColor: string;
+    color: string;
+    style?: Record<string, any>;
+    hAlignment: HorizontalAlignment;
+    vAlignment: VerticalAlignment;
+    content?: string;
+    created: string;
+    updatedAt: string;
+}
+
+export interface Sheet {
+    id: number;
+    spreadsheetId: number;
+    name: string;
+    index: number;
+    color: string;
+    numRows: number;
+    numCols: number;
+    columnWidths?: Record<number, number>;
+    rowHeights?: Record<number, number>;
+    hiddenCols?: Record<number, boolean>;
+    hiddenRows?: Record<number, boolean>;
+    created: string;
+    updatedAt: string;
+    cells: Cell[];
+}
+
 export const getSheet = async (req: Request, res: Response) => {
     try {
         const sheetId = parseInt(req.params.sheetId, 10);
@@ -9,6 +54,18 @@ export const getSheet = async (req: Request, res: Response) => {
 
         const sheet = await sheetService.getSheet(sheetId, userId);
         res.status(200).json(sheet);
+    } catch (error: any) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+export const revertSheet = async (req: Request, res: Response) => {
+    try {
+        const sheet = req.body as Sheet;
+        const userId = (req as any).user.uid;
+
+        const updatedSheet = await sheetService.revertSheet(sheet, userId);
+        res.status(201).json(updatedSheet);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
     }

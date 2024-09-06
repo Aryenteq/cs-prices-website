@@ -32,9 +32,13 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
     setSelectedCellsContent: React.Dispatch<React.SetStateAction<SelectedCellsContent>>;
     editingCell: { id: number, row: number, col: number } | null;
     setEditingCell: React.Dispatch<React.SetStateAction<{ id: number, row: number, col: number } | null>>;
+    updateCtrlZMemory: (updatedSheet: any) => void;
+    isFirstRender: boolean;
+    setIsFirstRender:  React.Dispatch<React.SetStateAction<boolean>>;
 }> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellsId, setSelectedCellsId,
     setSelectedCellsContent, editingCell, setEditingCell,
-    setCurrentFontFamily, setCurrentFontSize, setCurrentTextColor, setCurrentBgColor
+    setCurrentFontFamily, setCurrentFontSize, setCurrentTextColor, setCurrentBgColor,
+    updateCtrlZMemory, isFirstRender, setIsFirstRender
 }) => {
         const { setInfo } = useInfo();
         const [numRows, setNumRows] = useState<number>(100);
@@ -52,8 +56,14 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                 setNumCols(spreadsheet.sheet.numCols || 26);
                 setUserPermission(spreadsheet.permission);
                 setSpreadsheetType(spreadsheet.type);
+        
+                if (isFirstRender&& spreadsheet.sheet) {
+                    updateCtrlZMemory(spreadsheet.sheet);
+                }
+        
+                setIsFirstRender(false);
             }
-        }, [spreadsheet]);
+        }, [spreadsheet]);        
 
         const [dialogOpen, setDialogOpen] = useState(false);
         const [resizeType, setResizeType] = useState<'row' | 'col' | null>(null);
@@ -312,6 +322,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet,
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -341,6 +352,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet,
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -376,6 +388,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet,
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -407,6 +420,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet,
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -443,6 +457,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet,
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -473,6 +488,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet,
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -655,6 +671,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet,
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -685,6 +702,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet,
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -831,6 +849,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                         sheet: updatedSheet
                     };
                 });
+                updateCtrlZMemory(updatedSheet);
             },
             onError: (error: any) => {
                 setSaving(false);
@@ -1002,7 +1021,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             e.preventDefault();
             if (isSelecting.current && startCell.current) {
                 const newSelectedCells = getSelectedCells(startCell.current, { row: rowIndex, col: colIndex });
-        
+
                 // sort needed for Ctrl+V (selectedCellsId[0] needs to be top-left cell)
                 const sortedSelectedCells = newSelectedCells.sort((a, b) => {
                     if (a.row === b.row) {
@@ -1010,9 +1029,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                     }
                     return a.row - b.row;
                 });
-        
+
                 const selectedCellsId = sortedSelectedCells.map(cell => cell.id);
-        
+
                 const selectedCellsContent = sortedSelectedCells.reduce((acc, cell) => {
                     if (!acc[cell.row]) {
                         acc[cell.row] = {};
@@ -1020,12 +1039,12 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                     acc[cell.row][cell.col] = cell.content;
                     return acc;
                 }, {} as { [row: number]: { [col: number]: string | null } });
-        
+
                 setSelectedCellsId(selectedCellsId);
                 setSelectedCellsContent(selectedCellsContent);
             }
         };
-        
+
 
         const handleCellMouseUp = () => {
             isSelecting.current = false;
