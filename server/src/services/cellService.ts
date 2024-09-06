@@ -230,7 +230,7 @@ export const setPastedContent = async (firstCellId: number, contents: SelectedCe
     // Adjust number of rows/col if necessary
     // Weird calculations
     if (sheet.numRows < lastRow - 1 + requiredRows) {
-        await addRows(sheetId, sheet.numRows, requiredRows - 1, userId); 
+        await addRows(sheetId, sheet.numRows, requiredRows - 1, userId);
     }
 
     if (sheet.numCols < lastCol - 1 + requiredCols) {
@@ -240,11 +240,14 @@ export const setPastedContent = async (firstCellId: number, contents: SelectedCe
     // Normalize contents
     const normalizedContents: { cellId: number; content: string }[] = [];
 
+    let hasNonNullContent = false;
+
     for (const relativeRowIndex in contents) {
         const rowContent = contents[relativeRowIndex];
         for (const relativeColIndex in rowContent) {
             const content = rowContent[relativeColIndex];
             if (content !== null) {
+                hasNonNullContent = true;
                 const absoluteRow = firstRow + (parseInt(relativeRowIndex, 10) - Math.min(...rowIndices));
                 const absoluteCol = firstCol + (parseInt(relativeColIndex, 10) - Math.min(...colIndices));
 
@@ -257,8 +260,23 @@ export const setPastedContent = async (firstCellId: number, contents: SelectedCe
         }
     }
 
+    if (!hasNonNullContent) {
+        // still return the updated sheet if no content is updated
+        // maybe numRows/numCols is updated
+        const updatedSheet = await db.sheet.findUnique({
+            where: { id: sheetId },
+            include: {
+                cells: true,
+            },
+        });
+
+        return updatedSheet;
+    }
+
+    console.log(hasNonNullContent);
     const updatedSheet = await setContent(normalizedContents, userId);
     return updatedSheet;
+
 };
 
 
