@@ -450,7 +450,13 @@ const processCellUpdate = async (cell: Cell, content: string, cellsInRow: Cell[]
 
 const updateSteamPrices = async (link: string, quantity: number, cell: Cell, transaction: Prisma.TransactionClient) => {
     const decodedUrl = decodeURIComponent(link);
-    const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
+    const lastSlashIndex = decodedUrl.lastIndexOf('/');
+    const questionMarkIndex = decodedUrl.indexOf('?', lastSlashIndex); // get rid of other params
+
+    const lastPart = questionMarkIndex !== -1
+        ? decodedUrl.substring(lastSlashIndex + 1, questionMarkIndex)
+        : decodedUrl.substring(lastSlashIndex + 1);
+
     const steamPrice = await transaction.steamPrices.findFirst({ where: { name: lastPart } });
 
     if (!steamPrice) {
@@ -459,14 +465,27 @@ const updateSteamPrices = async (link: string, quantity: number, cell: Cell, tra
 
     const updates = preparePriceUpdates(steamPrice, quantity);
 
-    const lastPipeIndex = lastPart.lastIndexOf('|');
-    if (lastPipeIndex !== -1) {
-        const name = lastPart.substring(0, lastPipeIndex).trim();
-        const float = lastPart.substring(lastPipeIndex + 1).trim();
-
+    const wearConditions = [
+        '(Factory-New)',
+        '(Minimal Wear)',
+        '(Field-Tested)',
+        '(Well-Worn)',
+        '(Battle-Scarred)',
+    ];
+    
+    const foundCondition = wearConditions.find(condition => lastPart.endsWith(condition));
+    
+    if (foundCondition) {
+        const name = lastPart.substring(0, lastPart.lastIndexOf(foundCondition)).trim();
+        const float = foundCondition.substring(1, foundCondition.length - 1).trim();
+    
         updates.push(
             { col: 1, content: name },
             { col: 2, content: float }
+        );
+    } else {
+        updates.push(
+            { col: 1, content: lastPart }
         );
     }
 

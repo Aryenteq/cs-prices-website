@@ -159,6 +159,10 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
                         onCopy();
                         break;
                     case 'v':
+                        // ????? normal paste
+                        if(selectedCellsId.length <= 1) {
+                            break;
+                        }
                         e.preventDefault();
                         onPaste();
                         break;
