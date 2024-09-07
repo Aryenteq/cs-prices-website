@@ -64,9 +64,11 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
             // timing issues, let the prev req handle the cookies
             // navigate() doesn't solve the issue - integrating it means passing the navigate through MULTIPLE functions
             // would be innefficient
+
+            // STILL DOESN'T WORK
             setTimeout(() => {
                 window.location.href = '/connect';
-            }, 100);
+            }, 500);
         }
     }
 

@@ -30,13 +30,14 @@ export const CS_PROTECTED_COLUMNS_EDITABLE: number[] = [0, 3];
 const SpreadsheetTable: React.FC<SpreadsheetProps & {
     setSelectedCellsId: React.Dispatch<React.SetStateAction<number[]>>;
     setSelectedCellsContent: React.Dispatch<React.SetStateAction<SelectedCellsContent>>;
+    editingCellRef: React.MutableRefObject<{ id: number, row: number, col: number } | null>;
     editingCell: { id: number, row: number, col: number } | null;
     setEditingCell: React.Dispatch<React.SetStateAction<{ id: number, row: number, col: number } | null>>;
     updateCtrlZMemory: (updatedSheet: any) => void;
     isFirstRender: boolean;
-    setIsFirstRender:  React.Dispatch<React.SetStateAction<boolean>>;
+    setIsFirstRender: React.Dispatch<React.SetStateAction<boolean>>;
 }> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellsId, setSelectedCellsId,
-    setSelectedCellsContent, editingCell, setEditingCell,
+    setSelectedCellsContent, editingCellRef, editingCell, setEditingCell,
     setCurrentFontFamily, setCurrentFontSize, setCurrentTextColor, setCurrentBgColor,
     updateCtrlZMemory, isFirstRender, setIsFirstRender
 }) => {
@@ -56,14 +57,14 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                 setNumCols(spreadsheet.sheet.numCols || 26);
                 setUserPermission(spreadsheet.permission);
                 setSpreadsheetType(spreadsheet.type);
-        
-                if (isFirstRender&& spreadsheet.sheet) {
+
+                if (isFirstRender && spreadsheet.sheet) {
                     updateCtrlZMemory(spreadsheet.sheet);
                 }
-        
+
                 setIsFirstRender(false);
             }
-        }, [spreadsheet]);        
+        }, [spreadsheet]);
 
         const [dialogOpen, setDialogOpen] = useState(false);
         const [resizeType, setResizeType] = useState<'row' | 'col' | null>(null);
@@ -898,7 +899,9 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             }
 
             const newTimeoutId = setTimeout(() => {
-                saveCellContent(updatedContent);
+                if (editingCellRef.current !== null) {
+                    saveCellContent(updatedContent);
+                }
             }, 2000);
 
             setTimeoutId(newTimeoutId);

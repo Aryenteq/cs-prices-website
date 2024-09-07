@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
@@ -50,6 +50,12 @@ const SpreadsheetPage: React.FC = () => {
     const [selectedCellsId, setSelectedCellsId] = useState<number[]>([]);
     const [selectedCellsContent, setSelectedCellsContent] = useState<SelectedCellsContent>({});
     const [editingCell, setEditingCell] = useState<{ id: number, row: number, col: number } | null>(null);
+    const editingCellRef = useRef<{ id: number, row: number, col: number } | null>(null);
+
+    useEffect(() => {
+        editingCellRef.current = editingCell;
+    }, [editingCell]);
+
     const [currentFontFamily, setCurrentFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
     const [currentFontSize, setCurrentFontSize] = useState<number>(DEFAULT_FONT_SIZE);
     const [currentTextColor, setCurrentTextColor] = useState<string>('#FFFFFF');
@@ -186,6 +192,7 @@ const SpreadsheetPage: React.FC = () => {
                 setSaving={setSaving}
                 selectedCellsId={selectedCellsId}
                 setSelectedCellsId={setSelectedCellsId}
+                editingCellRef={editingCellRef}
                 editingCell={editingCell}
                 setEditingCell={setEditingCell}
                 setSelectedCellsContent={setSelectedCellsContent}
@@ -209,6 +216,7 @@ const SpreadsheetPage: React.FC = () => {
                 setSaving={setSaving}
                 selectedCellsId={selectedCellsId}
                 selectedCellsContent={selectedCellsContent}
+                editingCellRef={editingCellRef}
                 setEditingCell={setEditingCell}
                 setSpreadsheet={setSpreadsheet}
                 updateCtrlZMemory={updateCtrlZMemory}

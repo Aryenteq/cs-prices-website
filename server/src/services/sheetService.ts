@@ -64,10 +64,10 @@ export const revertSheet = async (sheet: Sheet, userId: number) => {
             color: sheet.color,
             numRows: sheet.numRows,
             numCols: sheet.numCols,
-            columnWidths: sheet.columnWidths ? JSON.stringify(sheet.columnWidths) : undefined,
-            rowHeights: sheet.rowHeights ? JSON.stringify(sheet.rowHeights) : undefined,
-            hiddenCols: sheet.hiddenCols ? JSON.stringify(sheet.hiddenCols) : undefined,
-            hiddenRows: sheet.hiddenRows ? JSON.stringify(sheet.hiddenRows) : undefined,
+            columnWidths: sheet.columnWidths ? sheet.columnWidths : undefined,
+            rowHeights: sheet.rowHeights ? sheet.rowHeights : undefined,
+            hiddenCols: sheet.hiddenCols ? sheet.hiddenCols : undefined,
+            hiddenRows: sheet.hiddenRows ? sheet.hiddenRows : undefined,
         },
     });
 

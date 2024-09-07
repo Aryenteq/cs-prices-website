@@ -11,6 +11,7 @@ interface KeyboardListenerProps {
     setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
     selectedCellsId: number[];
     selectedCellsContent: SelectedCellsContent;
+    editingCellRef: React.MutableRefObject<{ id: number, row: number, col: number } | null>;
     setEditingCell: React.Dispatch<React.SetStateAction<{ id: number, row: number, col: number } | null>>;
     updateCtrlZMemory: (updatedSheet: any) => void;
     ctrlZSheets: Sheet[] | null;
@@ -19,7 +20,7 @@ interface KeyboardListenerProps {
 }
 
 const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSpreadsheet, selectedCellsId, selectedCellsContent,
-    setEditingCell, updateCtrlZMemory, ctrlZSheets, ctrlZIndex, setCtrlZIndex,
+    editingCellRef, setEditingCell, updateCtrlZMemory, ctrlZSheets, ctrlZIndex, setCtrlZIndex,
 }) => {
     const { setInfo } = useInfo();
     const [copiedCellsContent, setCopiedCellsContent] = useState<SelectedCellsContent>({});
@@ -78,7 +79,8 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
 
     const onPaste = async () => {
         if (selectedCellsId.length !== 0 && Object.keys(copiedCellsContent).length > 0) {
-            setEditingCell(null);
+            editingCellRef.current = null; // instantly. Avoid saving after 2s
+            setEditingCell(null); // async, updates after saveCellContent finishes, on the next re-render or smth
             saveCellContentMutation({ firstCellId: selectedCellsId[0], contents: copiedCellsContent });
         }
     };
@@ -157,12 +159,11 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
         // horrible way to determine if the ctrl+v is from the website
         const handleClipboardPaste = async (e: KeyboardEvent) => {
             const clipboardText = await navigator.clipboard.readText();
-    
-            console.log(clipboardText);
-            if (!clipboardText.startsWith("IHMLegend.ary".toLowerCase())) {
+
+            if (!clipboardText.startsWith("IHMLegend.ary") && !clipboardText.startsWith("ihmlegend.ary")) {
                 return;
             }
-    
+
             e.preventDefault();
             onPaste();
         };
@@ -184,9 +185,6 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
                     case 'y':
                         e.preventDefault();
                         onRedo();
-                        break;
-                    case 'b':
-                        e.preventDefault();
                         break;
                     default:
                         break;
