@@ -37,6 +37,7 @@ jobs:
         protocol: ftps
         local-dir: ./client/dist/
         server-dir: /public_html/
+        dangerous-clean-slate: true
 
   build-server:
     runs-on: ubuntu-latest
