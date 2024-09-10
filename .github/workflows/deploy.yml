@@ -33,10 +33,12 @@ jobs:
       with:
         username: ${{ secrets.CLIENT_USER }}
         server: ${{ secrets.CLIENT_HOST }}
-        password: ${{ secrets.CLIENT_PASSWORD }}
+        ssh_private_key: ${{ secrets.CLIENT_SSH_KEY }}
         port: 22
         local_path: "./client/dist/*"
         remote_path: "/public_html/"
+        sftp_only: true
+        delete_remote_files: true
 
   build-server:
     runs-on: ubuntu-latest
