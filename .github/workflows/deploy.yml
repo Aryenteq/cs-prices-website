@@ -35,8 +35,8 @@ jobs:
         username: ${{ secrets.CLIENT_USER }}
         password: ${{ secrets.CLIENT_PASSWORD }}
         port: 22
-        source: "./client/build/*"  # Local build folder
-        target: "/public_html/"  # Remote directory on the server
+        source: "./client/dist/*"
+        target: "/public_html/"
 
   build-server:
     runs-on: ubuntu-latest
