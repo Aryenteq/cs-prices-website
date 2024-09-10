@@ -29,14 +29,14 @@ jobs:
         npm run build
 
     - name: Deploy client to server via SFTP
-      uses: appleboy/scp-action@master
+      uses: wlixcc/SFTP-Deploy-Action@v1.2.4
       with:
-        host: ${{ secrets.CLIENT_HOST }}
         username: ${{ secrets.CLIENT_USER }}
+        server: ${{ secrets.CLIENT_HOST }}
         password: ${{ secrets.CLIENT_PASSWORD }}
         port: 22
-        source: "./client/dist/*"
-        target: "/public_html/"
+        local_path: "./client/dist/*"
+        remote_path: "/public_html/"
 
   build-server:
     runs-on: ubuntu-latest
