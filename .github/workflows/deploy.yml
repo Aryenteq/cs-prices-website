@@ -27,7 +27,7 @@ jobs:
       run: |
         cd client
         npm run build
-      env:
+      env: # Idk why they need to be explicitly set again...
         VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
         VITE_SECRET_KEY: ${{ secrets.VITE_SECRET_KEY }}
         VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -46,11 +46,11 @@ jobs:
         protocol: ftps
         local-dir: ./client/dist/
         server-dir: /public_html/
-        dangerous-clean-slate: true
+        dangerous-clean-slate: true # Unfortunately, errors appear if this is not true. Dangerous but assumed
 
   build-server:
     runs-on: ubuntu-latest
-    needs: build-client  # Ensure server builds af
+    needs: build-client  # Ensure server builds after client build
 
     steps:
     - name: Checkout the code
@@ -72,9 +72,9 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
-        port: 22  # SSH port
+        port: 22
         script: |
           cd cs-prices-website/server
           git pull origin main
           bun install
-          bun start  # Start the server
+          bun start
