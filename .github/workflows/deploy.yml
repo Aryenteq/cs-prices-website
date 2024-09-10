@@ -80,5 +80,5 @@ jobs:
           export BUN_INSTALL="$HOME/.bun"
           export PATH="$BUN_INSTALL/bin:$PATH"
           bun install
-          pkill -f 'bun'
+          pkill -f 'bun' || true
           nohup bun start &>/dev/null &
