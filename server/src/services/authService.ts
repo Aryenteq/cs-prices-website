@@ -148,7 +148,7 @@ export const forgotPass = async (email: string) => {
         },
     });
 
-    const resetLink = `http://${process.env.CLIENT_IP}:${process.env.CLIENT_PORT}/reset-pwd?token=${resetToken}&email=${user.email}`;
+    const resetLink = `http://${process.env.CLIENT_IP}/reset-pwd?token=${resetToken}&email=${user.email}`;
     const emailContent = `
         <div style="background-color: #047500; padding: 20px; text-align: center; font-family: Arial, sans-serif; color: white;">
             <h2>Password Reset</h2>
