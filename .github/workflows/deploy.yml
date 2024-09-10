@@ -34,8 +34,9 @@ jobs:
         server: ${{ secrets.CLIENT_HOST }}
         username: ${{ secrets.CLIENT_USER }}
         password: ${{ secrets.CLIENT_PASSWORD }}
-        local-dir: "./client/dist/"
-        server-dir: "/public_html/"
+        protocol: ftps
+        local-dir: ./client/dist/
+        server-dir: /public_html/
 
   build-server:
     runs-on: ubuntu-latest
