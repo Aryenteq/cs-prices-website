@@ -33,7 +33,7 @@ jobs:
       with:
         username: ${{ secrets.CLIENT_USER }}
         server: ${{ secrets.CLIENT_HOST }}
-        ssh_private_key: ${{ secrets.CLIENT_SSH_KEY }}
+        password: ${{ secrets.CLIENT_PASSWORD }}
         port: 22
         local_path: "./client/dist/*"
         remote_path: "/public_html/"
@@ -42,7 +42,7 @@ jobs:
 
   build-server:
     runs-on: ubuntu-latest
-    needs: build-client  # Ensure server builds after
+    needs: build-client  # Ensure server builds af
 
     steps:
     - name: Checkout the code
