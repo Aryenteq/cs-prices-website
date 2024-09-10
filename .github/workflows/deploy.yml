@@ -28,17 +28,14 @@ jobs:
         cd client
         npm run build
 
-    - name: Deploy client to server via SFTP
-      uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+    - name: Deploy client to server via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
-        username: ${{ secrets.CLIENT_USER }}
         server: ${{ secrets.CLIENT_HOST }}
+        username: ${{ secrets.CLIENT_USER }}
         password: ${{ secrets.CLIENT_PASSWORD }}
-        port: 22
-        local_path: "./client/dist/*"
-        remote_path: "/public_html/"
-        delete_remote_files: true
-        debug: true
+        local_dir: "./client/dist/"
+        server_dir: "/public_html/"
 
   build-server:
     runs-on: ubuntu-latest
