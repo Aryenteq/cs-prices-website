@@ -26,8 +26,10 @@ export const logIn = async (req: Request, res: Response) => {
 export const refreshToken = async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
+    console.log(refreshToken);
     const tokens = await authService.refreshToken(refreshToken);
 
+    console.log(tokens);
     res.status(200).json(tokens);
   } catch (error: any) {
     res.status(400).json({ message: error.message });

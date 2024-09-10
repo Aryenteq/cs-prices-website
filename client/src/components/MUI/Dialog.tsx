@@ -1,4 +1,3 @@
-// Dialog.tsx
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -35,7 +34,7 @@ const DialogSelect: React.FC<DialogSelectProps> = ({ options }) => {
     setOpen(true);
   };
 
-  const handleClose = (event: React.SyntheticEvent<unknown>, reason?: string) => {
+  const handleClose = (_: unknown, reason?: string) => {
     if (reason !== 'backdropClick') {
       setOpen(false);
     }
@@ -51,7 +50,7 @@ const DialogSelect: React.FC<DialogSelectProps> = ({ options }) => {
         <img src={arrows} alt="Order & Sort" />
       </Button>
       <Dialog disableEscapeKeyDown open={open} onClose={handleClose}>
-        <DialogTitle sx={{color: '#510154',}}>Order & Sort Options</DialogTitle>
+        <DialogTitle sx={{ color: '#510154', }}>Order & Sort Options</DialogTitle>
         <DialogContent>
           <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
             {options.map((option, index) => (
@@ -77,7 +76,7 @@ const DialogSelect: React.FC<DialogSelectProps> = ({ options }) => {
                     sx={{
                       minWidth: 'auto',
                       padding: '0px',
-                      color: 'white', 
+                      color: 'white',
                       "& .MuiSvgIcon-root": {
                         color: '#39B645',
                       },
@@ -94,8 +93,8 @@ const DialogSelect: React.FC<DialogSelectProps> = ({ options }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} sx={{color: '#510154',}}>Cancel</Button>
-          <Button onClick={handleClose} sx={{color: '#510154',}}>Ok</Button>
+          <Button onClick={handleClose} sx={{ color: '#510154', }}>Cancel</Button>
+          <Button onClick={handleClose} sx={{ color: '#510154', }}>Ok</Button>
         </DialogActions>
       </Dialog>
     </div>
