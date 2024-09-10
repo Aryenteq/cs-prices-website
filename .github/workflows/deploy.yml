@@ -77,6 +77,7 @@ jobs:
           cd cs-prices-website
           git pull origin main
           cd server
-          source ~/.bashrc
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
           bun install
           bun start
