@@ -37,8 +37,8 @@ jobs:
         port: 22
         local_path: "./client/dist/*"
         remote_path: "/public_html/"
-        sftp_only: true
         delete_remote_files: true
+        debug: true
 
   build-server:
     runs-on: ubuntu-latest
