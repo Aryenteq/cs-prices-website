@@ -77,5 +77,6 @@ jobs:
           cd cs-prices-website
           git pull origin main
           cd server
+          source ~/.bashrc
           bun install
           bun start

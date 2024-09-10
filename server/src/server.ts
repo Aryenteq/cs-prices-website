@@ -44,6 +44,6 @@ const port = Number(process.env.SERVER_PORT) || 3000;
 const server = http.createServer(app);
 
 server.listen(port, ip, () => {
-    console.log("HH");
+    console.log("AA");
     console.log(`Server is listening at http://${ip}:${port}`);
 });
