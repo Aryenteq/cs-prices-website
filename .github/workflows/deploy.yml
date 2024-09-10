@@ -3,7 +3,7 @@ name: Build and Deploy Client and Server
 on:
   push:
     branches:
-      - main  # Trigger on push to the 'main' branch
+      - main
 
 jobs:
   build-client:
@@ -16,7 +16,7 @@ jobs:
     - name: Set up Node.js for client (React)
       uses: actions/setup-node@v3
       with:
-        node-version: '16'  # Match your Node.js version
+        node-version: '20.12.1'
 
     - name: Install client dependencies
       run: |
@@ -61,7 +61,7 @@ jobs:
       with:
         host: ${{ secrets.SERVER_HOST }}  # Server IP
         username: ${{ secrets.SERVER_USER }}  # Your server user (e.g., root)
-        key: ${{ secrets.SSH_PRIVATE_KEY }}  # Your SSH private key (id_ed25519)
+        key: ${{ secrets.SERVER_SSH_KEY }}  # Your SSH private key (id_ed25519)
         port: 3000
         script: |
           cd cs-prices-website/server
