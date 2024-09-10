@@ -1,0 +1,70 @@
+name: Build and Deploy Client and Server
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the 'main' branch
+
+jobs:
+  build-client:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js for client (React)
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'  # Match your Node.js version
+
+    - name: Install client dependencies
+      run: |
+        cd client  # Navigate to client directory
+        npm install
+
+    - name: Build the client (React)
+      run: |
+        cd client
+        npm run build
+
+    - name: Deploy client to server via SFTP
+      uses: easingthemes/ssh-deploy@v2.1.5
+      with:
+        host: ${{ secrets.CLIENT_HOST }}  # Server IP
+        port: 22
+        username: ${{ secrets.CLIENT_USER }}  # Your server user
+        password: ${{ secrets.CLIENT_PASSWORD }}  # SFTP password
+        local: ./client/dist/  # Local directory with build files
+        remote: /public_html/  # Remote directory for client deployment
+
+  build-server:
+    runs-on: ubuntu-latest
+    needs: build-client  # Ensure server builds after the client
+
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v3
+
+    - name: Set up Bun for server
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install server dependencies (Bun)
+      run: |
+        cd server  # Navigate to server directory
+        bun install
+
+    - name: Deploy server via SSH
+      uses: appleboy/ssh-action@v0.1.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}  # Server IP
+        username: ${{ secrets.SERVER_USER }}  # Your server user (e.g., root)
+        key: ${{ secrets.SSH_PRIVATE_KEY }}  # Your SSH private key (id_ed25519)
+        port: 3000
+        script: |
+          cd cs-prices-website/server
+          git pull origin main
+          bun install
+          bun start 
