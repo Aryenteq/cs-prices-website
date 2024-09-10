@@ -34,8 +34,8 @@ jobs:
         server: ${{ secrets.CLIENT_HOST }}
         username: ${{ secrets.CLIENT_USER }}
         password: ${{ secrets.CLIENT_PASSWORD }}
-        local_dir: "./client/dist/"
-        server_dir: "/public_html/"
+        local-dir: "./client/dist/"
+        server-dir: "/public_html/"
 
   build-server:
     runs-on: ubuntu-latest
