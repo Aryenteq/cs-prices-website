@@ -27,7 +27,7 @@ jobs:
       run: |
         cd client
         npm run build
-      env: # Idk why they need to be explicitly set again..
+      env: # Idk why they need to be explicitly set again...
         VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
         VITE_SECRET_KEY: ${{ secrets.VITE_SECRET_KEY }}
         VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -74,7 +74,8 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         script: |
-          cd cs-prices-website/server
+          cd cs-prices-website
           git pull origin main
+          cd server
           bun install
           bun start
