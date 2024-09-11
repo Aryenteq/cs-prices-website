@@ -867,6 +867,25 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             }
         });
 
+        const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter' && selectedCellsId.length === 1 && editingCell) {
+                handleCellBlur();
+
+                const { row, col } = editingCell;
+                const nextCell = spreadsheet?.sheet.cells.find(c => c.row === row + 1 && c.col === col);
+
+                if (nextCell) {
+                    setSelectedCellsId([nextCell.id]);
+                    setSelectedCellsContent({
+                        [row]: {
+                            [col]: nextCell.content ? nextCell.content : null,
+                        }
+                    });
+                    handleCellClick(nextCell.id, row + 1, col, nextCell.content ?? "");
+                }
+            }
+        };
+
         const handleCellClick = (id: number, row: number, col: number, content: string) => {
             if (hiddenRows[row] || hiddenCols[col]) return;
 
@@ -1239,6 +1258,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
                                                             value={cellContent}
                                                             onChange={handleCellContentChange}
                                                             onBlur={handleCellBlur}
+                                                            onKeyDown={handleKeyDown}
                                                             className="w-full h-full p-2"
                                                             style={{
                                                                 backgroundColor: !isSelected ? (cell?.bgColor || '#000000') : undefined,
