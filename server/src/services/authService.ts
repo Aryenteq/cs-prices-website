@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { add } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
 import { db } from '../db';
 
 import type { User as PrismaUser } from '@prisma/client';
@@ -11,7 +10,8 @@ import type { User as PrismaUser } from '@prisma/client';
 import { sendMail } from '../utils/mailSender';
 
 const SECRET_KEY = process.env.JWT_SECRET!;
-const TIMEZONE = 'Europe/Berlin'; // DB location
+const UTCDifference = 3600000 * 2; // workaround UTC, new Date() doesn't return UTC for some reason??
+// reliability 0
 
 if (!SECRET_KEY) {
     throw new Error("JWT_SECRET not found");
@@ -140,7 +140,7 @@ export const forgotPass = async (email: string) => {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetPasswordExpires = formatInTimeZone(new Date(Date.now() + 3600000), TIMEZONE, 'yyyy-MM-dd HH:mm:ssXXX');
+    const resetPasswordExpires = new Date(Date.now() + 3600000).toISOString(); // 1-hour expiration in UTC
 
     await db.user.update({
         where: { email },
@@ -183,7 +183,7 @@ export const resetPass = async (newPwd: string, repeatedPwd: string, email: stri
     }
 
     const resetPasswordExpiresUTC = new Date(user.resetPasswordExpires).getTime();
-    const nowUTC = Date.now();
+    const nowUTC = Date.now() + UTCDifference;
 
     if (user.resetPasswordToken !== token || resetPasswordExpiresUTC < nowUTC) {
         throw new Error('Invalid or expired token');
