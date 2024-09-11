@@ -92,6 +92,10 @@ export const getColIndexFromLetter = (
                     return 5;
                 case 'g':
                     return 6;
+                case 'h':
+                    return 7;
+                case 'i':
+                    return 8;
                 default:
                     return '#ERROR';
             }
