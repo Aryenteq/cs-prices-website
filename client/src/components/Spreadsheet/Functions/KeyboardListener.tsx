@@ -85,6 +85,26 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
         }
     };
 
+    const onDelete = async () => {
+        if (selectedCellsId.length !== 0) {
+            editingCellRef.current = null;
+            setEditingCell(null);
+
+            const deletedCellsContent = Object.keys(selectedCellsContent).reduce((acc, rowIndex) => {
+                const numericRowIndex = parseInt(rowIndex, 10);
+
+                acc[numericRowIndex] = Object.keys(selectedCellsContent[numericRowIndex]).reduce((rowAcc, colIndex) => {
+                    rowAcc[Number(colIndex)] = '';
+                    return rowAcc;
+                }, {} as Record<number, string>);
+
+                return acc;
+            }, {} as Record<number, Record<number, string>>);
+
+            saveCellContentMutation({ firstCellId: selectedCellsId[0], contents: deletedCellsContent });
+        }
+    }
+
 
     // Duplicated code unfortunately in SpreadsheetUtilities
     // Too many hooks rendered if function passed by props
@@ -189,6 +209,11 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
                     default:
                         break;
                 }
+            }
+
+            else if (e.key === 'Delete') {
+                e.preventDefault();
+                onDelete();
             }
         };
 
