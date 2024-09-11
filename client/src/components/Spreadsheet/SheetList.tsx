@@ -340,14 +340,14 @@ const SheetList: React.FC<{
 
 
         return (
-            <div className="w-full h-[150px] flex overflow-x-auto custom-scrollbar items-center gap-1">
+            <div className="w-full h-[170px] flex overflow-x-auto custom-scrollbar items-center gap-1">
                 {spreadsheet!.sheetsInfo
                     ?.sort((a, b) => a.index - b.index)
                     .map((sheetInfo) => {
                         return (
                             <div
                                 key={sheetInfo.id}
-                                className={`h-full w-32 flex items-center justify-center border-b-4 truncate outline outline-1 outline-gray-500
+                                className={`h-full w-32 flex-shrink-0 flex items-center justify-center border-b-4 truncate outline outline-1 outline-gray-500
                                         outline-offset-[-1px] cursor-pointer 
                                         ${sheetInfo.id === currentSheetId ? 'bg-primary-lightest text-black' : ''}`}
                                 style={{ borderBottomColor: sheetInfo.color }}
@@ -361,7 +361,7 @@ const SheetList: React.FC<{
 
 
                 {canEdit &&
-                    <button className="h-7 w-7 flex justify-center bg-primary rounded-lg" title="New sheet"
+                    <button className="h-7 w-7 flex-shrink-0 flex justify-center bg-primary rounded-lg" title="New sheet"
                         onClick={() =>
                             addSheetMutation({
                                 spreadsheetId: spreadsheet!.id,
