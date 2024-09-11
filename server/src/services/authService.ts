@@ -138,7 +138,7 @@ export const forgotPass = async (email: string) => {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    const resetPasswordExpires = new Date(Date.now() + 3600000).toISOString(); // 1 hour expiration in UTC
 
     await db.user.update({
         where: { email },
@@ -181,7 +181,7 @@ export const resetPass = async (newPwd: string, repeatedPwd: string, email: stri
     }
 
     const resetPasswordExpiresUTC = new Date(user.resetPasswordExpires).getTime();
-    const nowUTC = new Date().getTime();
+    const nowUTC = Date.now();
 
     console.log("Reset Password Expires UTC:", resetPasswordExpiresUTC);
     console.log("Current Time UTC:", nowUTC);
