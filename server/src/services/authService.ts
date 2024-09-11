@@ -176,7 +176,18 @@ export const resetPass = async (newPwd: string, repeatedPwd: string, email: stri
         where: { email },
     });
 
-    if (!user || user.resetPasswordToken !== token || !user.resetPasswordExpires || user.resetPasswordExpires.getTime() < Date.now()) {
+    if (!user || !user.resetPasswordExpires) {
+        throw new Error('No token found');
+    }
+
+    const resetPasswordExpiresUTC = new Date(user.resetPasswordExpires).getTime();
+    const nowUTC = new Date().getTime();
+
+    console.log("Reset Password Expires UTC:", resetPasswordExpiresUTC);
+    console.log("Current Time UTC:", nowUTC);
+
+    if (user.resetPasswordToken !== token ||
+        resetPasswordExpiresUTC < nowUTC) {
         throw new Error('Invalid or expired token');
     }
 
