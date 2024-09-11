@@ -10,8 +10,6 @@ import type { User as PrismaUser } from '@prisma/client';
 import { sendMail } from '../utils/mailSender';
 
 const SECRET_KEY = process.env.JWT_SECRET!;
-const UTCDifference = 3600000 * 2; // workaround UTC, new Date() doesn't return UTC for some reason??
-// reliability 0
 
 if (!SECRET_KEY) {
     throw new Error("JWT_SECRET not found");
@@ -183,7 +181,7 @@ export const resetPass = async (newPwd: string, repeatedPwd: string, email: stri
     }
 
     const resetPasswordExpiresUTC = new Date(user.resetPasswordExpires).getTime();
-    const nowUTC = Date.now() + UTCDifference;
+    const nowUTC = Date.now();
 
     if (user.resetPasswordToken !== token || resetPasswordExpiresUTC < nowUTC) {
         throw new Error('Invalid or expired token');

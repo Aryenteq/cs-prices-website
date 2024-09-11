@@ -17,7 +17,7 @@ const handleSubmit = (token: string, email: string, setInfo: (info: { message: s
     const repeatedPwd = formData.get('repeatedPwd') as string;
 
     try {
-        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/reset-pwd`, { pwd, repeatedPwd, token, email });
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/reset-pwd`, { pwd, repeatedPwd, email, token });
         navigate('/connect');
     } catch (error: any) {
         console.error('Error resetting password:', error.response ? error.response.data : error.message);
@@ -28,7 +28,7 @@ const handleSubmit = (token: string, email: string, setInfo: (info: { message: s
 const ResetPwdPage: React.FC = () => {
     const query = useQuery();
     const email = query.get('email');
-    const token = query.get('access_token');
+    const token = query.get('token');
 
     const navigate = useNavigate();
 
