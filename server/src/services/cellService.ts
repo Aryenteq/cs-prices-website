@@ -466,7 +466,7 @@ const updateSteamPrices = async (link: string, quantity: number, cell: Cell, tra
     const updates = preparePriceUpdates(steamPrice, quantity);
 
     const wearConditions = [
-        '(Factory-New)',
+        '(Factory New)',
         '(Minimal Wear)',
         '(Field-Tested)',
         '(Well-Worn)',
