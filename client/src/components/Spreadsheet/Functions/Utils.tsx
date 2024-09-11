@@ -30,7 +30,7 @@ export const getColumnLetter = (abbreviated: boolean = true, type: 'CS' | 'NORMA
             title = abbreviated ? 'b' : 'Name (b)';
             break;
         case 2:
-            title = abbreviated ? 'c' : 'Float (c)';
+            title = abbreviated ? 'c' : 'Wear (c)';
             break;
         case 3:
             title = abbreviated ? 'd' : 'Quantity (d)';
