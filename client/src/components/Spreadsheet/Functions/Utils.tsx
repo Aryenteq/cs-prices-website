@@ -76,7 +76,7 @@ export const getColIndexFromLetter = (
     }
 
     if (type === 'CS') {
-        if (letter.length === 1 && letter >= 'a' && letter <= 'g') {
+        if (letter.length === 1 && letter >= 'a' && letter <= 'i') {
             switch (letter) {
                 case 'a':
                     return 0;
