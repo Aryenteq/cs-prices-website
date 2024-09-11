@@ -347,8 +347,8 @@ const SheetList: React.FC<{
                         return (
                             <div
                                 key={sheetInfo.id}
-                                className={`h-full w-32 flex-shrink-0 flex items-center justify-center border-b-4 truncate outline outline-1 outline-gray-500
-                                        outline-offset-[-1px] cursor-pointer 
+                                className={`h-full min-w-32 fit-content flex-shrink-0 flex items-center justify-center border-b-4 truncate outline outline-1 outline-gray-500
+                                        outline-offset-[-1px] cursor-pointer px-3
                                         ${sheetInfo.id === currentSheetId ? 'bg-primary-lightest text-black' : ''}`}
                                 style={{ borderBottomColor: sheetInfo.color }}
                                 onClick={() => changeSheetMutation({ sheetId: sheetInfo.id })}
