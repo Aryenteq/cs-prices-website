@@ -43,15 +43,15 @@ export const updateUserItems = async (): Promise<void> => {
                                 }
 
                                 const priceLatestNumber = priceLatest.toNumber();
-                                const colLatestPrice = parseFloat(priceLatestNumber.toFixed(2));
-                                const colSumLatestPrice = parseFloat((priceLatestNumber * quantity).toFixed(2));
+                                const colLatestPrice = priceLatestNumber;
+                                const colSumLatestPrice = Math.round((priceLatestNumber * quantity) * 100) / 100;
 
                                 const priceRealNumber = priceReal.toNumber();
                                 const colRealPrice = parseFloat(priceRealNumber.toFixed(2));
-                                const colSumRealPrice = parseFloat((priceRealNumber * quantity).toFixed(2));
+                                const colSumRealPrice = Math.round((priceRealNumber * quantity) * 100) / 100;
 
                                 const buyOrderPriceNumber = buyOrderPrice.toNumber();
-                                const colBuyOrderPrice = parseFloat(buyOrderPriceNumber.toFixed(2));
+                                const colBuyOrderPrice = buyOrderPriceNumber;
 
                                 // Get cell IDs for the specific row and columns to update
                                 const latestPriceCell = row.cells.find(c => c.col === LATEST_PRICE_INDEX && c.row === cell.row);

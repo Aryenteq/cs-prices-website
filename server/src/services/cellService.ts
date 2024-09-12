@@ -472,13 +472,13 @@ const updateSteamPrices = async (link: string, quantity: number, cell: Cell, tra
         '(Well-Worn)',
         '(Battle-Scarred)',
     ];
-    
+
     const foundCondition = wearConditions.find(condition => lastPart.endsWith(condition));
-    
+
     if (foundCondition) {
         const name = lastPart.substring(0, lastPart.lastIndexOf(foundCondition)).trim();
         const float = foundCondition.substring(1, foundCondition.length - 1).trim();
-    
+
         updates.push(
             { col: 1, content: name },
             { col: 2, content: float }
@@ -510,9 +510,9 @@ const preparePriceUpdates = (steamPrice: any, quantity: number) => {
 
     return [
         { col: 4, content: priceLatest.toNumber().toString() },
-        { col: 5, content: (priceLatest.toNumber() * quantity).toString() },
+        { col: 5, content: (Math.round((priceLatest.toNumber() * quantity * 100)) / 100).toString() },
         { col: 6, content: priceReal.toNumber().toString() },
-        { col: 7, content: (priceReal.toNumber() * quantity).toString() },
+        { col: 7, content: (Math.round((priceReal.toNumber() * quantity * 100)) / 100).toString() },
         { col: 8, content: buyOrderPrice.toNumber().toString() },
     ];
 };
