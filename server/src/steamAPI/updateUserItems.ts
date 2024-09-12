@@ -36,7 +36,6 @@ export const updateUserItems = async (): Promise<void> => {
                             const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
 
                             if (lastPart === name) {
-                                // Retrieve quantity from col 1
                                 const quantityCell = row.cells.find(c => c.col === QUANTITY_INDEX);
                                 let quantity = quantityCell ? parseFloat(quantityCell.content || '1') : 1;
                                 if (isNaN(quantity)) {
@@ -44,20 +43,23 @@ export const updateUserItems = async (): Promise<void> => {
                                 }
 
                                 const priceLatestNumber = priceLatest.toNumber();
-                                const colLatestPrice = priceLatestNumber;
-                                const colSumLatestPrice = priceLatestNumber * quantity;
+                                const colLatestPrice = parseFloat(priceLatestNumber.toFixed(2));
+                                const colSumLatestPrice = parseFloat((priceLatestNumber * quantity).toFixed(2));
+
                                 const priceRealNumber = priceReal.toNumber();
-                                const colRealPrice = priceRealNumber;
-                                const colSumRealPrice = priceRealNumber * quantity;
+                                const colRealPrice = parseFloat(priceRealNumber.toFixed(2));
+                                const colSumRealPrice = parseFloat((priceRealNumber * quantity).toFixed(2));
+
                                 const buyOrderPriceNumber = buyOrderPrice.toNumber();
-                                const colBuyOrderPrice = buyOrderPriceNumber;
+                                const colBuyOrderPrice = parseFloat(buyOrderPriceNumber.toFixed(2));
 
                                 // Get cell IDs for the specific row and columns to update
-                                const latestPriceCell = row.cells.find(c => c.col === LATEST_PRICE_INDEX);
-                                const sumLatestPriceCell = row.cells.find(c => c.col === SUM_LATEST_PRICE_INDEX);
-                                const realPriceCell = row.cells.find(c => c.col === REAL_PRICE_INDEX);
-                                const sumRealPriceCell = row.cells.find(c => c.col === SUM_REAL_PRICE_INDEX);
-                                const buyOrderPriceCell = row.cells.find(c => c.col === BUY_ORDER_PRICE_INDEX);
+                                const latestPriceCell = row.cells.find(c => c.col === LATEST_PRICE_INDEX && c.row === cell.row);
+                                console.log(latestPriceCell);
+                                const sumLatestPriceCell = row.cells.find(c => c.col === SUM_LATEST_PRICE_INDEX && c.row === cell.row);
+                                const realPriceCell = row.cells.find(c => c.col === REAL_PRICE_INDEX && c.row === cell.row);
+                                const sumRealPriceCell = row.cells.find(c => c.col === SUM_REAL_PRICE_INDEX && c.row === cell.row);
+                                const buyOrderPriceCell = row.cells.find(c => c.col === BUY_ORDER_PRICE_INDEX && c.row === cell.row);
 
                                 if (latestPriceCell) {
                                     await db.cell.update({
@@ -103,5 +105,3 @@ export const updateUserItems = async (): Promise<void> => {
         console.error('Error updating user items:', error);
     }
 };
-
-updateUserItems();

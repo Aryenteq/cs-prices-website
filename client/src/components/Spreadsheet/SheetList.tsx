@@ -342,7 +342,7 @@ const SheetList: React.FC<{
         return (
             <div className="w-full h-[170px] flex overflow-x-auto custom-scrollbar items-center gap-1">
                 {canEdit &&
-                    <button className="h-7 w-7 flex-shrink-0 flex justify-center bg-primary rounded-lg" title="New sheet"
+                    <button className="h-7 w-7 mx-2 flex-shrink-0 flex justify-center bg-primary rounded-lg" title="New sheet"
                         onClick={() =>
                             addSheetMutation({
                                 spreadsheetId: spreadsheet!.id,
