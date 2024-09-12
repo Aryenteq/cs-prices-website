@@ -36,7 +36,7 @@ export const updateUserItems = async (): Promise<void> => {
                             const lastPart = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1);
 
                             if (lastPart === name) {
-                                const quantityCell = row.cells.find(c => c.col === QUANTITY_INDEX);
+                                const quantityCell = row.cells.find(c => c.col === QUANTITY_INDEX && c.row === cell.row);
                                 let quantity = quantityCell ? parseFloat(quantityCell.content || '1') : 1;
                                 if (isNaN(quantity)) {
                                     quantity = 1; // Default to 1 if invalid
@@ -47,7 +47,7 @@ export const updateUserItems = async (): Promise<void> => {
                                 const colSumLatestPrice = Math.round((priceLatestNumber * quantity) * 100) / 100;
 
                                 const priceRealNumber = priceReal.toNumber();
-                                const colRealPrice = parseFloat(priceRealNumber.toFixed(2));
+                                const colRealPrice = priceRealNumber;
                                 const colSumRealPrice = Math.round((priceRealNumber * quantity) * 100) / 100;
 
                                 const buyOrderPriceNumber = buyOrderPrice.toNumber();
@@ -68,6 +68,7 @@ export const updateUserItems = async (): Promise<void> => {
                                 }
 
                                 if (sumLatestPriceCell) {
+                                    console.log(priceLatestNumber, quantity, colSumLatestPrice);
                                     await db.cell.update({
                                         where: { id: sumLatestPriceCell.id },
                                         data: { content: colSumLatestPrice.toString() }
