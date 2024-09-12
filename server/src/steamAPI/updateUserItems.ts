@@ -68,7 +68,6 @@ export const updateUserItems = async (): Promise<void> => {
                                 }
 
                                 if (sumLatestPriceCell) {
-                                    console.log(priceLatestNumber, quantity, colSumLatestPrice);
                                     await db.cell.update({
                                         where: { id: sumLatestPriceCell.id },
                                         data: { content: colSumLatestPrice.toString() }
