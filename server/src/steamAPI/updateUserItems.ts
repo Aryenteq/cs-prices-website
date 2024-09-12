@@ -55,7 +55,6 @@ export const updateUserItems = async (): Promise<void> => {
 
                                 // Get cell IDs for the specific row and columns to update
                                 const latestPriceCell = row.cells.find(c => c.col === LATEST_PRICE_INDEX && c.row === cell.row);
-                                console.log(latestPriceCell);
                                 const sumLatestPriceCell = row.cells.find(c => c.col === SUM_LATEST_PRICE_INDEX && c.row === cell.row);
                                 const realPriceCell = row.cells.find(c => c.col === REAL_PRICE_INDEX && c.row === cell.row);
                                 const sumRealPriceCell = row.cells.find(c => c.col === SUM_REAL_PRICE_INDEX && c.row === cell.row);
