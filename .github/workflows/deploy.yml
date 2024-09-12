@@ -83,5 +83,12 @@ jobs:
           cd server
           export BUN_INSTALL="$HOME/.bun"
           export PATH="$BUN_INSTALL/bin:$PATH"
+
+          # Kill previous processes
+          PIDS=$(lsof -t -i:3000)
+          if [ -n "$PIDS" ]; then
+            kill -9 $PIDS
+          fi
+
           bun install
           nohup bun start &>/dev/null &
