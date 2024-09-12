@@ -8,6 +8,7 @@ import { revertSheet } from "./SheetFetch";
 
 interface KeyboardListenerProps {
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
+    spreadsheet: Spreadsheet | undefined;
     setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
     selectedCellsId: number[];
     selectedCellsContent: SelectedCellsContent;
@@ -19,11 +20,12 @@ interface KeyboardListenerProps {
     setCtrlZIndex: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
-const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSpreadsheet, selectedCellsId, selectedCellsContent,
+const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, spreadsheet, setSpreadsheet, selectedCellsId, selectedCellsContent,
     editingCellRef, setEditingCell, updateCtrlZMemory, ctrlZSheets, ctrlZIndex, setCtrlZIndex,
 }) => {
     const { setInfo } = useInfo();
     const [copiedCellsContent, setCopiedCellsContent] = useState<SelectedCellsContent>({});
+    const canEdit = spreadsheet!.permission !== 'VIEW';
 
     const onCopy = () => {
         setCopiedCellsContent(() => {
@@ -78,6 +80,10 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
     });
 
     const onPaste = async () => {
+        if(!canEdit) {
+            return;
+        }
+
         if (selectedCellsId.length !== 0 && Object.keys(copiedCellsContent).length > 0) {
             editingCellRef.current = null; // instantly. Avoid saving after 2s
             setEditingCell(null); // async, updates after saveCellContent finishes, on the next re-render or smth
@@ -86,6 +92,10 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
     };
 
     const onDelete = async () => {
+        if(!canEdit) {
+            return;
+        }
+        
         if (selectedCellsId.length !== 0) {
             editingCellRef.current = null;
             setEditingCell(null);
@@ -137,7 +147,7 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
     });
 
     const onUndo = async () => {
-        if (ctrlZSheets === null || ctrlZIndex === null) {
+        if (ctrlZSheets === null || ctrlZIndex === null || !canEdit) {
             return;
         }
 
@@ -157,7 +167,7 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
 
 
     const onRedo = async () => {
-        if (ctrlZSheets === null || ctrlZIndex === null || ctrlZIndex >= ctrlZSheets.length - 1) {
+        if (ctrlZSheets === null || ctrlZIndex === null || ctrlZIndex >= ctrlZSheets.length - 1 || !canEdit) {
             return;
         }
 
@@ -222,7 +232,7 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, setSprea
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [onCopy, onPaste, onUndo, onRedo]);
+    }, [onCopy, onPaste, onUndo, onRedo, onDelete]);
 
     // Render nothing
     return null;

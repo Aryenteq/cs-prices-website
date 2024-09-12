@@ -218,6 +218,7 @@ const SpreadsheetPage: React.FC = () => {
                 selectedCellsContent={selectedCellsContent}
                 editingCellRef={editingCellRef}
                 setEditingCell={setEditingCell}
+                spreadsheet={spreadsheet}
                 setSpreadsheet={setSpreadsheet}
                 updateCtrlZMemory={updateCtrlZMemory}
                 ctrlZSheets={CtrlZSheets}

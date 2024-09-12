@@ -52,31 +52,47 @@ export const updateUserItems = async (): Promise<void> => {
                                 const buyOrderPriceNumber = buyOrderPrice.toNumber();
                                 const colBuyOrderPrice = buyOrderPriceNumber;
 
-                                // Update cells
-                                await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: LATEST_PRICE_INDEX },
-                                    data: { content: colLatestPrice.toString() }
-                                });
+                                // Get cell IDs for the specific row and columns to update
+                                const latestPriceCell = row.cells.find(c => c.col === LATEST_PRICE_INDEX);
+                                const sumLatestPriceCell = row.cells.find(c => c.col === SUM_LATEST_PRICE_INDEX);
+                                const realPriceCell = row.cells.find(c => c.col === REAL_PRICE_INDEX);
+                                const sumRealPriceCell = row.cells.find(c => c.col === SUM_REAL_PRICE_INDEX);
+                                const buyOrderPriceCell = row.cells.find(c => c.col === BUY_ORDER_PRICE_INDEX);
 
-                                await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: SUM_LATEST_PRICE_INDEX },
-                                    data: { content: colSumLatestPrice.toString() }
-                                });
+                                if (latestPriceCell) {
+                                    await db.cell.update({
+                                        where: { id: latestPriceCell.id },
+                                        data: { content: colLatestPrice.toString() }
+                                    });
+                                }
 
-                                await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: REAL_PRICE_INDEX },
-                                    data: { content: colRealPrice.toString() }
-                                });
+                                if (sumLatestPriceCell) {
+                                    await db.cell.update({
+                                        where: { id: sumLatestPriceCell.id },
+                                        data: { content: colSumLatestPrice.toString() }
+                                    });
+                                }
 
-                                await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: SUM_REAL_PRICE_INDEX },
-                                    data: { content: colSumRealPrice.toString() }
-                                });
+                                if (realPriceCell) {
+                                    await db.cell.update({
+                                        where: { id: realPriceCell.id },
+                                        data: { content: colRealPrice.toString() }
+                                    });
+                                }
 
-                                await db.cell.updateMany({
-                                    where: { sheetId: row.id, col: BUY_ORDER_PRICE_INDEX },
-                                    data: { content: colBuyOrderPrice.toString() }
-                                });
+                                if (sumRealPriceCell) {
+                                    await db.cell.update({
+                                        where: { id: sumRealPriceCell.id },
+                                        data: { content: colSumRealPrice.toString() }
+                                    });
+                                }
+
+                                if (buyOrderPriceCell) {
+                                    await db.cell.update({
+                                        where: { id: buyOrderPriceCell.id },
+                                        data: { content: colBuyOrderPrice.toString() }
+                                    });
+                                }
                             }
                         }
                     }
@@ -87,3 +103,5 @@ export const updateUserItems = async (): Promise<void> => {
         console.error('Error updating user items:', error);
     }
 };
+
+updateUserItems();
