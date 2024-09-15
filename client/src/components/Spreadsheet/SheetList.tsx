@@ -14,7 +14,8 @@ import { sketchColors } from "./Functions/Utils";
 
 import { getSheet, addSheet, deleteSheet, setName, setIndex, setColor } from "../../fetch/SheetFetch";
 import { useInfo } from "../InfoContext";
-import type { SheetInfo, Spreadsheet, Sheet } from "../../types/shareInfoTypes";
+import { SheetInfo, Spreadsheet } from "../../types/spreadsheetTypes";
+import type { Sheet } from "../../types/sheetTypes";
 import { encryptData } from "../../utils/encrypt";
 import ContextMenu from "./ContextMenu";
 import { Typography } from "@mui/material";

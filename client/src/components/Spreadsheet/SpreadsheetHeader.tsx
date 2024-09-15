@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { SpreadsheetHeaderProps } from "../../pages/SpreadsheetPage";
+import { SpreadsheetHeaderProps } from "../../props/spreadsheetProps";
 import { authTokensFetch } from "../../utils/authTokens";
 
 import SpreadsheetShare from "./SpreadsheetShare";

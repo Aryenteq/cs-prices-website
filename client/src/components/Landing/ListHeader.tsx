@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Selector from "../MUI/Selector";
 import DialogSelect from "../MUI/Dialog";
-import type { Filters } from "./SpreadsheetsList";
+import type { Filters } from "../../types/SpreadsheetListTypes";
 
 interface ListHeaderProps {
     onFiltersChange: (filters: Partial<Filters>) => void;

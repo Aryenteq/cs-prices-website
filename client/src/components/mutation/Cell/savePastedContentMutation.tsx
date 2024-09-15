@@ -1,7 +1,6 @@
 import { useMutation } from "react-query";
 import { updatePastedCellsContent } from "../../../fetch/CellFetch";
 import { useInfo } from "../../InfoContext";
-import { Cell, SelectedCellsContent } from "../../../types/cellTypes";
 
 export const useSavePastedContentMutation = (
     setSpreadsheet: Function,
@@ -11,9 +10,49 @@ export const useSavePastedContentMutation = (
     const { setInfo } = useInfo();
 
     return useMutation(updatePastedCellsContent, {
-        onMutate: async ({ firstCellId, contents }: { firstCellId: number, contents: SelectedCellsContent }) => {
+        onMutate: () => {
             setSaving(true);
-            /*
+        },
+        onSuccess: (updatedSheet) => {
+            setSaving(false);
+            setSpreadsheet((prevSpreadsheet: any) => {
+                if (!prevSpreadsheet) return prevSpreadsheet;
+
+                return {
+                    ...prevSpreadsheet,
+                    sheet: updatedSheet
+                };
+            });
+            updateCtrlZMemory(updatedSheet);
+        },
+        onError: (error: any, rollback: any) => {
+            setSaving(false);
+            let errorMessage = 'Something went wrong saving the pasted content. Try again';
+
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            if (error.status !== 401) {
+                console.error('Error updating pasted content:', errorMessage);
+            }
+            setInfo({ message: errorMessage, isError: true });
+
+            if (rollback) {
+                setSpreadsheet(rollback);
+            }
+        }
+    });
+};
+
+
+
+/*
+import { Cell, SelectedCellsContent } from "../../../types/cellTypes";
+
+
+onMutate: async ({ firstCellId, contents }: { firstCellId: number, contents: SelectedCellsContent }) => {
+            setSaving(true);
             return setSpreadsheet((prevSpreadsheet: any) => {
                 if (!prevSpreadsheet) return prevSpreadsheet;
 
@@ -57,36 +96,6 @@ export const useSavePastedContentMutation = (
                     ...prevSpreadsheet,
                     sheet: updatedSheet,
                 };
-            }); */
-        },
-        onSuccess: (updatedSheet) => {
-            setSaving(false);
-            setSpreadsheet((prevSpreadsheet: any) => {
-                if (!prevSpreadsheet) return prevSpreadsheet;
-
-                return {
-                    ...prevSpreadsheet,
-                    sheet: updatedSheet
-                };
             });
-            updateCtrlZMemory(updatedSheet);
         },
-        onError: (error: any, rollback: any) => {
-            setSaving(false);
-            let errorMessage = 'Something went wrong saving the pasted content. Try again';
-
-            if (error instanceof Error) {
-                errorMessage = error.message;
-            }
-
-            if (error.status !== 401) {
-                console.error('Error updating pasted content:', errorMessage);
-            }
-            setInfo({ message: errorMessage, isError: true });
-
-            if (rollback) {
-                setSpreadsheet(rollback);
-            }
-        }
-    });
-};
+        */
