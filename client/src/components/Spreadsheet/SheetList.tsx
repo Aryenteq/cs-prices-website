@@ -12,9 +12,9 @@ import TextField from '@mui/material/TextField';
 import { SketchPicker } from 'react-color';
 import { sketchColors } from "./Functions/Utils";
 
-import { getSheet, addSheet, deleteSheet, setName, setIndex, setColor } from "./Functions/SheetFetch";
+import { getSheet, addSheet, deleteSheet, setName, setIndex, setColor } from "../../fetch/SheetFetch";
 import { useInfo } from "../InfoContext";
-import type { SheetInfo, Spreadsheet, Sheet } from "./Functions/Types";
+import type { SheetInfo, Spreadsheet, Sheet } from "../../types/shareInfoTypes";
 import { encryptData } from "../../utils/encrypt";
 import ContextMenu from "./ContextMenu";
 import { Typography } from "@mui/material";

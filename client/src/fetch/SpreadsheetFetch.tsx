@@ -1,5 +1,15 @@
-import { authTokensFetch } from "../../../utils/authTokens";
-import { ShareInfo } from "./Types";
+import { authTokensFetch } from "../utils/authTokens";
+import { ShareInfo } from "../types/shareInfoTypes";
+
+import type { Spreadsheet, Filters } from "../types/SpreadsheetListTypes";
+
+export const fetchSpreadsheets = async (filters: Filters): Promise<Spreadsheet[]> => {
+    const query = new URLSearchParams(filters as any).toString();
+    const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet?${query}`, {
+        method: 'GET',
+    });
+    return data;
+};
 
 export const fetchSpreadsheet = async (spreadsheetId: number, sheetIndex: number): Promise<any> => {
     return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}?index=${sheetIndex}`, {
@@ -20,7 +30,7 @@ export const updatePermission = async (spreadsheetId: number, email: string, per
     };
 
     await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shared-users-ids`, {
-        method: 'PATCH',
+        method: 'POST',
         headers: headers,
         body: JSON.stringify({ email, permission }),
     });

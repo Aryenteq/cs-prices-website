@@ -1,33 +1,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "react-query";
-import { UserIdProps } from "../../utils/types";
+import { UserIdProps } from "../../props/jwtProps";
 import logo from "../../assets/logo.webp";
 import account from "../../media/svgs/user-edit.svg";
 import loading from "../../media/svgs/loading.svg";
 
 import SpreadsheetSearch from "./SpreadsheetSearch";
-import { authTokensFetch } from "../../utils/authTokens";
-
-
-
-const fetchUserPhoto = async (userId: number) => {
-    try {
-        const data = await authTokensFetch(
-            `${import.meta.env.VITE_BACKEND_URL}/user/photo/${userId}`,
-            { method: 'GET' }
-        );
-        return data;
-    } catch (error: any) {
-        if (error.status !== 401) {
-            console.error('Error fetching user photo:', error.message);
-        }
-        throw error;
-    }
-};
+import { useUserPhotoFetch } from "../query/User/UserPhotoFetch";
 
 const LandingPageHeader: React.FC<UserIdProps> = ({ userId }) => {
-    const { data: photoURL, isLoading, error } = useQuery(['userPhoto', userId], () => fetchUserPhoto(userId));
+    const { photoURL, isLoading, error } = useUserPhotoFetch(userId);
     const navigate = useNavigate();
 
     const accountPage = () => {

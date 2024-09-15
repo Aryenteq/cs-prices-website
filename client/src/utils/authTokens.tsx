@@ -41,7 +41,6 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
 
             saveTokens(data.accessToken, data.refreshToken);
 
-            // original req
             const retryResponse = await fetch(url, {
                 ...options,
                 headers: {
@@ -50,32 +49,38 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
                 },
             });
 
-
-            if (!retryResponse.ok) {
-                const errorResponse = await retryResponse.json();
-                throw new Error(errorResponse.message || 'Failed to complete request after token refresh.');
-            }
-
-            return retryResponse.json();
+            return await handleResponse(retryResponse);
         } else {
             Cookies.remove('access_token');
             Cookies.remove('refresh_token');
 
-            // timing issues, let the prev req handle the cookies
-            // navigate() doesn't solve the issue - integrating it means passing the navigate through MULTIPLE functions
-            // would be innefficient
-
-            // STILL DOESN'T WORK
             setTimeout(() => {
                 window.location.href = '/connect';
             }, 500);
+
+            return;
         }
     }
 
+    return await handleResponse(response);
+};
+
+const handleResponse = async (response: Response): Promise<any> => {
+    const contentType = response.headers.get("content-type");
+
     if (!response.ok) {
-        const errorResponse = await response.json();
-        throw new Error(errorResponse.message || 'Failed to complete request.');
+        if (contentType && contentType.includes("application/json")) {
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.message || 'Failed to complete request.');
+        } else {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to complete request.');
+        }
     }
 
-    return response.json();
+    if (contentType && contentType.includes("application/json")) {
+        return await response.json();
+    } else {
+        return await response.text();
+    }
 };

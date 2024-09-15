@@ -1,9 +1,9 @@
-import { authTokensFetch } from "../../../utils/authTokens";
-import { Sheet } from "./Types";
+import { authTokensFetch } from "../utils/authTokens";
+import { Sheet, ItemsVisibility } from "../types/sheetTypes";
 
 export const updateRowHeight = async ({ sheetId, rowIndex, height }: { sheetId: number, rowIndex: number, height: number }) => {
     return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/row-height`, {
-        method: 'PATCH',
+        method: 'PUT', // ? PATCH doesn't work on Brave - CORS
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ index: rowIndex, height }),
     });
@@ -11,25 +11,25 @@ export const updateRowHeight = async ({ sheetId, rowIndex, height }: { sheetId: 
 
 export const updateColWidth = async ({ sheetId, colIndex, width }: { sheetId: number, colIndex: number, width: number }) => {
     return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/col-width`, {
-        method: 'PATCH',
+        method: 'PUT', // ? PATCH doesn't work on Brave - CORS
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ index: colIndex, width }),
     });
 };
 
-export const updateHiddenRows = async ({ sheetId, rowIndex, hidden }: { sheetId: number, rowIndex: number, hidden: boolean }) => {
-    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/row-hidden`, {
-        method: 'PATCH',
+export const updateHiddenRows = async ({ sheetId, rows }: { sheetId: number, rows: ItemsVisibility[] }) => {
+    await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/row-hidden`, {
+        method: 'PUT', // ? PATCH doesn't work on Brave - CORS
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ index: rowIndex, hidden }),
+        body: JSON.stringify({ itemsVisibility: rows }),
     });
 };
 
-export const updateHiddenCols = async ({ sheetId, colIndex, hidden }: { sheetId: number, colIndex: number, hidden: boolean }) => {
-    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/col-hidden`, {
-        method: 'PATCH',
+export const updateHiddenCols = async ({ sheetId, cols }: { sheetId: number, cols: ItemsVisibility[]}) => {
+    await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/col-hidden`, {
+        method: 'PUT', // ? PATCH doesn't work on Brave - CORS
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ index: colIndex, hidden }),
+        body: JSON.stringify({ itemsVisibility: cols }),
     });
 };
 
@@ -115,7 +115,7 @@ export const setColor = async ({ sheetId, color }: { sheetId: number, color: str
 
 // CTRL + Z, CTRL+Y
 export const revertSheet = async ({ sheetId, sheet }: { sheetId: number, sheet: Sheet }) => {
-    return await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}`, {
+    await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sheet),

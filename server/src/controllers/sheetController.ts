@@ -1,51 +1,7 @@
 import type { Request, Response } from 'express';
 import * as sheetService from '../services/sheetService';
 import type { Sheet as PrismaSheet } from '@prisma/client';
-
-export enum HorizontalAlignment {
-    LEFT = "LEFT",
-    CENTER = "CENTER",
-    RIGHT = "RIGHT"
-}
-
-export enum VerticalAlignment {
-    TOP = "TOP",
-    CENTER = "CENTER",
-    BOTTOM = "BOTTOM"
-}
-
-export interface Cell {
-    id: number;
-    sheetId: number;
-    row: number;
-    col: number;
-    protected: boolean;
-    bgColor: string;
-    color: string;
-    style?: Record<string, any>;
-    hAlignment: HorizontalAlignment;
-    vAlignment: VerticalAlignment;
-    content?: string;
-    created: string;
-    updatedAt: string;
-}
-
-export interface Sheet {
-    id: number;
-    spreadsheetId: number;
-    name: string;
-    index: number;
-    color: string;
-    numRows: number;
-    numCols: number;
-    columnWidths?: Record<number, number>;
-    rowHeights?: Record<number, number>;
-    hiddenCols?: Record<number, boolean>;
-    hiddenRows?: Record<number, boolean>;
-    created: string;
-    updatedAt: string;
-    cells: Cell[];
-}
+import type { Sheet } from '../utils/types';
 
 export const getSheet = async (req: Request, res: Response) => {
     try {
@@ -64,8 +20,8 @@ export const revertSheet = async (req: Request, res: Response) => {
         const sheet = req.body as Sheet;
         const userId = (req as any).user.uid;
 
-        const updatedSheet = await sheetService.revertSheet(sheet, userId);
-        res.status(201).json(updatedSheet);
+        await sheetService.revertSheet(sheet, userId);
+        res.sendStatus(200);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
     }
@@ -215,11 +171,11 @@ export const updateColsWidth = async (req: Request, res: Response) => {
 export const updateHiddenRows = async (req: Request, res: Response) => {
     try {
         const sheetId = parseInt(req.params.sheetId, 10);
-        const { index, hidden } = req.body;
+        const { itemsVisibility } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedSheet = await sheetService.updateVisibility(sheetId, index, hidden, userId, 'row');
-        res.status(200).json(updatedSheet);
+        await sheetService.updateVisibility(sheetId, itemsVisibility, userId, 'row');
+        res.sendStatus(200);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
     }
@@ -228,11 +184,11 @@ export const updateHiddenRows = async (req: Request, res: Response) => {
 export const updateHiddenCols = async (req: Request, res: Response) => {
     try {
         const sheetId = parseInt(req.params.sheetId, 10);
-        const { index, hidden } = req.body;
+        const { itemsVisibility } = req.body;
         const userId = (req as any).user.uid;
 
-        const updatedSheet = await sheetService.updateVisibility(sheetId, index, hidden, userId, 'col');
-        res.status(200).json(updatedSheet);
+        await sheetService.updateVisibility(sheetId, itemsVisibility, userId, 'col');
+        res.sendStatus(200);
     } catch (error: any) {
         res.status(400).json({ message: error.message });
     }

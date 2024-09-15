@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { authTokensFetch } from "../../utils/authTokens";
 import { useInfo } from "../InfoContext";
-import { ShareInfo } from "./Functions/Types";
+import { ShareInfo } from "../../types/shareInfoTypes";
 
-import { fetchSpreadsheetShares, updatePermission } from "./Functions/SpreadsheetFetch";
+import { fetchSpreadsheetShares, updatePermission } from "../../fetch/SpreadsheetFetch";
 import Selector from "../MUI/Selector";
 
 import copyLinkImg from "../../media/svgs/copy-link.svg";
@@ -15,7 +15,7 @@ const shareSpreadsheet = async (spreadsheetId: number, email: string, permission
     };
 
     await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheetId}/shared-users-ids`, {
-        method: 'PATCH',
+        method: 'PUT', // ? PATCH doesn't work on Brave - CORS
         headers: headers,
         body: JSON.stringify({ email, permission }),
     });

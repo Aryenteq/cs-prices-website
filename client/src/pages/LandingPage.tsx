@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
-import { JwtPayload } from '../utils/types';
+import { JwtPayload } from '../props/jwtProps';
 
 import LandingPageHeader from '../components/Landing/LandingPageHeader';
 import NewSpreadsheetMenu from '../components/Landing/NewSpreadsheetMenu';

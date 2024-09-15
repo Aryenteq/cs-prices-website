@@ -1,5 +1,5 @@
 import { CS_PROTECTED_COLUMNS_LENGTH } from "../SpreadsheetTable";
-import { Spreadsheet } from "./Types";
+import { Spreadsheet } from "../../../types/spreadsheetTypes";
 import { getColIndexFromLetter } from "./Utils";
 
 export const computeCellFunction = (content: string, spreadsheet: Spreadsheet): string | number => {

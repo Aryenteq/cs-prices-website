@@ -1,5 +1,3 @@
-export type TextAlign = 'left' | 'right' | 'center' | 'justify';
-
 export enum HorizontalAlignment {
     LEFT = "LEFT",
     CENTER = "CENTER",
@@ -45,35 +43,7 @@ export interface Sheet {
     cells: Cell[];
 }
 
-export enum SpreadsheetTypes {
-    NORMAL = 'NORMAL',
-    CS = 'CS',
-}
-
-export interface SheetInfo {
-    id: number;
-    name: string;
+export interface ItemsVisibility {
     index: number;
-    color: string;
+    hidden: boolean;
 }
-
-export interface Spreadsheet {
-    id: number;
-    ownerId: number;
-    type: SpreadsheetTypes;
-    name: string;
-    lastOpened: string;
-    sheet: Sheet;
-    sheetsInfo: SheetInfo[];
-    created: string;
-    updatedAt: string;
-    permission: 'EDIT' | 'VIEW';
-}
-
-export type ShareInfo = {
-    uid: number;
-    username: string;
-    email: string;
-    photoURL: string;
-    permission: string;
-};

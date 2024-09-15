@@ -3,10 +3,7 @@ import type { Sheet as PrismaSheet } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 import { CS_PROTECTED_COLUMNS_LENGTH, generateCells } from './spreadsheetService';
-import type { Sheet } from '../controllers/sheetController';
-
-import { promises as fs } from 'fs';
-import { join } from 'path';
+import type { ItemsVisibility, Sheet } from '../utils/types';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
@@ -49,6 +46,27 @@ export const getSheet = async (sheetId: number, userId: number) => {
     return sheet;
 };
 
+const computeBatchSize = (totalCells: number): number => {
+    const MIN_BATCH_SIZE = 50;
+    const MAX_BATCH_SIZE = 500;
+
+    return Math.min(MAX_BATCH_SIZE, Math.max(MIN_BATCH_SIZE, Math.floor(totalCells / 50)));
+};
+
+const hasCellChanged = (dbCell: any, newCell: any): boolean => {
+    return (
+        dbCell.row !== newCell.row ||
+        dbCell.col !== newCell.col ||
+        //dbCell.protected !== newCell.protected || // this can not be edited
+        dbCell.bgColor !== newCell.bgColor ||
+        dbCell.color !== newCell.color ||
+        JSON.stringify(dbCell.style) !== JSON.stringify(newCell.style) ||
+        dbCell.hAlignment !== newCell.hAlignment ||
+        dbCell.vAlignment !== newCell.vAlignment ||
+        dbCell.content !== newCell.content
+    );
+};
+
 export const revertSheet = async (sheet: Sheet, userId: number) => {
     const permission = await getUserPermissionForSpreadsheet(sheet.spreadsheetId, userId);
 
@@ -64,44 +82,85 @@ export const revertSheet = async (sheet: Sheet, userId: number) => {
             color: sheet.color,
             numRows: sheet.numRows,
             numCols: sheet.numCols,
-            columnWidths: sheet.columnWidths ? sheet.columnWidths : undefined,
-            rowHeights: sheet.rowHeights ? sheet.rowHeights : undefined,
-            hiddenCols: sheet.hiddenCols ? sheet.hiddenCols : undefined,
-            hiddenRows: sheet.hiddenRows ? sheet.hiddenRows : undefined,
+            columnWidths: sheet.columnWidths || undefined,
+            rowHeights: sheet.rowHeights || undefined,
+            hiddenCols: sheet.hiddenCols || undefined,
+            hiddenRows: sheet.hiddenRows || undefined,
         },
     });
 
-    await db.cell.deleteMany({
+    const existingCells = await db.cell.findMany({
         where: { sheetId: sheet.id },
     });
 
-    const newCellsData = sheet.cells.map(cell => ({
-        sheetId: sheet.id,
-        row: cell.row,
-        col: cell.col,
-        protected: cell.protected,
-        bgColor: cell.bgColor,
-        color: cell.color,
-        style: cell.style,
-        hAlignment: cell.hAlignment,
-        vAlignment: cell.vAlignment,
-        content: cell.content,
-        created: new Date(cell.created),
-        updatedAt: new Date(cell.updatedAt),
-    }));
+    const existingCellMap = new Map(existingCells.map(cell => [cell.id, cell]));
 
-    await db.cell.createMany({
-        data: newCellsData,
+    // Identify cells to delete (that exist in DB but not in updated data)
+    const existingCellIds = new Set(existingCells.map(cell => cell.id));
+    const newCellIds = new Set(sheet.cells.map(cell => cell.id));
+    const cellIdsToDelete = Array.from(existingCellIds).filter(id => !newCellIds.has(id));
+
+    if (cellIdsToDelete.length > 0) {
+        await db.cell.deleteMany({
+            where: { id: { in: cellIdsToDelete } },
+        });
+    }
+
+    const totalCells = sheet.numRows * sheet.numCols;
+
+    const BATCH_SIZE = computeBatchSize(totalCells);
+
+    // Filter cells that have been added or modified
+    const changedCells = sheet.cells.filter(newCell => {
+        const dbCell = existingCellMap.get(newCell.id);
+        return !dbCell || hasCellChanged(dbCell, newCell); // Either new or changed
     });
 
-    const updatedSheet = await db.sheet.findUnique({
-        where: { id: sheet.id },
-        include: {
-            cells: true,
-        },
-    });
+    const batchUpserts = async (cells: any[], sheetId: number) => {
+        for (let i = 0; i < cells.length; i += BATCH_SIZE) {
+            const batch = cells.slice(i, i + BATCH_SIZE);
 
-    return updatedSheet;
+            const upsertPromises = batch.map(cell => {
+                return db.cell.upsert({
+                    where: { id: cell.id },
+                    update: {
+                        row: cell.row,
+                        col: cell.col,
+                        protected: cell.protected,
+                        bgColor: cell.bgColor,
+                        color: cell.color,
+                        style: cell.style,
+                        hAlignment: cell.hAlignment,
+                        vAlignment: cell.vAlignment,
+                        content: cell.content,
+                        created: new Date(cell.created),
+                        updatedAt: new Date(cell.updatedAt),
+                    },
+                    create: {
+                        id: cell.id,
+                        sheetId,
+                        row: cell.row,
+                        col: cell.col,
+                        protected: cell.protected,
+                        bgColor: cell.bgColor,
+                        color: cell.color,
+                        style: cell.style,
+                        hAlignment: cell.hAlignment,
+                        vAlignment: cell.vAlignment,
+                        content: cell.content,
+                        created: new Date(cell.created),
+                        updatedAt: new Date(cell.updatedAt),
+                    },
+                });
+            });
+
+            await Promise.all(upsertPromises);
+        }
+    };
+
+    if (changedCells.length > 0) {
+        await batchUpserts(changedCells, sheet.id);
+    }
 };
 
 export const createSheet = async (sheet: PrismaSheet, userId: number) => {
@@ -941,8 +1000,7 @@ export const updateColsWidth = async (sheetId: number, index: number, width: num
 
 export const updateVisibility = async (
     sheetId: number,
-    index: number,
-    hidden: boolean,
+    itemsVisibility: ItemsVisibility[],
     userId: number,
     type: 'row' | 'col'
 ) => {
@@ -962,50 +1020,37 @@ export const updateVisibility = async (
         throw new Error('You do not have permission to update this sheet.');
     }
 
-    let updatedVisibility: Prisma.JsonObject;
-    let currentVisibility: Prisma.JsonObject | null = null;
+    let updatedVisibility: Record<number, boolean> = {};
+    let currentVisibility: Record<number, boolean> | null = null;
     let totalItems = 0;
 
     if (type === 'row') {
-        currentVisibility = sheet.hiddenRows as Prisma.JsonObject;
+        currentVisibility = sheet.hiddenRows as Record<number, boolean>;
         totalItems = sheet.numRows;
     } else if (type === 'col') {
-        currentVisibility = sheet.hiddenCols as Prisma.JsonObject;
+        currentVisibility = sheet.hiddenCols as Record<number, boolean>;
         totalItems = sheet.numCols;
     }
 
-    if (!currentVisibility || typeof currentVisibility !== 'object') {
+    if (!currentVisibility) {
         updatedVisibility = {};
     } else {
         updatedVisibility = { ...currentVisibility };
     }
 
-    // Start from the given index and continue to reveal following adjacent neighbors
-    let currentIndex = index;
+    itemsVisibility.forEach(({ index, hidden }) => {
+        updatedVisibility[index] = hidden;
+    });
 
-    if (hidden === true) {
-        updatedVisibility[currentIndex] = hidden;
-    } else {
-        while (currentIndex < totalItems && updatedVisibility[currentIndex] === true) {
-            updatedVisibility[currentIndex] = hidden;
-            currentIndex++;
-        }
-        const hiddenCount = Object.values(updatedVisibility).filter(value => value === true).length;
-
-        if (hiddenCount >= totalItems) {
-            throw new Error(`Cannot hide all ${type === 'row' ? 'rows' : 'columns'}. At least one ${type === 'row' ? 'row' : 'column'} must remain visible.`);
-        }
+    const visibleCount = totalItems - Object.values(updatedVisibility).filter(value => value === true).length;
+    if (visibleCount <= 0) {
+        throw new Error(`Cannot hide all ${type === 'row' ? 'rows' : 'columns'}. At least one ${type === 'row' ? 'row' : 'column'} must remain visible.`);
     }
 
     const updateData = type === 'row' ? { hiddenRows: updatedVisibility } : { hiddenCols: updatedVisibility };
 
-    return await db.sheet.update({
-        where: {
-            id: sheetId,
-        },
+    await db.sheet.update({
+        where: { id: sheetId },
         data: updateData,
-        include: {
-            cells: true,
-        },
     });
 };

@@ -15,10 +15,10 @@ sheetRoutes.put('/sheet/:sheetId/index', isAuthenticated, sheetController.setInd
 sheetRoutes.put('/sheet/:sheetId/color', isAuthenticated, sheetController.setColor);
 sheetRoutes.put('/sheet/:sheetId/rows', isAuthenticated, sheetController.addRows);
 sheetRoutes.put('/sheet/:sheetId/cols', isAuthenticated, sheetController.addCols);
-sheetRoutes.patch('/sheet/:sheetId/row-height', isAuthenticated, sheetController.updateRowsHeight);
-sheetRoutes.patch('/sheet/:sheetId/col-width', isAuthenticated, sheetController.updateColsWidth);
-sheetRoutes.patch('/sheet/:sheetId/row-hidden', isAuthenticated, sheetController.updateHiddenRows);
-sheetRoutes.patch('/sheet/:sheetId/col-hidden', isAuthenticated, sheetController.updateHiddenCols);
+sheetRoutes.put('/sheet/:sheetId/row-height', isAuthenticated, sheetController.updateRowsHeight); // ? PATCH doesn't work on Brave - CORS
+sheetRoutes.put('/sheet/:sheetId/col-width', isAuthenticated, sheetController.updateColsWidth); // ? PATCH doesn't work on Brave - CORS
+sheetRoutes.put('/sheet/:sheetId/row-hidden', isAuthenticated, sheetController.updateHiddenRows); // ? PATCH doesn't work on Brave - CORS
+sheetRoutes.put('/sheet/:sheetId/col-hidden', isAuthenticated, sheetController.updateHiddenCols); // ? PATCH doesn't work on Brave - CORS
 
 
 export default sheetRoutes;

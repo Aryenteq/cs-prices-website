@@ -2,59 +2,57 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useParams } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
-import { JwtPayload } from '../utils/types';
-import { Sheet, type Spreadsheet } from "../components/Spreadsheet/Functions/Types";
+import { JwtPayload } from '../props/jwtProps';
 
+// types
+import type { Sheet } from "../types/sheetTypes";
+import type { Spreadsheet } from "../types/spreadsheetTypes";
+import type { SelectedCellsContent } from "../types/cellTypes";
+
+// components
 import SpreadsheetHeader from "../components/Spreadsheet/SpreadsheetHeader";
 import SpreadsheetUtilities from "../components/Spreadsheet/SpreadsheetUtilities";
-import SpreadsheetTable from "../components/Spreadsheet/SpreadsheetTable";
+import SpreadsheetTable, { DEFAULT_COL_WIDTH, DEFAULT_ROW_HEIGHT } from "../components/Spreadsheet/SpreadsheetTable";
 import SheetList from "../components/Spreadsheet/SheetList";
-import { decryptData } from '../utils/encrypt';
-
-import { fetchSpreadsheet } from "../components/Spreadsheet/Functions/SpreadsheetFetch";
-import { useInfo } from "../components/InfoContext";
-
-import { DEFAULT_FONT_SIZE, DEFAULT_FONT_FAMILY } from "../components/Spreadsheet/SpreadsheetTable";
-import { useQuery } from "react-query";
 import KeyboardListener from "../components/Spreadsheet/Functions/KeyboardListener";
 
-export interface SpreadsheetProps {
-    setSaving: React.Dispatch<React.SetStateAction<boolean>>;
-    selectedCellsId: number[];
-    spreadsheet: Spreadsheet | undefined;
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
-    setCurrentFontFamily: React.Dispatch<React.SetStateAction<string>>;
-    setCurrentFontSize: React.Dispatch<React.SetStateAction<number>>;
-    setCurrentTextColor: React.Dispatch<React.SetStateAction<string>>;
-    setCurrentBgColor: React.Dispatch<React.SetStateAction<string>>;
-}
+// hooks
+import { useSpreadsheetFetch } from "../components/query/Spreadsheet/SpreadsheetFetch";
 
-export interface SpreadsheetHeaderProps {
-    uid: number;
-    spreadsheetId: number;
-    saving: boolean;
-    setSaving: React.Dispatch<React.SetStateAction<boolean>>;
-}
+// functions
+import { decryptData } from '../utils/encrypt';
 
-export type SelectedCellsContent = {
-    [rowIndex: number]: {
-        [colIndex: number]: string | null;
-    };
-};
+// vars
+import { DEFAULT_FONT_SIZE, DEFAULT_FONT_FAMILY } from "../components/Spreadsheet/SpreadsheetTable";
+import { initializeSizes, initializeVisibility } from "../components/Spreadsheet/Functions/Utils";
+import { useCtrlZMemory } from "../components/Spreadsheet/hooks/ctrlZ/updateCtrlZMemory";
 
 export const CTRL_Z_MEMORY_LENGTH = 50;
 
+import LoadingGIF from "../media/imgs/loading.gif";
+
 const SpreadsheetPage: React.FC = () => {
-    const { setInfo } = useInfo();
     const [saving, setSaving] = useState<boolean>(false);
+    const [isFirstRender, setIsFirstRender] = useState(true);
+    const [spreadsheet, setSpreadsheet] = useState<Spreadsheet | undefined>(undefined);
+
     const [selectedCellsId, setSelectedCellsId] = useState<number[]>([]);
     const [selectedCellsContent, setSelectedCellsContent] = useState<SelectedCellsContent>({});
     const [editingCell, setEditingCell] = useState<{ id: number, row: number, col: number } | null>(null);
     const editingCellRef = useRef<{ id: number, row: number, col: number } | null>(null);
 
-    useEffect(() => {
-        editingCellRef.current = editingCell;
-    }, [editingCell]);
+    const [rowHeights, setRowHeights] = useState<number[]>([]);
+    const [colWidths, setColWidths] = useState<number[]>([]);
+    const [hiddenRows, setHiddenRows] = useState<boolean[]>([]);
+    const [hiddenCols, setHiddenCols] = useState<boolean[]>([]);
+
+    const getColumnWidth = (colIndex: number) => {
+        return colWidths[colIndex] || DEFAULT_COL_WIDTH;
+    };
+    const getRowHeight = (rowIndex: number) => {
+        return rowHeights[rowIndex] || DEFAULT_ROW_HEIGHT;
+    };
+
 
     const [currentFontFamily, setCurrentFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
     const [currentFontSize, setCurrentFontSize] = useState<number>(DEFAULT_FONT_SIZE);
@@ -62,35 +60,10 @@ const SpreadsheetPage: React.FC = () => {
     const [currentBgColor, setCurrentBgColor] = useState<string>('#242424');
     const { encodedSpreadsheetId } = useParams<{ encodedSpreadsheetId: string }>();
 
-    const [isFirstRender, setIsFirstRender] = useState(true);
     const [CtrlZSheets, setCtrlZSheets] = useState<Sheet[] | null>(null);
     const [ctrlZIndex, setCtrlZIndex] = useState<number | null>(null);
 
-    const updateCtrlZMemory = (updatedSheet: any) => {
-        setCtrlZSheets((prevSheets) => {
-            const currentCtrlZIndex = ctrlZIndex !== null ? ctrlZIndex : 0;
-
-            const newSheets = prevSheets ? [...prevSheets] : [];
-
-            // avoid future history (Ctrl+Y)
-            const sheetsUpToCurrentIndex = newSheets.slice(0, currentCtrlZIndex + 1);
-
-            const lastSheet = sheetsUpToCurrentIndex[sheetsUpToCurrentIndex.length - 1];
-            if (lastSheet && JSON.stringify(lastSheet) === JSON.stringify(updatedSheet)) {
-                return prevSheets;
-            }
-
-            sheetsUpToCurrentIndex.push(updatedSheet);
-
-            if (sheetsUpToCurrentIndex.length > CTRL_Z_MEMORY_LENGTH) {
-                sheetsUpToCurrentIndex.shift();
-            }
-
-            setCtrlZIndex(sheetsUpToCurrentIndex.length - 1);
-
-            return sheetsUpToCurrentIndex;
-        });
-    };
+    const { updateCtrlZMemory } = useCtrlZMemory(setCtrlZSheets, ctrlZIndex, setCtrlZIndex, CTRL_Z_MEMORY_LENGTH);
 
     const [spreadsheetId, sheetIndex] = useMemo(() => {
         if (encodedSpreadsheetId) {
@@ -107,7 +80,7 @@ const SpreadsheetPage: React.FC = () => {
             }
         }
         return [null, 0];
-    }, [encodedSpreadsheetId]);
+    }, []);
 
 
     const jwtInfo = useMemo(() => {
@@ -121,34 +94,40 @@ const SpreadsheetPage: React.FC = () => {
             }
         }
         return null;
-    }, []);
+    }, [[Cookies.get('access_token')]]);
 
-    const [spreadsheet, setSpreadsheet] = useState<Spreadsheet | undefined>(undefined);
-
-    const { data: fetchedSpreadsheet } = useQuery<Spreadsheet, Error>(
-        ['spreadsheet', spreadsheetId],
-        () => fetchSpreadsheet(spreadsheetId!, sheetIndex),
-        {
-            keepPreviousData: true,
-            onError: (error: any) => {
-                if (error.status !== 401) {
-                    console.error('Error getting spreadsheet:', error);
-                }
-                const parsedMessage = JSON.parse(error.message);
-                const errorMessage = parsedMessage.message || 'An unknown error occurred while getting the spreadsheet.';
-                setInfo({ message: errorMessage, isError: true });
-            },
-        }
-    );
+    const { fetchedSpreadsheet, isLoading } = useSpreadsheetFetch(spreadsheetId, sheetIndex);
 
     useEffect(() => {
-        if (fetchedSpreadsheet) {
+        if (fetchedSpreadsheet && isFirstRender) {
             setSpreadsheet(fetchedSpreadsheet);
+
+            setRowHeights(initializeSizes(fetchedSpreadsheet.sheet.numRows, DEFAULT_ROW_HEIGHT, fetchedSpreadsheet.sheet.rowHeights));
+            setColWidths(initializeSizes(fetchedSpreadsheet.sheet.numCols, DEFAULT_COL_WIDTH, fetchedSpreadsheet.sheet.columnWidths));
+            setHiddenRows(initializeVisibility(fetchedSpreadsheet.sheet.numRows, fetchedSpreadsheet.sheet.hiddenRows));
+            setHiddenCols(initializeVisibility(fetchedSpreadsheet.sheet.numCols, fetchedSpreadsheet.sheet.hiddenCols));
+            setIsFirstRender(true);
         }
-    }, [fetchedSpreadsheet]);
+    }, [fetchedSpreadsheet, isFirstRender]);
+
+    useEffect(() => {
+        if (spreadsheet) {
+            if (isFirstRender && spreadsheet.sheet) {
+                updateCtrlZMemory(spreadsheet.sheet);
+            }
+        }
+    }, [spreadsheet]);
 
     if (!jwtInfo) {
         return <Navigate to="/connect" replace />;
+    }
+
+    if (isLoading) {
+        return (
+            <div className="h-full flex items-center justify-center">
+                <img src={LoadingGIF} alt="Loading..." className="h-20" />
+            </div>
+        );
     }
 
     if (!spreadsheetId) {
@@ -186,6 +165,10 @@ const SpreadsheetPage: React.FC = () => {
                     ctrlZSheets={CtrlZSheets}
                     ctrlZIndex={ctrlZIndex}
                     setCtrlZIndex={setCtrlZIndex}
+                    setRowHeights={setRowHeights}
+                    setColWidths={setColWidths}
+                    setHiddenRows={setHiddenRows}
+                    setHiddenCols={setHiddenCols}
                 />
             </div>
             <SpreadsheetTable
@@ -203,8 +186,16 @@ const SpreadsheetPage: React.FC = () => {
                 setCurrentTextColor={setCurrentTextColor}
                 setCurrentBgColor={setCurrentBgColor}
                 updateCtrlZMemory={updateCtrlZMemory}
-                isFirstRender={isFirstRender}
-                setIsFirstRender={setIsFirstRender}
+                rowHeights={rowHeights}
+                setRowHeights={setRowHeights}
+                colWidths={colWidths}
+                setColWidths={setColWidths}
+                hiddenRows={hiddenRows}
+                setHiddenRows={setHiddenRows}
+                hiddenCols={hiddenCols}
+                setHiddenCols={setHiddenCols}
+                getRowHeight={getRowHeight}
+                getColumnWidth={getColumnWidth}
             />
             <SheetList
                 setSaving={setSaving}
@@ -224,6 +215,10 @@ const SpreadsheetPage: React.FC = () => {
                 ctrlZSheets={CtrlZSheets}
                 ctrlZIndex={ctrlZIndex}
                 setCtrlZIndex={setCtrlZIndex}
+                setRowHeights={setRowHeights}
+                setColWidths={setColWidths}
+                setHiddenRows={setHiddenRows}
+                setHiddenCols={setHiddenCols}
             />
 
         </div>

@@ -1,38 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useQuery } from "react-query";
 import ListHeader from "./ListHeader";
 import SpreadsheetItem from "./SpreadsheetItem";
-import { useInfo } from "../InfoContext";
-
-import { authTokensFetch } from "../../utils/authTokens";
-
-// Custom spreadsheet interface for 'getAllSpreadsheets'
-export interface Spreadsheet {
-    id: number;
-    name: string;
-    type: string;
-    created: string;
-    lastOpened: string;
-    updatedAt: string;
-    ownerName: string;
-    permission: 'EDIT' | 'VIEW';
-}
-
-export interface Filters {
-    owner: 'ALL' | 'ME' | 'OTHER';
-    type: 'ALL' | 'NORMAL' | 'CS';
-    orderBy: 'LAST_OPENED' | 'NAME' | 'CREATED';
-    orderType: 'asc' | 'desc';
-}
-
-const fetchSpreadsheets = async (filters: Filters): Promise<Spreadsheet[]> => {
-    const query = new URLSearchParams(filters as any).toString();
-    const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet?${query}`, {
-        method: 'GET',
-    });
-    return data;
-};
-
+import type { Spreadsheet, Filters } from "../../types/SpreadsheetListTypes";
+import { useSpreadsheets } from "../query/Spreadsheet/SpreadsheetsFetch";
 
 function groupSpreadsheetsByDate(spreadsheets: Spreadsheet[]): Record<string, Spreadsheet[]> {
     const today = new Date();
@@ -69,8 +39,6 @@ function groupSpreadsheetsByDate(spreadsheets: Spreadsheet[]): Record<string, Sp
 }
 
 const SpreadsheetsList: React.FC = () => {
-    const { setInfo } = useInfo();
-
     const [filters, setFilters] = useState<Filters>({
         owner: 'ALL',
         type: 'ALL',
@@ -78,21 +46,7 @@ const SpreadsheetsList: React.FC = () => {
         orderType: 'desc'
     });
 
-    const { data: spreadsheets, isLoading, error } = useQuery<Spreadsheet[], Error>(
-        ['spreadsheets', filters],
-        () => fetchSpreadsheets(filters),
-        {
-            keepPreviousData: true,
-            onError: (error: Error) => {
-                setInfo({ message: error.message, isError: true });
-                const typedError = error as any;
-                if (typedError.status !== 401) {
-                    console.error('Error fetching spreadsheets:', error.message);
-                }
-            },
-        }
-    );
-
+    const { data: spreadsheets, isLoading, error } = useSpreadsheets(filters);
 
     const handleFiltersChange = (newFilters: Partial<Filters>) => {
         setFilters((prevFilters) => ({

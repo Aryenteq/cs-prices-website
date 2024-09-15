@@ -14,6 +14,6 @@ spreadsheetRoutes.post('/spreadsheet', isAuthenticated, spreadsheetController.cr
 spreadsheetRoutes.delete('/spreadsheet/:spreadsheetId', isAuthenticated, spreadsheetController.deleteSpreadsheet);
 spreadsheetRoutes.put('/spreadsheet/:spreadsheetId/name', isAuthenticated, spreadsheetController.setName);
 spreadsheetRoutes.put('/spreadsheet/:spreadsheetId/last-opened', isAuthenticated, spreadsheetController.setLastOpened);
-spreadsheetRoutes.patch('/spreadsheet/:spreadsheetId/shared-users-ids', isAuthenticated, spreadsheetController.updateSharedUsersIds);
+spreadsheetRoutes.put('/spreadsheet/:spreadsheetId/shared-users-ids', isAuthenticated, spreadsheetController.updateSharedUsersIds); // ? PATCH doesn't work on Brave - CORS
 
 export default spreadsheetRoutes;

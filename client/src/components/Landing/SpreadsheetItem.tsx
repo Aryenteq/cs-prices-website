@@ -6,7 +6,9 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import { useMutation, useQueryClient } from 'react-query';
+
+import { useRenameSpreadsheet } from "../mutation/Spreadsheet/renameSpreadsheetMutation";
+import { useDeleteSpreadsheet } from "../mutation/Spreadsheet/deleteSpreadsheetMutation";
 
 import csSheet from '../../media/svgs/spreadsheet-cs.svg';
 import normalSheet from '../../media/svgs/spreadsheet-normal.svg';
@@ -17,79 +19,21 @@ import newTab from "../../media/svgs/new-tab.svg";
 
 import { formatDate } from "../../utils/formatDate";
 import { encryptData } from "../../utils/encrypt";
-import { authTokensFetch } from "../../utils/authTokens";
-import { useInfo } from "../InfoContext";
 
-interface SpreadsheetItemProps {
-    spreadsheet: {
-        id: number;
-        name: string;
-        type: string;
-        created: string;
-        lastOpened: string;
-        updatedAt: string;
-        ownerName: string;
-        permission: 'EDIT' | 'VIEW';
-    };
-    openMenuId: number | null;
-    handleMenuToggle: (id: number) => void;
-}
+import { SpreadsheetItemProps } from "../../props/spreadsheetItemProps";
 
 const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenuId, handleMenuToggle }) => {
     const navigate = useNavigate();
-    const { setInfo } = useInfo();
+
     const isOpen = openMenuId === spreadsheet.id;
 
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [newName, setNewName] = useState(spreadsheet.name);
 
-    const queryClient = useQueryClient();
-
-    // Rename mutation
-    const renameMutation = useMutation(async () => {
-        const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheet.id}/name`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name: newName }),
-        });
-        return data;
-    }, {
-        onSuccess: () => {
-            queryClient.invalidateQueries('spreadsheets');
-            setRenameDialogOpen(false);
-        },
-        onError: (error: any) => {
-            setInfo({ message: error.message, isError: true });
-            if (error.status !== 401) {
-                console.error('Error renaming spreadsheet:', error);
-            }
-        },
-    });
-
-    // Delete mutation
-    const deleteMutation = useMutation(async () => {
-        const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/spreadsheet/${spreadsheet.id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        return data;
-    }, {
-        onSuccess: () => {
-            queryClient.invalidateQueries('spreadsheets');
-            setDeleteDialogOpen(false);
-        },
-        onError: (error: any) => {
-            setInfo({ message: error.message, isError: true });
-            if (error.status !== 401) {
-                console.error('Error deleting spreadsheet:', error);
-            }
-        },
-    });
+    const spreadsheetId = spreadsheet.id;
+    const renameSpreadsheet = useRenameSpreadsheet(spreadsheetId, newName, setRenameDialogOpen);
+    const deleteSpreadsheet = useDeleteSpreadsheet(spreadsheetId, setDeleteDialogOpen);
 
     const handleItemClick = () => {
         const spreadsheetId = spreadsheet.id;
@@ -166,7 +110,7 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
             {/* Rename Dialog */}
             <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)}
                 onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{color: '#510154',}}>Rename Spreadsheet</DialogTitle>
+                <DialogTitle sx={{ color: '#510154', }}>Rename Spreadsheet</DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
@@ -179,21 +123,21 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setRenameDialogOpen(false)} sx={{color: '#510154',}}>Cancel</Button>
-                    <Button onClick={() => renameMutation.mutate()} sx={{color: '#510154',}}>Ok</Button>
+                    <Button onClick={() => setRenameDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                    <Button onClick={() => renameSpreadsheet.mutate()} sx={{ color: '#510154', }}>Ok</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Delete Dialog */}
             <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}
                 onClick={(e) => e.stopPropagation()}>
-                <DialogTitle sx={{color: '#510154',}}>Delete Spreadsheet</DialogTitle>
-                <DialogContent sx={{color: '#510154',}}>
+                <DialogTitle sx={{ color: '#510154', }}>Delete Spreadsheet</DialogTitle>
+                <DialogContent sx={{ color: '#510154', }}>
                     Are you sure you want to delete this spreadsheet? This action can not be reversed.
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{color: '#510154',}}>Cancel</Button>
-                    <Button onClick={() => deleteMutation.mutate()} sx={{color: '#510154',}}>Delete</Button>
+                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: '#510154', }}>Cancel</Button>
+                    <Button onClick={() => deleteSpreadsheet.mutate()} sx={{ color: '#510154', }}>Delete</Button>
                 </DialogActions>
             </Dialog>
         </div>

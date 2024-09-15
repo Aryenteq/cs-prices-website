@@ -1,6 +1,5 @@
 import { CS_PROTECTED_COLUMNS_LENGTH } from "../SpreadsheetTable";
-
-import { HorizontalAlignment, VerticalAlignment, TextAlign } from "./Types";
+import { HorizontalAlignment, VerticalAlignment, TextAlign } from "../../../types/cellTypes";
 
 export const getColumnLetter = (abbreviated: boolean = true, type: 'CS' | 'NORMAL', col: number) => {
     let title = '';
@@ -117,7 +116,7 @@ export const getColIndexFromLetter = (
 export const initializeSizes = (
     numItems: number,
     defaultSize: number,
-    specificSizes: { [key: number]: number } | null
+    specificSizes?: { [key: number]: number } | null
 ): number[] => {
     const defaultSizes = new Array(numItems).fill(defaultSize);
 
@@ -136,11 +135,11 @@ export const initializeSizes = (
 // Combine JSON to Array (boolean)
 export const initializeVisibility = (
     numItems: number,
-    specificVisibility: { [key: number]: boolean }
+    specificVisibility?: { [key: number]: boolean }
 ): boolean[] => {
     const defaultVisibility = new Array(numItems).fill(false);
     return defaultVisibility.map((isVisible, index) => {
-        return specificVisibility[index] !== undefined ? specificVisibility[index] : isVisible;
+        return specificVisibility?.[index] ?? isVisible;
     });
 };
 
