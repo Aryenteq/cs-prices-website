@@ -1,5 +1,17 @@
 import Cookies from "js-cookie";
 
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+const subscribeTokenRefresh = (cb: (token: string) => void) => {
+    refreshSubscribers.push(cb);
+};
+
+const onRrefreshed = (token: string) => {
+    refreshSubscribers.forEach(cb => cb(token));
+    refreshSubscribers = [];
+};
+
 export const getRefreshToken = () => {
     return Cookies.get('refresh_token');
 };
@@ -11,7 +23,6 @@ const getAuthHeader = () => {
     }
     return { Authorization: `Bearer ${token}` };
 };
-
 
 export const saveTokens = (accessToken: string, refreshToken: string) => {
     Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
@@ -28,37 +39,66 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
     });
 
     if (response.status === 401) {
-        const refreshResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ refreshToken: getRefreshToken() }),
-        });
+        if (!isRefreshing) {
+            isRefreshing = true;
 
-        if (refreshResponse.ok) {
-            const data = await refreshResponse.json();
+            try {
+                const refreshResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken: getRefreshToken() }),
+                });
 
-            saveTokens(data.accessToken, data.refreshToken);
+                if (refreshResponse.ok) {
+                    const data = await refreshResponse.json();
 
-            const retryResponse = await fetch(url, {
-                ...options,
-                headers: {
-                    ...options.headers,
-                    ...getAuthHeader(),
-                },
-            });
+                    saveTokens(data.accessToken, data.refreshToken);
+                    onRrefreshed(data.accessToken);
 
-            return await handleResponse(retryResponse);
+                    const retryResponse = await fetch(url, {
+                        ...options,
+                        headers: {
+                            ...options.headers,
+                            Authorization: `Bearer ${data.accessToken}`,
+                        },
+                    });
+
+                    isRefreshing = false;
+                    return await handleResponse(retryResponse);
+                } else {
+                    // If refresh fails, remove the tokens and redirect to login
+                    Cookies.remove('access_token');
+                    Cookies.remove('refresh_token');
+
+                    setTimeout(() => {
+                        window.location.href = '/connect';
+                    }, 500);
+
+                    isRefreshing = false;
+                    return;
+                }
+            } catch (error) {
+                isRefreshing = false;
+                throw new Error("Failed to refresh token.");
+            }
         } else {
-            Cookies.remove('access_token');
-            Cookies.remove('refresh_token');
-
-            setTimeout(() => {
-                window.location.href = '/connect';
-            }, 500);
-
-            return;
+            // Token is already being refreshed; queue this request
+            return new Promise((resolve, reject) => {
+                subscribeTokenRefresh(async (newToken: string) => {
+                    try {
+                        const retryResponse = await fetch(url, {
+                            ...options,
+                            headers: {
+                                ...options.headers,
+                                Authorization: `Bearer ${newToken}`,
+                            },
+                        });
+                        resolve(await handleResponse(retryResponse));
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            });
         }
     }
 

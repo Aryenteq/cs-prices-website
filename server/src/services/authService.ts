@@ -19,7 +19,7 @@ const generateTokens = async (user: PrismaUser) => {
     const accessToken = jwt.sign({ uid: user.uid, username: user.username, email: user.email, admin: user.admin }, SECRET_KEY, { expiresIn: '15m' });
 
     const refreshToken = uuidv4();
-    const expiresAt = add(new Date(), { days: 7 });
+    const expiresAt = add(new Date(), { days: 30 });
 
     await db.refreshToken.create({
         data: {
