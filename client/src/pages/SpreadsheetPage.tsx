@@ -84,17 +84,23 @@ const SpreadsheetPage: React.FC = () => {
 
 
     const jwtInfo = useMemo(() => {
-        const storedToken = Cookies.get('access_token');
-        if (storedToken) {
+        const accessToken = Cookies.get('access_token');
+        const refreshToken = Cookies.get('refresh_token');
+        if (accessToken) {
             try {
-                return jwtDecode<JwtPayload>(storedToken);
+                return jwtDecode<JwtPayload>(accessToken);
             } catch (error) {
                 console.error('Failed to decode access_token', error);
                 return null;
             }
         }
+
+        if (refreshToken) {
+            Cookies.set('access_token', '');
+        }
+
         return null;
-    }, [[Cookies.get('access_token')]]);
+    }, [Cookies.get('access_token'), Cookies.get('refresh_token')]);
 
     const { fetchedSpreadsheet, isLoading } = useSpreadsheetFetch(spreadsheetId, sheetIndex);
 

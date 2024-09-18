@@ -14,8 +14,6 @@ export const useDialogSave = (
     const [currentIndex, setCurrentIndex] = useState<number | null>(null);
 
     const handleDialogSave = (newSize: number) => {
-        console.log(newSize); // returns correct
-        console.log(currentIndex);
         if (resizeType === 'row' && currentIndex !== null) {
             setRowHeights((prevHeights: number[]) => {
                 const newHeights = [...prevHeights];
@@ -30,7 +28,6 @@ export const useDialogSave = (
                 return newHeights;
             });
         } else if (resizeType === 'col' && currentIndex !== null) {
-            console.log(newSize);
             setColWidths((prevWidths: number[]) => {
                 const newWidths = [...prevWidths];
                 newWidths[currentIndex] = newSize;
