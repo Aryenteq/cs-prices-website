@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { updateRowHeight } from "../../../fetch/SheetFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 
 export const useUpdateRowHeightMutation = (
     setSpreadsheet: Function, 

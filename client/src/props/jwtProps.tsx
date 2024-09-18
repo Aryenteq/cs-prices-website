@@ -3,9 +3,5 @@ export interface JwtPayload {
   username: string;
   email: string;
   admin: boolean;
-  exp?: number;
-}
-
-export interface UserIdProps {
-  userId: number
+  exp: number;
 }

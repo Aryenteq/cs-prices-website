@@ -1,15 +1,16 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { UserIdProps } from "../../props/jwtProps";
 import logo from "../../assets/logo.webp";
 import account from "../../media/svgs/user-edit.svg";
 import loading from "../../media/svgs/loading.svg";
 
 import SpreadsheetSearch from "./SpreadsheetSearch";
 import { useUserPhotoFetch } from "../query/User/UserPhotoFetch";
+import { useAuth } from "../../context/AuthContext";
 
-const LandingPageHeader: React.FC<UserIdProps> = ({ userId }) => {
-    const { photoURL, isLoading, error } = useUserPhotoFetch(userId);
+const LandingPageHeader: React.FC = () => {
+    const { uid } = useAuth();
+    const { photoURL, isLoading, error } = useUserPhotoFetch(uid);
     const navigate = useNavigate();
 
     const accountPage = () => {

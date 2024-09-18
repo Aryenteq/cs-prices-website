@@ -13,7 +13,7 @@ import { SketchPicker } from 'react-color';
 import { sketchColors } from "./Functions/Utils";
 
 import { getSheet, addSheet, deleteSheet, setName, setIndex, setColor } from "../../fetch/SheetFetch";
-import { useInfo } from "../InfoContext";
+import { useInfo } from "../../context/InfoContext";
 import { SheetInfo, Spreadsheet } from "../../types/spreadsheetTypes";
 import type { Sheet } from "../../types/sheetTypes";
 import { encryptData } from "../../utils/encrypt";

@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { updateCellsStyle } from "../../../fetch/CellFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 import { Cell } from "../../../types/cellTypes";
 
 export const useUpdateCellsStyleMutation = (setSpreadsheet: Function, updateCtrlZMemory: Function, setSaving: Function) => {

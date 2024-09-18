@@ -25,11 +25,12 @@ const getAuthHeader = () => {
 };
 
 export const saveTokens = (accessToken: string, refreshToken: string) => {
-    Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
+    Cookies.set('access_token', accessToken);
     Cookies.set('refresh_token', refreshToken, { expires: 30 });
 };
 
 export const authTokensFetch = async (url: string, options: RequestInit): Promise<any> => {
+    console.log("hoo");
     const response = await fetch(url, {
         ...options,
         headers: {
@@ -66,7 +67,6 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
                     isRefreshing = false;
                     return await handleResponse(retryResponse);
                 } else {
-                    // If refresh fails, remove the tokens and redirect to login
                     Cookies.remove('access_token');
                     Cookies.remove('refresh_token');
 
@@ -82,7 +82,7 @@ export const authTokensFetch = async (url: string, options: RequestInit): Promis
                 throw new Error("Failed to refresh token.");
             }
         } else {
-            // Token is already being refreshed; queue this request
+            // Token is already being refreshed; queue
             return new Promise((resolve, reject) => {
                 subscribeTokenRefresh(async (newToken: string) => {
                     try {

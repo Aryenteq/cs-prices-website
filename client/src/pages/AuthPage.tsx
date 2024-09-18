@@ -4,7 +4,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { Navigate, useNavigate } from 'react-router-dom';
 
-import { useInfo } from '../components/InfoContext';
+import { useInfo } from '../context/InfoContext';
 import { useQuery } from './ResetPwdPage';
 
 import AuthForm, { AuthFormProps } from '../components/Auth/AuthForm';
@@ -18,7 +18,7 @@ export const handleLogInSubmit = async (data: Record<string, string>, setInfo: (
   try {
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, data);
     const { accessToken, refreshToken } = response.data;
-    Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
+    Cookies.set('access_token', accessToken);
     Cookies.set('refresh_token', refreshToken, { expires: 30 });
 
     const next = location.get('next');
@@ -51,7 +51,7 @@ export const handleSignUpSubmit = async (data: Record<string, string>, setInfo: 
 
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/signup`, data);
     const { accessToken, refreshToken } = response.data;
-    Cookies.set('access_token', accessToken, { expires: 15 / 1440 });
+    Cookies.set('access_token', accessToken);
     Cookies.set('refresh_token', refreshToken, { expires: 30 });
 
     const next = location.get('next');

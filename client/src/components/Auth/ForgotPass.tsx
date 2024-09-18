@@ -2,7 +2,7 @@ import React from 'react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import leftArrow from './media/left-arrow.svg';
-import { useInfo } from '../InfoContext';
+import { useInfo } from '../../context/InfoContext';
 
 interface ForgotPassProp {
     toggle: () => void;

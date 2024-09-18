@@ -1,7 +1,7 @@
 import React, { useState} from "react";
 
 // custom hooks
-import { useInfo } from "../InfoContext";
+import { useInfo } from "../../context/InfoContext";
 import { useAddRowsMutation } from "../mutation/Sheet/addRowsMutation";
 import { useAddColsMutation } from "../mutation/Sheet/addColsMutation";
 import { useDeleteRowsMutation } from "../mutation/Sheet/deleteRowsMutation";

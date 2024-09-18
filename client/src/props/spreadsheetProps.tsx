@@ -12,7 +12,6 @@ export interface SpreadsheetProps {
 }
 
 export interface SpreadsheetHeaderProps {
-    uid: number;
     spreadsheetId: number;
     saving: boolean;
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;

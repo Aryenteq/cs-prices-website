@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { authTokensFetch } from "../../utils/authTokens";
-import { useInfo } from "../InfoContext";
+import { useInfo } from "../../context/InfoContext";
 import { ShareInfo } from "../../types/shareInfoTypes";
 
 import { fetchSpreadsheetShares, updatePermission } from "../../fetch/SpreadsheetFetch";

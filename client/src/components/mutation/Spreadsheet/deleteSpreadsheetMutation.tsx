@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from 'react-query';
 import { authTokensFetch } from '../../../utils/authTokens';
-import { useInfo } from '../../InfoContext';
+import { useInfo } from '../../../context/InfoContext';
 
 export const useDeleteSpreadsheet = (spreadsheetId: number, setDeleteDialogOpen: (open: boolean) => void) => {
     const queryClient = useQueryClient();

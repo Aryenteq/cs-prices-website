@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { updateCellsBgColor } from "../../../fetch/CellFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 import { Cell } from "../../../types/cellTypes";
 
 export const useUpdateCellsBgColorMutation = (

@@ -1,5 +1,5 @@
 import { useQuery } from "react-query";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 
 import type { Spreadsheet, Filters } from "../../../types/SpreadsheetListTypes";
 import { fetchSpreadsheets } from "../../../fetch/SpreadsheetFetch";

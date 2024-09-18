@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { updateHiddenRows } from "../../../fetch/SheetFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 import { Spreadsheet } from "../../../types/spreadsheetTypes";
 import type { ItemsVisibility } from "../../../types/sheetTypes";
 

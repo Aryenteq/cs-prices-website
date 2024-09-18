@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { updatePastedCellsContent } from "../../../fetch/CellFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 
 export const useSavePastedContentMutation = (
     setSpreadsheet: Function,

@@ -1,8 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useParams } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-import Cookies from 'js-cookie';
-import { JwtPayload } from '../props/jwtProps';
 
 // types
 import type { Sheet } from "../types/sheetTypes";
@@ -82,26 +79,6 @@ const SpreadsheetPage: React.FC = () => {
         return [null, 0];
     }, []);
 
-
-    const jwtInfo = useMemo(() => {
-        const accessToken = Cookies.get('access_token');
-        const refreshToken = Cookies.get('refresh_token');
-        if (accessToken) {
-            try {
-                return jwtDecode<JwtPayload>(accessToken);
-            } catch (error) {
-                console.error('Failed to decode access_token', error);
-                return null;
-            }
-        }
-
-        if (refreshToken) {
-            Cookies.set('access_token', '');
-        }
-
-        return null;
-    }, [Cookies.get('access_token'), Cookies.get('refresh_token')]);
-
     const { fetchedSpreadsheet, isLoading } = useSpreadsheetFetch(spreadsheetId, sheetIndex);
 
     useEffect(() => {
@@ -124,10 +101,6 @@ const SpreadsheetPage: React.FC = () => {
         }
     }, [spreadsheet]);
 
-    if (!jwtInfo) {
-        return <Navigate to="/connect" replace />;
-    }
-
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center">
@@ -148,7 +121,6 @@ const SpreadsheetPage: React.FC = () => {
         <div className="flex flex-col h-full">
             <div className="flex-shrink-0">
                 <SpreadsheetHeader
-                    uid={jwtInfo.uid}
                     spreadsheetId={spreadsheetId}
                     saving={saving}
                     setSaving={setSaving}

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from 'react-query';
 import { authTokensFetch } from '../../../utils/authTokens';
-import { useInfo } from '../../InfoContext';
+import { useInfo } from '../../../context/InfoContext';
 
 export const useRenameSpreadsheet = (spreadsheetId: number, newName: string, setRenameDialogOpen: (open: boolean) => void) => {
     const queryClient = useQueryClient();

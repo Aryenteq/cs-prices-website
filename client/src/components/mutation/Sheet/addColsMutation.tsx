@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { addCols } from "../../../fetch/SheetFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 import { initializeSizes } from "../../Spreadsheet/Functions/Utils";
 import { DEFAULT_COL_WIDTH } from "../../Spreadsheet/SpreadsheetTable";
 

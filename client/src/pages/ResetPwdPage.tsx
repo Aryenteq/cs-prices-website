@@ -4,7 +4,7 @@ import axios from 'axios';
 import hidePass from '../components/Auth/media/hide-pass.svg';
 import showPass from '../components/Auth/media/show-pass.svg';
 import '../components/Auth/Auth.css';
-import { useInfo } from '../components/InfoContext';
+import { useInfo } from '../context/InfoContext';
 
 export const useQuery = () => {
     return new URLSearchParams(useLocation().search);

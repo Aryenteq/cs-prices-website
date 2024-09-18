@@ -1,7 +1,7 @@
 import { useQuery } from "react-query";
 import { fetchSpreadsheet } from "../../../fetch/SpreadsheetFetch";
 import type { Spreadsheet } from "../../../types/spreadsheetTypes";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 
 export const useSpreadsheetFetch = (spreadsheetId: number | null, sheetIndex: number) => {
     const { setInfo } = useInfo();

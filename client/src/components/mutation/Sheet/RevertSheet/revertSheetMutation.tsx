@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { revertSheet } from "../../../../fetch/SheetFetch";
-import { useInfo } from "../../../InfoContext";
+import { useInfo } from "../../../../context/InfoContext";
 
 export const useRevertSheetMutation = (setSaving: Function) => {
     const { setInfo } = useInfo();

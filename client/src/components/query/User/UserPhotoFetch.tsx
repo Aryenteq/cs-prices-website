@@ -1,6 +1,6 @@
 import { useQuery } from "react-query";
 import { fetchUserPhoto } from "../../../fetch/UserFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 
 export const useUserPhotoFetch = (userId: number) => {
     const { setInfo } = useInfo();

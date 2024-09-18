@@ -6,7 +6,7 @@ import { authTokensFetch } from "../../utils/authTokens";
 
 import SpreadsheetShare from "./SpreadsheetShare";
 
-import { useInfo } from "../InfoContext";
+import { useInfo } from "../../context/InfoContext";
 
 import cloudSavedImg from "../../media/svgs/cloud-saved.svg";
 import cloudSavingImg from "../../media/svgs/timer.svg";
@@ -14,6 +14,7 @@ import normalSpreadsheetImg from "../../media/svgs/spreadsheet-normal.svg";
 import csSpreadsheetImg from "../../media/svgs/spreadsheet-cs.svg";
 import accountImg from "../../media/svgs/user-edit.svg";
 import loadingImg from "../../media/svgs/loading.svg";
+import { useAuth } from "../../context/AuthContext";
 
 const fetchUserPhoto = async (userId: number) => {
     const data = await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/user/photo/${userId}`, {
@@ -36,7 +37,8 @@ const fetchSpreadsheetType = async (spreadsheetId: number): Promise<string> => {
     return data;
 };
 
-const SpreadsheetHeader: React.FC<SpreadsheetHeaderProps> = ({ uid, spreadsheetId, saving, setSaving }) => {
+const SpreadsheetHeader: React.FC<SpreadsheetHeaderProps> = ({ spreadsheetId, saving, setSaving }) => {
+    const { uid } = useAuth();
     const queryClient = useQueryClient();
     const [name, setName] = useState<string>('');
     const [spreadsheetType, setSpreadsheetType] = useState<string>('NORMAL');

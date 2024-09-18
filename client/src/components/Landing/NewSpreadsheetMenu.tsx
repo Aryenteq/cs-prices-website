@@ -1,7 +1,7 @@
 import React from "react";
 import { useMutation } from "react-query";
 import { useNavigate } from "react-router-dom";
-import { useInfo } from "../InfoContext";
+import { useInfo } from "../../context/InfoContext";
 
 import csSheet from "../../media/svgs/spreadsheet-cs.svg"
 import normalSheet from "../../media/svgs/spreadsheet-normal.svg";

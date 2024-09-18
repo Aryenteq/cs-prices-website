@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { updateColWidth } from "../../../fetch/SheetFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 
 export const useUpdateColWidthMutation = (
     setSpreadsheet: Function, 

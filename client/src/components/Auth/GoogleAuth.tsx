@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import googleLogo from './media/google-logo.svg';
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { useInfo } from '../InfoContext';
+import { useInfo } from '../../context/InfoContext';
 import { app } from '../../utils/firebase';
 
 import { handleLogInSubmit, handleSignUpSubmit } from '../../pages/AuthPage';

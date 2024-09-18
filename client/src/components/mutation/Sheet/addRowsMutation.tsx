@@ -1,6 +1,6 @@
 import { useMutation } from "react-query";
 import { addRows } from "../../../fetch/SheetFetch";
-import { useInfo } from "../../InfoContext";
+import { useInfo } from "../../../context/InfoContext";
 import { initializeSizes } from "../../Spreadsheet/Functions/Utils";
 import { DEFAULT_ROW_HEIGHT } from "../../Spreadsheet/SpreadsheetTable";
 

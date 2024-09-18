@@ -4,8 +4,8 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from 'react-query';
 import './index.css';
 
-import { InfoProvider } from "./components/InfoContext";
-import RequireAuth from "./components/RequireAuth";
+import { InfoProvider } from "./context/InfoContext";
+import RequireAuth from "./context/RequireAuth";
 
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
