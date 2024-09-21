@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 import { CS_PROTECTED_COLUMNS_LENGTH, generateCells } from './spreadsheetService';
 import type { ItemsVisibility, Sheet } from '../utils/types';
+import { getSheetById, getSpreadsheetById } from '../utils/getById';
+import { findSpreadheetIdBySheetId } from '../utils/findById';
 
 const DEFAULT_ROW_HEIGHT = 21;
 const DEFAULT_COL_WIDTH = 100;
@@ -457,7 +459,7 @@ export const addRows = async (sheetId: number, startIndex: number, rowsNumber: n
         }
     });
 
-    const newCells = generateCellsForNewRows(sheetId, startIndex, rowsNumber, sheet.numCols);
+    const newCells = await generateCellsForNewRows(sheetId, startIndex, rowsNumber, sheet.numCols);
     await db.cell.createMany({
         data: newCells
     });
@@ -519,7 +521,31 @@ export const addRows = async (sheetId: number, startIndex: number, rowsNumber: n
     });
 };
 
-const generateCellsForNewRows = (sheetId: number, startIndex: number, rowsNumber: number, numCols: number) => {
+const generateCellsForNewRows = async (sheetId: number, startIndex: number, rowsNumber: number, numCols: number) => {
+    const sheet = await getSheetById(sheetId);
+
+    if (!sheet) {
+        throw new Error("Sheet not found");
+    }
+
+    const spreadsheetId = await findSpreadheetIdBySheetId(sheet.id);
+
+    if (!spreadsheetId) {
+        throw new Error("Spreadsheet ID not found");
+    }
+
+    const spreadsheet = await getSpreadsheetById(spreadsheetId);
+
+    if (!spreadsheet) {
+        throw new Error("Spreadsheet ID not found");
+    }
+
+    let protectedCell = false;
+
+    if (spreadsheet.type === 'CS') {
+        protectedCell = true;
+    }
+
     const cells = [];
     for (let row = startIndex; row < startIndex + rowsNumber; row++) {
         for (let col = 0; col < numCols; col++) {
@@ -527,6 +553,7 @@ const generateCellsForNewRows = (sheetId: number, startIndex: number, rowsNumber
                 sheetId,
                 row,
                 col,
+                protected: protectedCell,
             });
         }
     }

@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { Prisma, type Cell } from '@prisma/client';
-import { findSheetIdByCellId } from '../utils/findSheetId';
-import { findSpreadsheetIdByCellId } from '../utils/findSpreadsheetId';
+import { findSheetIdByCellId } from '../utils/findById';
+import { findSpreadsheetIdByCellId } from '../utils/findById';
 import { getUserPermissionForSpreadsheet } from '../utils/checkPermission';
 
 import { CS_PROTECTED_COLUMNS_LENGTH, CS_PROTECTED_COLUMNS_EDITABLE } from './spreadsheetService';

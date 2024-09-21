@@ -27,3 +27,17 @@ export const getSheetById = async (sheetId: number) => {
         throw new Error('Error fetching sheet');
     }
 };
+
+export const getSpreadsheetById = async (spreadsheetId: number) => {
+    try {
+        const spreadsheet = await db.spreadsheet.findUnique({
+            where: {
+                id: spreadsheetId,
+            },
+        });
+        return spreadsheet;
+    } catch (error) {
+        console.error('Error fetching spreadsheet by ID:', error);
+        throw new Error('Error fetching spreadsheet');
+    }
+};
