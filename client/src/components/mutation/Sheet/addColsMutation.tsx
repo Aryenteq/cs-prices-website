@@ -3,9 +3,11 @@ import { addCols } from "../../../fetch/SheetFetch";
 import { useInfo } from "../../../context/InfoContext";
 import { initializeSizes } from "../../Spreadsheet/Functions/Utils";
 import { DEFAULT_COL_WIDTH } from "../../Spreadsheet/SpreadsheetTable";
+import { Spreadsheet } from "../../../types/spreadsheetTypes";
+import { Sheet } from "../../../types/sheetTypes";
 
-export const useAddColsMutation = (setSpreadsheet: Function, setColWidths: React.Dispatch<React.SetStateAction<number[]>>, 
-    updateCtrlZMemory: Function, setSaving: Function) => {
+export const useAddColsMutation = (setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>, setColWidths: React.Dispatch<React.SetStateAction<number[]>>, 
+    updateCtrlZMemory: (updatedSheet: Sheet) => void, setSaving: React.Dispatch<React.SetStateAction<boolean>>) => {
     const { setInfo } = useInfo();
 
     return useMutation(addCols, {

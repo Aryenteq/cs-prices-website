@@ -2,7 +2,7 @@ import { useMutation } from "react-query";
 import { revertSheet } from "../../../../fetch/SheetFetch";
 import { useInfo } from "../../../../context/InfoContext";
 
-export const useRevertSheetMutation = (setSaving: Function) => {
+export const useRevertSheetMutation = (setSaving: React.Dispatch<React.SetStateAction<boolean>>) => {
     const { setInfo } = useInfo();
 
     return useMutation(revertSheet, {

@@ -12,7 +12,7 @@ export const useCellEditing = (
     saveCellContentMutation: Function,
     hiddenRows: boolean[],
     hiddenCols: boolean[],
-    setSaving: Function
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const spreadsheetType = spreadsheet!.type;
     const [cellContent, setCellContent] = useState<string>("");

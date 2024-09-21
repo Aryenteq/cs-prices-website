@@ -47,7 +47,7 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
     currentTextColor: string;
     currentBgColor: string;
     setEditingCell: React.Dispatch<React.SetStateAction<{ id: number, row: number, col: number } | null>>;
-    updateCtrlZMemory: (updatedSheet: any) => void;
+    updateCtrlZMemory: (updatedSheet: Sheet) => void;
     ctrlZSheets: Sheet[] | null;
     ctrlZIndex: number | null;
     setCtrlZIndex: React.Dispatch<React.SetStateAction<number | null>>;

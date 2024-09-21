@@ -7,7 +7,7 @@ export const useContextMenuHandler = (
     hiddenRows: boolean[],
     spreadsheet: Spreadsheet,
     setInfo: Function,
-    setSaving: Function,
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>,
     updateHiddenColsMutation: Function,
     updateHiddenRowsMutation: Function,
     addColsMutation: Function,

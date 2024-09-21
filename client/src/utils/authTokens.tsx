@@ -30,7 +30,6 @@ export const saveTokens = (accessToken: string, refreshToken: string) => {
 };
 
 export const authTokensFetch = async (url: string, options: RequestInit): Promise<any> => {
-    console.log("hoo");
     const response = await fetch(url, {
         ...options,
         headers: {

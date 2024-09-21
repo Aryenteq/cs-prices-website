@@ -6,7 +6,7 @@ export const useDialogSave = (
     setColWidths: Function,
     updateRowHeightMutation: Function,
     updateColWidthMutation: Function,
-    setSaving: Function,
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>,
     spreadsheet: Spreadsheet
 ) => {
     const [dialogOpen, setDialogOpen] = useState(false);

@@ -1,4 +1,5 @@
 import { Sheet } from "../../../../types/sheetTypes"
+import { Spreadsheet } from "../../../../types/spreadsheetTypes";
 import { initializeSizes, initializeVisibility } from "../../../Spreadsheet/Functions/Utils";
 import { DEFAULT_COL_WIDTH, DEFAULT_ROW_HEIGHT } from "../../../Spreadsheet/SpreadsheetTable";
 
@@ -6,8 +7,8 @@ export const useUndo = (
     ctrlZSheets: Sheet[] | null,
     ctrlZIndex: number | null,
     setCtrlZIndex: Function,
-    setSpreadsheet: Function,
-    setSaving: Function,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>,
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>,
     setEditingCell: Function,
     revertSheetMutation: any,
     setRowHeights: React.Dispatch<React.SetStateAction<number[]>>,

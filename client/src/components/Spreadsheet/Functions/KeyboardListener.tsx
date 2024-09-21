@@ -13,8 +13,8 @@ import { useSavePastedContentMutation } from "../../mutation/Cell/savePastedCont
 
 interface KeyboardListenerProps {
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
-    spreadsheet: Spreadsheet | undefined;
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
+    spreadsheet: Spreadsheet;
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>;
     selectedCellsId: number[];
     selectedCellsContent: SelectedCellsContent;
     editingCellRef: React.MutableRefObject<{ id: number, row: number, col: number } | null>;

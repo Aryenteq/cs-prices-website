@@ -1,8 +1,10 @@
 import { useMutation } from "react-query";
 import { deleteSheetCols } from "../../../fetch/SheetFetch";
 import { useInfo } from "../../../context/InfoContext";
+import { Spreadsheet } from "../../../types/spreadsheetTypes";
+import { Sheet } from "../../../types/sheetTypes";
 
-export const useDeleteColsMutation = (setSpreadsheet: Function, updateCtrlZMemory: Function, setSaving: Function) => {
+export const useDeleteColsMutation = (setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>, updateCtrlZMemory: (updatedSheet: Sheet) => void, setSaving: React.Dispatch<React.SetStateAction<boolean>>) => {
     const { setInfo } = useInfo();
 
     return useMutation(deleteSheetCols, {

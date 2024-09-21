@@ -7,7 +7,7 @@ export const useColResizeHandler = (
     setColWidths: Function,
     updateColWidthMutation: Function,
     spreadsheet: Spreadsheet,
-    setSaving: Function
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const [currentResizeColIndex, setCurrentResizeColIndex] = useState<number | null>(null);
     const [isResizing, setIsResizing] = useState(false);

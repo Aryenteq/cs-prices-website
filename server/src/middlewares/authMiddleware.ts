@@ -5,7 +5,6 @@ const SECRET_KEY = process.env.JWT_SECRET!;
 
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
-  console.log(authHeader);
   if (!authHeader) {
     return res.status(401).json({ message: 'No token provided' });
   }

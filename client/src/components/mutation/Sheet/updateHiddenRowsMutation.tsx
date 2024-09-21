@@ -2,13 +2,13 @@ import { useMutation } from "react-query";
 import { updateHiddenRows } from "../../../fetch/SheetFetch";
 import { useInfo } from "../../../context/InfoContext";
 import { Spreadsheet } from "../../../types/spreadsheetTypes";
-import type { ItemsVisibility } from "../../../types/sheetTypes";
+import type { ItemsVisibility, Sheet } from "../../../types/sheetTypes";
 
 export const useUpdateHiddenRowsMutation = (
-    setSpreadsheet: Function,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>,
     setHiddenRows: Function,
-    updateCtrlZMemory: Function,
-    setSaving: Function
+    updateCtrlZMemory: (updatedSheet: Sheet) => void,
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const { setInfo } = useInfo();
 
@@ -16,7 +16,7 @@ export const useUpdateHiddenRowsMutation = (
         onMutate: async ({ rows }: { rows: ItemsVisibility[] }) => {
             setSaving(true);
 
-            return setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
+            return setSpreadsheet((prevSpreadsheet: Spreadsheet) => {
                 if (!prevSpreadsheet) return prevSpreadsheet;
 
                 const updatedHiddenRows = { ...prevSpreadsheet.sheet.hiddenRows };

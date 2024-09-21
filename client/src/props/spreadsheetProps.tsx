@@ -3,8 +3,8 @@ import type { Spreadsheet } from "../types/spreadsheetTypes";
 export interface SpreadsheetProps {
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
     selectedCellsId: number[];
-    spreadsheet: Spreadsheet | undefined;
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
+    spreadsheet: Spreadsheet;
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>;
     setCurrentFontFamily: React.Dispatch<React.SetStateAction<string>>;
     setCurrentFontSize: React.Dispatch<React.SetStateAction<number>>;
     setCurrentTextColor: React.Dispatch<React.SetStateAction<string>>;

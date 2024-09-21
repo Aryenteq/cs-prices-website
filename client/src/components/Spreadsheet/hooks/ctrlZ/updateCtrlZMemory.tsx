@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
 import { Sheet } from '../../../../types/sheetTypes';
+import { CTRL_Z_MEMORY_LENGTH } from '../../../../pages/SpreadsheetPage';
 
 export const useCtrlZMemory = (
     setCtrlZSheets: Function,
     ctrlZIndex: number | null,
     setCtrlZIndex: Function,
-    CTRL_Z_MEMORY_LENGTH: number
 ) => {
 
-    const updateCtrlZMemory = useCallback((updatedSheet: any) => {
+    const updateCtrlZMemory = useCallback((updatedSheet: Sheet) => {
         setCtrlZSheets((prevSheets: Sheet[] | null) => {
             const currentCtrlZIndex = ctrlZIndex !== null ? ctrlZIndex : 0;
 

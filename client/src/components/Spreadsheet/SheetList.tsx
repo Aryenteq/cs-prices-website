@@ -20,12 +20,10 @@ import { encryptData } from "../../utils/encrypt";
 import ContextMenu from "./ContextMenu";
 import { Typography } from "@mui/material";
 
-
-
 const SheetList: React.FC<{
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
-    spreadsheet: Spreadsheet | undefined;
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
+    spreadsheet: Spreadsheet;
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>;
     updateCtrlZMemory: (updatedSheet: any) => void;
 }> = ({
     setSaving,
@@ -338,7 +336,6 @@ const SheetList: React.FC<{
         const handleColorChange = (color: any) => {
             setNewColor(color.hex);
         }
-
 
         return (
             <div className="w-full h-[170px] flex overflow-x-auto custom-scrollbar items-center gap-1">

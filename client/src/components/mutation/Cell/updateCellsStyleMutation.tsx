@@ -2,8 +2,10 @@ import { useMutation } from "react-query";
 import { updateCellsStyle } from "../../../fetch/CellFetch";
 import { useInfo } from "../../../context/InfoContext";
 import { Cell } from "../../../types/cellTypes";
+import { Spreadsheet } from "../../../types/spreadsheetTypes";
+import { Sheet } from "../../../types/sheetTypes";
 
-export const useUpdateCellsStyleMutation = (setSpreadsheet: Function, updateCtrlZMemory: Function, setSaving: Function) => {
+export const useUpdateCellsStyleMutation = (setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>, updateCtrlZMemory: (updatedSheet: Sheet) => void, setSaving: React.Dispatch<React.SetStateAction<boolean>>) => {
     const { setInfo } = useInfo();
 
     return useMutation(updateCellsStyle, {
