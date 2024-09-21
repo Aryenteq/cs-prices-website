@@ -540,12 +540,6 @@ const generateCellsForNewRows = async (sheetId: number, startIndex: number, rows
         throw new Error("Spreadsheet ID not found");
     }
 
-    let protectedCell = false;
-
-    if (spreadsheet.type === 'CS') {
-        protectedCell = true;
-    }
-
     const cells = [];
     for (let row = startIndex; row < startIndex + rowsNumber; row++) {
         for (let col = 0; col < numCols; col++) {
@@ -553,7 +547,7 @@ const generateCellsForNewRows = async (sheetId: number, startIndex: number, rows
                 sheetId,
                 row,
                 col,
-                protected: protectedCell,
+                protected: spreadsheet.type === 'CS' && col < CS_PROTECTED_COLUMNS_LENGTH,
             });
         }
     }
