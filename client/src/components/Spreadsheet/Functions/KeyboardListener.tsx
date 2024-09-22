@@ -58,7 +58,7 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, spreadsh
     };
 
 
-    const { mutate: savePastedContentMutation } = useSavePastedContentMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
+    const { mutate: savePastedContentMutation } = useSavePastedContentMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
 
     const onPaste = async () => {
         if (!canEdit) {
