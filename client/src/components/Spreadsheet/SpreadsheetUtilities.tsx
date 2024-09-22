@@ -150,13 +150,13 @@ const SpreadsheetUtilities: React.FC<SpreadsheetProps & {
         // MUTATIONS
         //
         //
-        const { mutate: updateCellsStyleMutation } = useUpdateCellsStyleMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
-        const { mutate: updateCellsHorizontalAlignmentMutation } = useUpdateCellsHorizontalAlignmentMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
-        const { mutate: updateCellsVerticalAlignmentMutation } = useUpdateCellsVerticalAlignmentMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
-        const { mutate: updateCellsColorMutation } = useUpdateCellsColorMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
-        const { mutate: updateCellsBgColorMutation } = useUpdateCellsBgColorMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: updateCellsStyleMutation } = useUpdateCellsStyleMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: updateCellsHorizontalAlignmentMutation } = useUpdateCellsHorizontalAlignmentMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: updateCellsVerticalAlignmentMutation } = useUpdateCellsVerticalAlignmentMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: updateCellsColorMutation } = useUpdateCellsColorMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: updateCellsBgColorMutation } = useUpdateCellsBgColorMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
 
-        const revertSheetMutation = useRevertSheetMutation(setSaving);
+        const revertSheetMutation = useRevertSheetMutation(spreadsheet, setSpreadsheet, setSaving);
 
         const undo = useUndo(ctrlZSheets, ctrlZIndex, setCtrlZIndex, setSpreadsheet, setSaving, setEditingCell, revertSheetMutation, setRowHeights, setColWidths, setHiddenRows, setHiddenCols);
         const handleUndo = () => {

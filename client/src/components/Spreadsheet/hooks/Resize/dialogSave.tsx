@@ -7,7 +7,7 @@ export const useDialogSave = (
     updateRowHeightMutation: Function,
     updateColWidthMutation: Function,
     setSaving: React.Dispatch<React.SetStateAction<boolean>>,
-    spreadsheet: Spreadsheet
+    spreadsheet: Spreadsheet | undefined
 ) => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [resizeType, setResizeType] = useState<'row' | 'col' | null>(null);

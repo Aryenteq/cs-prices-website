@@ -3,13 +3,17 @@ import { updatePastedCellsContent } from "../../../fetch/CellFetch";
 import { useInfo } from "../../../context/InfoContext";
 import { Spreadsheet } from "../../../types/spreadsheetTypes";
 import { Sheet } from "../../../types/sheetTypes";
+import { useRef } from "react";
 
 export const useSavePastedContentMutation = (
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>,
+    spreadsheet: Spreadsheet | undefined,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>,
     updateCtrlZMemory: (updatedSheet: Sheet) => void,
     setSaving: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const { setInfo } = useInfo();
+
+    const previousSpreadsheetRef = useRef<Spreadsheet | undefined>(spreadsheet);
 
     return useMutation(updatePastedCellsContent, {
         onMutate: () => {
@@ -27,7 +31,7 @@ export const useSavePastedContentMutation = (
             });
             updateCtrlZMemory(updatedSheet);
         },
-        onError: (error: any, rollback: any) => {
+        onError: (error: any) => {
             setSaving(false);
             let errorMessage = 'Something went wrong saving the pasted content. Try again';
 
@@ -40,64 +44,9 @@ export const useSavePastedContentMutation = (
             }
             setInfo({ message: errorMessage, isError: true });
 
-            if (rollback) {
-                setSpreadsheet(rollback);
+            if (previousSpreadsheetRef.current) {
+                setSpreadsheet(previousSpreadsheetRef.current);
             }
         }
     });
 };
-
-
-
-/*
-import { Cell, SelectedCellsContent } from "../../../types/cellTypes";
-
-
-onMutate: async ({ firstCellId, contents }: { firstCellId: number, contents: SelectedCellsContent }) => {
-            setSaving(true);
-            return setSpreadsheet((prevSpreadsheet: any) => {
-                if (!prevSpreadsheet) return prevSpreadsheet;
-
-                const firstCell = prevSpreadsheet.sheet.cells.find((cell: Cell) => cell.id === firstCellId);
-
-                if (!firstCell) {
-                    console.error('First cell not found');
-                    return prevSpreadsheet;
-                }
-
-                const { row: firstRow, col: firstCol } = firstCell;
-
-                // If you optimistically update, you won't know if any changes are made after that or not
-                // isEditing is not enough. If you want to update before the BE responds, isEditing needs to be true
-                // ihmlegendary appears in front
-
-                // also the logic for the update is not logic
-                // doesn't work, was 2am, don't feel like thinking
-                const rowDiff = contents[0]?.[0]
-                const updatedSheet = {
-                    ...prevSpreadsheet.sheet,
-                    cells: prevSpreadsheet.sheet.cells.map((cell: Cell) => {
-                        const relativeRow = cell.row - firstRow;
-                        const relativeCol = cell.col - firstCol;
-            
-                        const cellContent = contents[relativeRow]?.[relativeCol];
-            
-                        if (cellContent !== undefined) {
-                            return {
-                                ...cell,
-                                content: cellContent,
-                            };
-                        }
-            
-                        return cell;
-                    }),
-                };
-
-                updateCtrlZMemory(updatedSheet);
-                return {
-                    ...prevSpreadsheet,
-                    sheet: updatedSheet,
-                };
-            });
-        },
-        */

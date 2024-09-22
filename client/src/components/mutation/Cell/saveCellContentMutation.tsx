@@ -2,26 +2,26 @@ import { useMutation } from "react-query";
 import { updateCellContent } from "../../../fetch/CellFetch";
 import { useInfo } from "../../../context/InfoContext";
 import { Cell } from "../../../types/cellTypes";
-import { defaultSpreadsheet, Spreadsheet } from "../../../types/spreadsheetTypes";
+import { Spreadsheet } from "../../../types/spreadsheetTypes";
 import { Sheet } from "../../../types/sheetTypes";
+import { useRef } from "react";
 
 export const useSaveCellContentMutation = (
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>,
+    spreadsheet: Spreadsheet | undefined,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>,
     updateCtrlZMemory: (updatedSheet: Sheet) => void,
     setSaving: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const { setInfo } = useInfo();
 
+    const previousSpreadsheetRef = useRef<Spreadsheet | undefined>(spreadsheet);
+
     return useMutation(updateCellContent, {
         onMutate: async (updatedCellData: { cellId: number, content: string }[]) => {
             setSaving(true);
 
-            let previousSpreadsheet: Spreadsheet = defaultSpreadsheet;
-
             setSpreadsheet((prevSpreadsheet) => {
                 if (!prevSpreadsheet) return prevSpreadsheet;
-
-                previousSpreadsheet = { ...prevSpreadsheet };
 
                 const updatedSheet = {
                     ...prevSpreadsheet.sheet,
@@ -43,12 +43,10 @@ export const useSaveCellContentMutation = (
                     sheet: updatedSheet,
                 };
             });
-
-            return { previousSpreadsheet }; // Return for rollback
         },
         onSuccess: (updatedSheet: Sheet) => {
             setSaving(false);
-            setSpreadsheet((prevSpreadsheet: Spreadsheet) => {
+            setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
                 if (!prevSpreadsheet) return prevSpreadsheet;
 
                 updateCtrlZMemory(updatedSheet);
@@ -59,8 +57,9 @@ export const useSaveCellContentMutation = (
                 };
             });
         },
-        onError: (error: any, _updatedCellData: any, context: { previousSpreadsheet: Spreadsheet } | undefined) => {
+        onError: (error: any) => {
             setSaving(false);
+
             let errorMessage = 'Something went wrong saving the new content. Try again';
 
             if (error instanceof Error) {
@@ -72,8 +71,8 @@ export const useSaveCellContentMutation = (
             }
             setInfo({ message: errorMessage, isError: true });
 
-            if (context?.previousSpreadsheet) {
-                setSpreadsheet(context.previousSpreadsheet);
+            if (previousSpreadsheetRef.current) {
+                setSpreadsheet(previousSpreadsheetRef.current);
             }
         }
     });

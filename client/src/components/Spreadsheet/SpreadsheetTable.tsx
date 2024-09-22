@@ -108,19 +108,19 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
             }
         };
 
-        const { mutate: addRowsMutation } = useAddRowsMutation(setSpreadsheet, setRowHeights, updateCtrlZMemory, setSaving);
-        const { mutate: addColsMutation } = useAddColsMutation(setSpreadsheet, setColWidths, updateCtrlZMemory, setSaving);
+        const { mutate: addRowsMutation } = useAddRowsMutation(spreadsheet, setSpreadsheet, setRowHeights, updateCtrlZMemory, setSaving);
+        const { mutate: addColsMutation } = useAddColsMutation(spreadsheet, setSpreadsheet, setColWidths, updateCtrlZMemory, setSaving);
 
         // DELETE ROWS/COLS
 
-        const { mutate: deleteRowsMutation } = useDeleteRowsMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
-        const { mutate: deleteColsMutation } = useDeleteColsMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: deleteRowsMutation } = useDeleteRowsMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: deleteColsMutation } = useDeleteColsMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
 
 
         // RESIZE
 
-        const { mutate: updateRowHeightMutation } = useUpdateRowHeightMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
-        const { mutate: updateColWidthMutation } = useUpdateColWidthMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: updateRowHeightMutation } = useUpdateRowHeightMutation(spreadsheet, setSpreadsheet, setRowHeights, updateCtrlZMemory, setSaving);
+        const { mutate: updateColWidthMutation } = useUpdateColWidthMutation(spreadsheet, setSpreadsheet, setColWidths, updateCtrlZMemory, setSaving);
 
         const { handleMouseDown: handleRowMouseDown, handleMouseMove: handleRowMouseMove, currentResizeRowIndex, setCurrentResizeRowIndex,
             isResizing: isRowResizing} = useRowResizeHandler(rowHeights, setRowHeights, updateRowHeightMutation, spreadsheet!, setSaving);
@@ -135,8 +135,8 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
 
         // HIDDEN/REVEALED
 
-        const { mutate: updateHiddenColsMutation } = useUpdateHiddenColsMutation(setSpreadsheet, setHiddenCols, updateCtrlZMemory, setSaving);
-        const { mutate: updateHiddenRowsMutation } = useUpdateHiddenRowsMutation(setSpreadsheet, setHiddenRows, updateCtrlZMemory, setSaving);
+        const { mutate: updateHiddenColsMutation } = useUpdateHiddenColsMutation(spreadsheet, setSpreadsheet, setHiddenCols, updateCtrlZMemory, setSaving);
+        const { mutate: updateHiddenRowsMutation } = useUpdateHiddenRowsMutation(spreadsheet, setSpreadsheet, setHiddenRows, updateCtrlZMemory, setSaving);
 
         const { handleRevealCols } = useRevealCols(hiddenCols, setHiddenCols, spreadsheet!, updateHiddenColsMutation);
         const { handleRevealRows } = useRevealRows(hiddenRows, setHiddenRows, spreadsheet!, updateHiddenRowsMutation);
@@ -146,7 +146,7 @@ const SpreadsheetTable: React.FC<SpreadsheetProps & {
 
         // CONTENT
 
-        const { mutate: saveCellContentMutation } = useSaveCellContentMutation(setSpreadsheet, updateCtrlZMemory, setSaving);
+        const { mutate: saveCellContentMutation } = useSaveCellContentMutation(spreadsheet, setSpreadsheet, updateCtrlZMemory, setSaving);
 
         const { cellContent, handleCellClick, handleCellContentChange, handleCellBlur, handleKeyDown, inputRef } = useCellEditing(
             selectedCellsId, spreadsheet!, editingCell, setEditingCell, editingCellRef, setSelectedCellsId, setSelectedCellsContent,

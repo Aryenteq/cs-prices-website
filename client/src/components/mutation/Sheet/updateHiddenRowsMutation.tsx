@@ -3,30 +3,34 @@ import { updateHiddenRows } from "../../../fetch/SheetFetch";
 import { useInfo } from "../../../context/InfoContext";
 import { Spreadsheet } from "../../../types/spreadsheetTypes";
 import type { ItemsVisibility, Sheet } from "../../../types/sheetTypes";
+import { useRef } from "react";
+import { initializeVisibility } from "../../Spreadsheet/Functions/Utils";
 
 export const useUpdateHiddenRowsMutation = (
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>,
-    setHiddenRows: Function,
+    spreadsheet: Spreadsheet | undefined,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>,
+    setHiddenRows: React.Dispatch<React.SetStateAction<boolean[]>>,
     updateCtrlZMemory: (updatedSheet: Sheet) => void,
     setSaving: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const { setInfo } = useInfo();
 
+    // For rollback purposes
+    const previousSpreadsheetRef = useRef<Spreadsheet | undefined>(spreadsheet);
+
     return useMutation(updateHiddenRows, {
         onMutate: async ({ rows }: { rows: ItemsVisibility[] }) => {
             setSaving(true);
 
-            return setSpreadsheet((prevSpreadsheet: Spreadsheet) => {
+            setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
                 if (!prevSpreadsheet) return prevSpreadsheet;
 
                 const updatedHiddenRows = { ...prevSpreadsheet.sheet.hiddenRows };
-
-                // Update hidden rows optimistically
                 rows.forEach((row) => {
                     updatedHiddenRows[row.index] = row.hidden;
                 });
 
-                setHiddenRows((prevHiddenRows: boolean[]) => {
+                setHiddenRows((prevHiddenRows) => {
                     const newHiddenRows = [...prevHiddenRows];
                     rows.forEach((row) => {
                         newHiddenRows[row.index] = row.hidden;
@@ -50,7 +54,7 @@ export const useUpdateHiddenRowsMutation = (
         onSuccess: () => {
             setSaving(false);
         },
-        onError: (error: any, rollback: any) => {
+        onError: (error: any) => {
             setSaving(false);
 
             let errorMessage = 'Something went wrong saving the new hidden rows. Try again';
@@ -63,9 +67,13 @@ export const useUpdateHiddenRowsMutation = (
             }
             setInfo({ message: errorMessage, isError: true });
 
-            // Rollback in case of error
-            if (rollback) {
-                setSpreadsheet(rollback);
+            if (previousSpreadsheetRef.current) {
+                setSpreadsheet(previousSpreadsheetRef.current);
+
+                const numRows = previousSpreadsheetRef.current.sheet?.numRows ?? 100;
+                const hiddenRows = previousSpreadsheetRef.current.sheet?.hiddenRows ?? {};
+
+                setHiddenRows(() => initializeVisibility(numRows, hiddenRows));
             }
         },
     });

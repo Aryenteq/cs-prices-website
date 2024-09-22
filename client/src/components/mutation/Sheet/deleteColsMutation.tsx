@@ -3,9 +3,17 @@ import { deleteSheetCols } from "../../../fetch/SheetFetch";
 import { useInfo } from "../../../context/InfoContext";
 import { Spreadsheet } from "../../../types/spreadsheetTypes";
 import { Sheet } from "../../../types/sheetTypes";
+import { useRef } from "react";
 
-export const useDeleteColsMutation = (setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>, updateCtrlZMemory: (updatedSheet: Sheet) => void, setSaving: React.Dispatch<React.SetStateAction<boolean>>) => {
+export const useDeleteColsMutation = (
+    spreadsheet: Spreadsheet | undefined,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>, 
+    updateCtrlZMemory: (updatedSheet: Sheet) => void, 
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>
+) => {
     const { setInfo } = useInfo();
+
+    const previousSpreadsheetRef = useRef<Spreadsheet | undefined>(spreadsheet);
 
     return useMutation(deleteSheetCols, {
         onSuccess: (updatedSheet) => {
@@ -34,6 +42,10 @@ export const useDeleteColsMutation = (setSpreadsheet: React.Dispatch<React.SetSt
                 console.error('Error deleting cols:', errorMessage);
             }
             setInfo({ message: errorMessage, isError: true });
+
+            if (previousSpreadsheetRef.current) {
+                setSpreadsheet(previousSpreadsheetRef.current);
+            }
         }
     });
 };

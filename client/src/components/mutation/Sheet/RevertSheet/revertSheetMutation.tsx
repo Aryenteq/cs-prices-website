@@ -1,9 +1,17 @@
 import { useMutation } from "react-query";
 import { revertSheet } from "../../../../fetch/SheetFetch";
 import { useInfo } from "../../../../context/InfoContext";
+import { Spreadsheet } from "../../../../types/spreadsheetTypes";
+import { useRef } from "react";
 
-export const useRevertSheetMutation = (setSaving: React.Dispatch<React.SetStateAction<boolean>>) => {
+export const useRevertSheetMutation = (
+    spreadsheet: Spreadsheet | undefined,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>,
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>,
+) => {
     const { setInfo } = useInfo();
+
+    const previousSpreadsheetRef = useRef<Spreadsheet | undefined>(spreadsheet);
 
     return useMutation(revertSheet, {
         onSuccess: () => {
@@ -21,6 +29,10 @@ export const useRevertSheetMutation = (setSaving: React.Dispatch<React.SetStateA
                 console.error('Error updating cell content:', errorMessage);
             }
             setInfo({ message: errorMessage, isError: true });
+
+            if (previousSpreadsheetRef.current) {
+                setSpreadsheet(previousSpreadsheetRef.current);
+            }
         },
     });
 };

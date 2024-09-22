@@ -25,9 +25,9 @@ export const updateHiddenRows = async ({ sheetId, rows }: { sheetId: number, row
     });
 };
 
-export const updateHiddenCols = async ({ sheetId, cols }: { sheetId: number, cols: ItemsVisibility[]}) => {
+export const updateHiddenCols = async ({ sheetId, cols }: { sheetId: number, cols: ItemsVisibility[] }) => {
     await authTokensFetch(`${import.meta.env.VITE_BACKEND_URL}/sheet/${sheetId}/col-hidden`, {
-        method: 'PUT', // ? PATCH doesn't work on Brave - CORS
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemsVisibility: cols }),
     });

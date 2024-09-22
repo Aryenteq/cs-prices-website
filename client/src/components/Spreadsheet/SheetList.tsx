@@ -22,8 +22,8 @@ import { Typography } from "@mui/material";
 
 const SheetList: React.FC<{
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
-    spreadsheet: Spreadsheet;
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>;
+    spreadsheet: Spreadsheet | undefined;
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
     updateCtrlZMemory: (updatedSheet: any) => void;
 }> = ({
     setSaving,
@@ -92,10 +92,6 @@ const SheetList: React.FC<{
         );
 
         const updateSheetInfo = (prevSpreadsheet: Spreadsheet, updatedSheet: Sheet): Spreadsheet => {
-            if (!prevSpreadsheet) {
-                return prevSpreadsheet;
-            }
-
             const newSheetInfo: SheetInfo = {
                 id: updatedSheet.id,
                 name: updatedSheet.name,
@@ -124,8 +120,12 @@ const SheetList: React.FC<{
             {
                 onSuccess: (updatedSheet) => {
                     setSaving(false);
-                    setSpreadsheet((prevSpreadsheet) => {
-                        const newSpreadsheet = updateSheetInfo(prevSpreadsheet!, updatedSheet);
+                    setSpreadsheet((prevSpreadsheet: Spreadsheet | undefined) => {
+                        if (!prevSpreadsheet) {
+                            return prevSpreadsheet;
+                        }
+
+                        const newSpreadsheet = updateSheetInfo(prevSpreadsheet, updatedSheet);
                         return newSpreadsheet;
                     });
                     updateCtrlZMemory(updatedSheet);
@@ -338,7 +338,7 @@ const SheetList: React.FC<{
         }
 
         return (
-            <div className="w-full h-[170px] flex overflow-x-auto custom-scrollbar items-center gap-1">
+            <div className="w-full h-[45px] min-h-[45px] max-h-[45px] flex overflow-x-auto custom-scrollbar items-center gap-1">
                 {canEdit &&
                     <button className="h-7 w-7 mx-2 flex-shrink-0 flex justify-center bg-primary rounded-lg" title="New sheet"
                         onClick={() =>

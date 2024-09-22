@@ -5,7 +5,7 @@ import { Spreadsheet } from '../../../../types/spreadsheetTypes';
 export const useContextMenuHandler = (
     hiddenCols: boolean[],
     hiddenRows: boolean[],
-    spreadsheet: Spreadsheet,
+    spreadsheet: Spreadsheet | undefined,
     setInfo: Function,
     setSaving: React.Dispatch<React.SetStateAction<boolean>>,
     updateHiddenColsMutation: Function,

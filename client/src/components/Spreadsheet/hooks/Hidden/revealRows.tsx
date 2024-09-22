@@ -4,7 +4,7 @@ import { Spreadsheet } from '../../../../types/spreadsheetTypes';
 export const useRevealRows = (
     hiddenRows: boolean[],
     setHiddenRows: Function,
-    spreadsheet: Spreadsheet,
+    spreadsheet: Spreadsheet | undefined,
     updateHiddenRowsMutation: Function
 ) => {
     const handleRevealRows = useCallback((startIndex: number) => {

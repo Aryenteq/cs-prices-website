@@ -7,7 +7,7 @@ export const useRowResizeHandler = (
     rowHeights: number[],
     setRowHeights: Function,
     updateRowHeightMutation: Function,
-    spreadsheet: Spreadsheet,
+    spreadsheet: Spreadsheet | undefined,
     setSaving: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const [currentResizeRowIndex, setCurrentResizeRowIndex] = useState<number | null>(null);

@@ -6,7 +6,7 @@ import { getColumnLetter } from '../../Functions/Utils';
 import { DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE } from '../../SpreadsheetTable';
 
 export const useCellSelection = (
-    spreadsheet: Spreadsheet | null,
+    spreadsheet: Spreadsheet | undefined | null,
     selectedCellsId: number[],
     setSelectedCellsId: (ids: number[]) => void,
     setSelectedCellsContent: (content: { [row: number]: { [col: number]: string | null } }) => void,

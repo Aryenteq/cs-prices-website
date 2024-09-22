@@ -5,10 +5,18 @@ import { initializeSizes } from "../../Spreadsheet/Functions/Utils";
 import { DEFAULT_ROW_HEIGHT } from "../../Spreadsheet/SpreadsheetTable";
 import { Spreadsheet } from "../../../types/spreadsheetTypes";
 import { Sheet } from "../../../types/sheetTypes";
+import { useRef } from "react";
 
-export const useAddRowsMutation = (setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>, setRowHeights: React.Dispatch<React.SetStateAction<number[]>>,
-    updateCtrlZMemory: (updatedSheet: Sheet) => void, setSaving: React.Dispatch<React.SetStateAction<boolean>>) => {
+export const useAddRowsMutation = (
+    spreadsheet: Spreadsheet | undefined,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>,
+    setRowHeights: React.Dispatch<React.SetStateAction<number[]>>,
+    updateCtrlZMemory: (updatedSheet: Sheet) => void,
+    setSaving: React.Dispatch<React.SetStateAction<boolean>>
+) => {
     const { setInfo } = useInfo();
+
+    const previousSpreadsheetRef = useRef<Spreadsheet | undefined>(spreadsheet);
 
     return useMutation(addRows, {
         onSuccess: (updatedSheet) => {
@@ -39,6 +47,10 @@ export const useAddRowsMutation = (setSpreadsheet: React.Dispatch<React.SetState
                 console.error('Error deleting rows:', errorMessage);
             }
             setInfo({ message: errorMessage, isError: true });
+
+            if (previousSpreadsheetRef.current) {
+                setSpreadsheet(previousSpreadsheetRef.current);
+            }
         }
     });
 };

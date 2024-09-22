@@ -4,6 +4,8 @@ import SpreadsheetItem from "./SpreadsheetItem";
 import type { Spreadsheet, Filters } from "../../types/SpreadsheetListTypes";
 import { useSpreadsheets } from "../query/Spreadsheet/SpreadsheetsFetch";
 
+import LoadingGIF from "../../media/imgs/loading.gif";
+
 function groupSpreadsheetsByDate(spreadsheets: Spreadsheet[]): Record<string, Spreadsheet[]> {
     const today = new Date();
     const yesterday = new Date(today);
@@ -75,7 +77,13 @@ const SpreadsheetsList: React.FC = () => {
         setOpenMenuId((prevId) => (prevId === id ? null : id));
     };
 
-    if (isLoading) return <p>Loading...</p>;
+    if (isLoading) {
+        return (
+            <div className="h-full flex items-center justify-center">
+                <img src={LoadingGIF} alt="Loading..." className="h-20" />
+            </div>
+        );
+    }
     if (error) return <p>Error fetching spreadsheets</p>;
 
     const groupedSpreadsheets = groupSpreadsheetsByDate(spreadsheets || []);

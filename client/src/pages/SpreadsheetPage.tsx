@@ -6,8 +6,6 @@ import type { Sheet } from "../types/sheetTypes";
 import type { Spreadsheet } from "../types/spreadsheetTypes";
 import type { SelectedCellsContent } from "../types/cellTypes";
 
-import { defaultSpreadsheet } from "../types/spreadsheetTypes";
-
 // components
 import SpreadsheetHeader from "../components/Spreadsheet/SpreadsheetHeader";
 import SpreadsheetUtilities from "../components/Spreadsheet/SpreadsheetUtilities";
@@ -33,7 +31,7 @@ import LoadingGIF from "../media/imgs/loading.gif";
 const SpreadsheetPage: React.FC = () => {
     const [saving, setSaving] = useState<boolean>(false);
     const [isFirstRender, setIsFirstRender] = useState(true);
-    const [spreadsheet, setSpreadsheet] = useState<Spreadsheet>(defaultSpreadsheet);
+    const [spreadsheet, setSpreadsheet] = useState<Spreadsheet | undefined>(undefined);
 
     const [selectedCellsId, setSelectedCellsId] = useState<number[]>([]);
     const [selectedCellsContent, setSelectedCellsContent] = useState<SelectedCellsContent>({});
@@ -91,17 +89,11 @@ const SpreadsheetPage: React.FC = () => {
             setColWidths(initializeSizes(fetchedSpreadsheet.sheet.numCols, DEFAULT_COL_WIDTH, fetchedSpreadsheet.sheet.columnWidths));
             setHiddenRows(initializeVisibility(fetchedSpreadsheet.sheet.numRows, fetchedSpreadsheet.sheet.hiddenRows));
             setHiddenCols(initializeVisibility(fetchedSpreadsheet.sheet.numCols, fetchedSpreadsheet.sheet.hiddenCols));
+
+            updateCtrlZMemory(fetchedSpreadsheet.sheet);
             setIsFirstRender(false);
         }
     }, [fetchedSpreadsheet, isFirstRender]);
-
-    useEffect(() => {
-        if (spreadsheet) {
-            if (isFirstRender && spreadsheet.sheet) {
-                updateCtrlZMemory(spreadsheet.sheet);
-            }
-        }
-    }, [spreadsheet]);
 
     if (isLoading) {
         return (
@@ -119,6 +111,7 @@ const SpreadsheetPage: React.FC = () => {
         return null;
     }
 
+    // context would be nicer but for ease of fast deployment
     return (
         <div className="flex flex-col h-full">
             <div className="flex-shrink-0">

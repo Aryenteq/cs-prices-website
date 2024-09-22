@@ -3,7 +3,7 @@ import { Spreadsheet } from '../../../../types/spreadsheetTypes';
 
 export const useCellEditing = (
     selectedCellsId: number[],
-    spreadsheet: Spreadsheet,
+    spreadsheet: Spreadsheet | undefined,
     editingCell: { id: number, row: number, col: number } | null,
     setEditingCell: React.Dispatch<React.SetStateAction<{ id: number, row: number, col: number } | null>>,
     editingCellRef: React.MutableRefObject<{ id: number, row: number, col: number } | null>,

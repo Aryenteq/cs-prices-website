@@ -13,8 +13,8 @@ import { useSavePastedContentMutation } from "../../mutation/Cell/savePastedCont
 
 interface KeyboardListenerProps {
     setSaving: React.Dispatch<React.SetStateAction<boolean>>;
-    spreadsheet: Spreadsheet;
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>;
+    spreadsheet: Spreadsheet | undefined;
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>;
     selectedCellsId: number[];
     selectedCellsContent: SelectedCellsContent;
     editingCellRef: React.MutableRefObject<{ id: number, row: number, col: number } | null>;
@@ -96,7 +96,7 @@ const KeyboardListener: React.FC<KeyboardListenerProps> = ({ setSaving, spreadsh
         }
     }
 
-    const revertSheetMutation = useRevertSheetMutation(setSaving);
+    const revertSheetMutation = useRevertSheetMutation(spreadsheet, setSpreadsheet, setSaving);
 
     const undo = useUndo(ctrlZSheets, ctrlZIndex, setCtrlZIndex, setSpreadsheet, setSaving, setEditingCell, revertSheetMutation, setRowHeights, setColWidths, setHiddenRows, setHiddenCols);
     const onUndo = () => {

@@ -3,13 +3,21 @@ import { updateColWidth } from "../../../fetch/SheetFetch";
 import { useInfo } from "../../../context/InfoContext";
 import { Spreadsheet } from "../../../types/spreadsheetTypes";
 import { Sheet } from "../../../types/sheetTypes";
+import { useRef } from "react";
+import { initializeSizes } from "../../Spreadsheet/Functions/Utils";
+import { DEFAULT_COL_WIDTH } from "../../Spreadsheet/SpreadsheetTable";
 
 export const useUpdateColWidthMutation = (
-    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet>>, 
-    updateCtrlZMemory: (updatedSheet: Sheet) => void, 
+    spreadsheet: Spreadsheet | undefined,
+    setSpreadsheet: React.Dispatch<React.SetStateAction<Spreadsheet | undefined>>,
+    setColWidths: React.Dispatch<React.SetStateAction<number[]>>,
+    updateCtrlZMemory: (updatedSheet: Sheet) => void,
     setSaving: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     const { setInfo } = useInfo();
+
+    // For rollback purposes
+    const previousSpreadsheetRef = useRef<Spreadsheet | undefined>(spreadsheet);
 
     return useMutation(updateColWidth, {
         onSuccess: (updatedSheet) => {
@@ -19,7 +27,7 @@ export const useUpdateColWidthMutation = (
                     return prevSpreadsheet;
                 }
 
-                // handling of setColWidths made inside the handleMouseMove
+                // handling of setColWidths is made inside the handleMouseMove
 
                 return {
                     ...prevSpreadsheet,
@@ -40,6 +48,16 @@ export const useUpdateColWidthMutation = (
                 console.error('Error updating column width:', errorMessage);
             }
             setInfo({ message: errorMessage, isError: true });
-        }
+
+            // Rollback in case of error
+            if (previousSpreadsheetRef.current) {
+                setSpreadsheet(previousSpreadsheetRef.current);
+
+                const numCols = previousSpreadsheetRef.current.sheet?.numCols ?? 26;
+                const colWidths = previousSpreadsheetRef.current.sheet?.columnWidths ?? {};
+
+                setColWidths(() => initializeSizes(numCols, DEFAULT_COL_WIDTH, colWidths));
+            }
+        },
     });
 };
