@@ -109,7 +109,7 @@ const SpreadsheetsList: React.FC = () => {
 
                 return (
                     <div key={group}>
-                        <h3>{groupLabel}</h3>
+                        <h3 className="mt-7">{groupLabel}</h3>
                         {groupedSpreadsheets[group].map(spreadsheet => (
                             <SpreadsheetItem
                                 key={spreadsheet.id}
@@ -128,7 +128,7 @@ const SpreadsheetsList: React.FC = () => {
     return (
         <div className="my-10 px-2 breakpoint-1000:px-20">
             <ListHeader onFiltersChange={handleFiltersChange} />
-            <div className="mt-5">
+            <div>
                 {isEmpty ? (
                     <p className="w-full text-center mt-20">No spreadsheets found, try creating one now!</p>
                 ) : (

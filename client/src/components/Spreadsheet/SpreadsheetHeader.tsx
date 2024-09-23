@@ -182,8 +182,9 @@ const SpreadsheetHeader: React.FC<SpreadsheetHeaderProps> = ({ spreadsheetId, sa
                     onChange={handleNameChange}
                     onBlur={handleBlur}
                     onFocus={handleFocus}
-                    className="bg-transparent truncate px-4 py-2"
+                    className="bg-transparent truncate px-4 py-2 w-min flex-shrink max-w-[20%] sm:max-w-[40%]"
                 />
+
                 <img src={saving ? cloudSavingImg : cloudSavedImg}
                     alt={saving ? "Saving..." : "Saved"}
                     title={saving ? "Saving to cloud..." : "Saved to cloud"}

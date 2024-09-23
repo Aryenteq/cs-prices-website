@@ -68,16 +68,16 @@ const SpreadsheetItem: React.FC<SpreadsheetItemProps> = ({ spreadsheet, openMenu
 
     return (
         <div className="relative flex my-3 cursor-pointer hover:bg-secondary-dark p-2" onClick={handleItemClick}>
-            <div className="flex w-9/20 gap-2">
+            <div className="w-[25%] lg:w-9/20 w-9/20 flex gap-2">
                 <img src={spreadsheet.type === 'NORMAL' ? normalSheet : csSheet} alt="Sheet" className="w-6 h-6" />
                 <p className="truncate">{spreadsheet.name}</p>
             </div>
 
-            <p className="w-1/6 truncate">{formatDate(spreadsheet.lastOpened)}</p>
-            <p className="w-1/6 truncate">{spreadsheet.ownerName}</p>
-            <p className="w-1/6 truncate">{spreadsheet.type}</p>
-            <button className="w-1/20 relative" onClick={toggleMenu}>
-                <img src={edit} alt="Options" className="ml-5" />
+            <p className="w-[25%] lg:w-1/6 truncate">{formatDate(spreadsheet.lastOpened)}</p>
+            <p className="w-[20%] lg:w-1/6 truncate">{spreadsheet.ownerName}</p>
+            <p className="w-[20%] lg:w-1/6 truncate">{spreadsheet.type}</p>
+            <button className="w-[10%] lg:w-1/20 relative" onClick={toggleMenu}>
+                <img src={edit} alt="Options" className="ml-auto" />
             </button>
 
             {isOpen && (

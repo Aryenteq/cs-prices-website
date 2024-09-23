@@ -6,7 +6,7 @@ import SpreadsheetsList from '../components/Landing/SpreadsheetsList';
 
 const LandingPage: React.FC = () => {
   return (
-    <main className='h-full'>
+    <main className='min-h-full'>
       <LandingPageHeader />
       <NewSpreadsheetMenu />
       <SpreadsheetsList />

@@ -45,10 +45,10 @@ const DialogSelect: React.FC<DialogSelectProps> = ({ options }) => {
   };
 
   return (
-    <div>
-      <Button onClick={handleClickOpen}>
-        <img src={arrows} alt="Order & Sort" />
-      </Button>
+    <div className='flex items-center justify-end'>
+      <button onClick={handleClickOpen}>
+        <img src={arrows} className="w-6 h-6" alt="Order & Sort" />
+      </button>
       <Dialog disableEscapeKeyDown open={open} onClose={handleClose}>
         <DialogTitle sx={{ color: '#510154', }}>Order & Sort Options</DialogTitle>
         <DialogContent>

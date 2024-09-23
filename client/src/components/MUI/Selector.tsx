@@ -4,6 +4,8 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 interface SelectorProps {
   theme: string;
@@ -15,8 +17,12 @@ interface SelectorProps {
   disabled?: boolean;
 }
 
-const Selector: React.FC<SelectorProps> = ({ theme, defaultt, label, name, options, onChange, disabled}) => {
+const Selector: React.FC<SelectorProps> = ({ theme, defaultt, label, name, options, onChange, disabled }) => {
   const [selectedValue, setSelectedValue] = React.useState<string | number>(defaultt || '');
+
+  // Use MUI's theme breakpoints and media queries
+  const muiTheme = useTheme();
+  const isSmScreen = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
   const handleChange = (event: SelectChangeEvent) => {
     const value = event.target.value as string;
@@ -32,20 +38,22 @@ const Selector: React.FC<SelectorProps> = ({ theme, defaultt, label, name, optio
 
   return (
     <Box sx={{
-      minWidth: '8rem',
-      maxWidth: '100%'
+      minWidth: isSmScreen ? '65px' : '8rem',
+      maxWidth: '100%',
     }}>
       <FormControl size="small" disabled={disabled}
         sx={{
           my: 1,
-          minWidth: '8rem',
+          minWidth: isSmScreen ? '65px' : '8rem',
           maxWidth: '100%',
-          padding: '0px',
+          padding: '0px !important',
           "& .MuiInputLabel-root": { color: '#39B645 !important' },
           "& .MuiOutlinedInput-root": {
             "&.Mui-focused": { borderColor: '#39B645 !important' },
             color: theme === 'dark' ? 'white' : 'black',
-            padding: '0px 0px',
+            "& .MuiOutlinedInput-input": {
+              padding: isSmScreen ? '8px 0px !important' : '8px !important', // Adjust padding based on screen size
+            }
           },
           "& .MuiOutlinedInput-notchedOutline": { borderColor: '#39B645 !important' },
           "& .MuiSvgIcon-root": { color: '#39B645' },
@@ -60,7 +68,7 @@ const Selector: React.FC<SelectorProps> = ({ theme, defaultt, label, name, optio
           onChange={handleChange}
           sx={{
             minWidth: 'auto',
-            padding: '0px',
+            padding: '0px !important',
             color: theme === 'dark' ? 'white' : 'black',
             "& .MuiSvgIcon-root": {
               color: '#39B645',

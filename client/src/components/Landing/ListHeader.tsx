@@ -46,10 +46,10 @@ const ListHeader: React.FC<ListHeaderProps> = ({ onFiltersChange }) => {
     }, [owner, type, orderBy, orderType]);
 
     return (
-        <header className="flex items-center">
-            <p className="w-9/20 truncate font-bold text-1xl text-primary-light">Name</p>
-            <p className="w-1/6 truncate font-bold text-1xl text-primary-light">Last opened</p>
-            <div className="w-1/6 truncate">
+        <header className="flex items-center p-2">
+            <p className="w-[25%] lg:w-9/20 truncate font-bold text-1xl text-primary-light">Name</p>
+            <p className="w-[25%] lg:w-1/6 word-break font-bold text-1xl text-primary-light">Last opened</p>
+            <div className="w-[20%] lg:w-1/6">
                 <Selector
                     theme="dark"
                     label="Owner"
@@ -62,7 +62,7 @@ const ListHeader: React.FC<ListHeaderProps> = ({ onFiltersChange }) => {
                     onChange={(value) => setOwner(value as Filters['owner'])}
                 />
             </div>
-            <div className="w-1/6 truncate">
+            <div className="w-[20%] lg:w-1/6">
                 <Selector
                     theme="dark"
                     label="Type"
@@ -75,7 +75,7 @@ const ListHeader: React.FC<ListHeaderProps> = ({ onFiltersChange }) => {
                     onChange={(value) => setType(value as Filters['type'])}
                 />
             </div>
-            <div className="w-1/20">
+            <div className="w-[10%] lg:w-1/20">
                 <DialogSelect options={orderAndSortOptions} />
             </div>
         </header>
