@@ -126,7 +126,7 @@ const SpreadsheetsList: React.FC = () => {
     };
 
     return (
-        <div className="my-10 px-2 breakpoint-1000:px-20">
+        <div className="mt-10 px-2 breakpoint-1000:px-20">
             <ListHeader onFiltersChange={handleFiltersChange} />
             <div>
                 {isEmpty ? (

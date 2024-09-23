@@ -10,6 +10,7 @@ const LandingPage: React.FC = () => {
       <LandingPageHeader />
       <NewSpreadsheetMenu />
       <SpreadsheetsList />
+      <div className='h-10'></div>
     </main>
   );
 };

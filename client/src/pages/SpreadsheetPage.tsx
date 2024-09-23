@@ -113,7 +113,7 @@ const SpreadsheetPage: React.FC = () => {
 
     // context would be nicer but for ease of fast deployment
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-[100dvh]">
             <div className="flex-shrink-0">
                 <SpreadsheetHeader
                     spreadsheetId={spreadsheetId}
