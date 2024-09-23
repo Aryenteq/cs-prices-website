@@ -12,7 +12,7 @@ const NotFoundPage: React.FC = () => {
     return (
         <div className='flex justify-center items-center h-full'>
             <button onClick={redirect}>
-                <img src={ghost} alt="404" /> <br></br>Căutăm designer!
+                <img src={ghost} alt="404" /> <br></br>Căutăm designer
             </button>
         </div>
     );
